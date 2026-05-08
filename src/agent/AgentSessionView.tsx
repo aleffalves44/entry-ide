@@ -435,14 +435,14 @@ function AgentHeader({ state, sessionId, workspacePathCount }: AgentHeaderProps)
 
   const isWorking = state.initialized && activity.status !== "idle";
   const tickerLabel = !state.initialized
-    ? "READY"
+    ? "Ready"
     : activity.status === "running"
-      ? `RUNNING ${(activity.toolName ?? "TOOL").toUpperCase()}`
+      ? `Running ${activity.toolName ?? "tool"}`
       : activity.status === "thinking"
-        ? "THINKING"
+        ? "Thinking"
         : activity.status === "awaiting"
-          ? "AWAITING CLAUDE"
-          : "READY";
+          ? "Awaiting Claude"
+          : "Ready";
 
   const cwdLabel = cwd ? cwd.split("/").pop() ?? cwd : null;
 
@@ -459,7 +459,7 @@ function AgentHeader({ state, sessionId, workspacePathCount }: AgentHeaderProps)
           data-state={dotState}
           aria-hidden="true"
         />
-        <span className="agent-session-flag">AGENT</span>
+        <span className="agent-session-flag">Agent</span>
       </div>
 
       <div className="agent-session-header-title">
@@ -522,7 +522,7 @@ function AgentHeader({ state, sessionId, workspacePathCount }: AgentHeaderProps)
             title="Stop this turn (Esc)"
             aria-label="Stop the current turn"
           >
-            ◼ STOP
+            ◼ Stop
           </button>
         ) : null}
       </div>
@@ -632,13 +632,13 @@ interface MessageRowProps {
   streamingMessageId?: string | null;
   thinkingStartedAt?: Map<string, number>;
   thinkingElapsed?: Map<string, number>;
-  /** Unused since the №-numbered gutter was removed.  Kept on the prop
-   *  surface so callers (tests, the messages map) don't need to refactor;
-   *  may come back for a different left-gutter treatment later. */
+  /** No longer used by the speaker-chip layout but kept on the prop
+   *  surface so existing callers / tests don't break. */
   turnNumber?: number;
-  /** When true, this message renders the turn's timestamp in the left
-   *  gutter.  False on continuation messages (the assistant response
-   *  that follows the user prompt within the same turn). */
+  /** When true, this is the first message of its turn — the speaker
+   *  chip carries the timestamp.  Continuation messages (assistant
+   *  replies after a user prompt within the same turn) suppress the
+   *  timestamp so the eye groups the turn as one unit. */
   isFirstOfTurn?: boolean;
 }
 
@@ -670,6 +670,7 @@ export function MessageRow({
   // source.  User messages don't need this — what you typed is what you see.
   const [showRaw, setShowRaw] = useState(false);
   const rawText = message.role === "assistant" ? collectRawText(message) : "";
+  const speakerName = message.role === "user" ? "You" : "Hermes";
 
   return (
     <div
@@ -677,7 +678,15 @@ export function MessageRow({
       data-role={message.role}
       data-first-of-turn={isFirstOfTurn ? "true" : "false"}
     >
-      <div className="agent-message-gutter" aria-hidden="true">
+      <div className="agent-message-speaker">
+        <span
+          className="agent-message-avatar"
+          data-role={message.role}
+          aria-hidden="true"
+        >
+          {message.role === "user" ? <UserIcon /> : <BotIcon />}
+        </span>
+        <span className="agent-message-name">{speakerName}</span>
         {isFirstOfTurn ? (
           <span className="agent-message-time">{formatHHMMSS(message.timestamp)}</span>
         ) : null}
@@ -704,6 +713,56 @@ export function MessageRow({
         )}
       </div>
     </div>
+  );
+}
+
+/** Speaker-chip icons.  Drawn inline with `currentColor` so each
+ *  theme's accent (via the brass-remap landed in #254) paints the
+ *  glyph — green-phosphor on hacker, cyan on tron, terracotta on
+ *  designer, etc.  Sized to fit the 24px avatar chip. */
+function BotIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* Antenna */}
+      <line x1="8" y1="2.5" x2="8" y2="4.5" />
+      <circle cx="8" cy="2" r="0.7" fill="currentColor" stroke="none" />
+      {/* Head */}
+      <rect x="3" y="4.5" width="10" height="8" rx="2" />
+      {/* Eyes */}
+      <circle cx="6" cy="8.5" r="0.85" fill="currentColor" stroke="none" />
+      <circle cx="10" cy="8.5" r="0.85" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      width="14"
+      height="14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {/* Head */}
+      <circle cx="8" cy="5.5" r="2.6" />
+      {/* Shoulders */}
+      <path d="M3 13.5c0-2.6 2.2-4.3 5-4.3s5 1.7 5 4.3" />
+    </svg>
   );
 }
 
