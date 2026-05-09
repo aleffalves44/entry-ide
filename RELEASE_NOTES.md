@@ -1,3 +1,15 @@
+# Hermes IDE 1.1.4
+
+A small performance touch-up.
+
+## Faster first Agent session
+
+The first Agent session you open after launching the app now starts noticeably faster. The runtime is warmed up quietly in the background while the app finishes opening, so the *awaiting claude* delay on the first message is largely gone.
+
+The pause was most noticeable on slower disks or right after a fresh restart; subsequent sessions in the same launch were already quick.
+
+---
+
 # Hermes IDE 1.1.3
 
 A focused hotfix that finishes restoring Agent mode in shipped builds, plus two reliability tightenings around tool permissions.
