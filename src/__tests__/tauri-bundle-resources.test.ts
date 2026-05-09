@@ -46,6 +46,38 @@ describe("tauri.conf.json bundle resources", () => {
     expect(hasNodeModules).toBe(true);
   });
 
+  // Regression coverage for v1.1.4 → v1.1.5 hotfix: when we added
+  // bridgeRuntimeHelpers.mjs and the bridge started importing it,
+  // the resources list wasn't updated.  Bundled installs crashed at
+  // runtime with `ERR_MODULE_NOT_FOUND: bridgeRuntimeHelpers.mjs`.
+  // This test scans the bridge for relative .mjs imports and asserts
+  // each one is declared as a Tauri resource — every future helper
+  // file the bridge imports gets caught at unit-test time.
+  it("every relative .mjs import in the bridge is declared as a bundle resource", () => {
+    const bridgeSource = readFileSync(
+      "src-tauri/bridge/hermes-claude-bridge.mjs",
+      "utf-8",
+    );
+    // Match `from "./X.mjs"` or `from './X.mjs'`
+    const importRe = /from\s+["']\.\/([^"']+\.mjs)["']/g;
+    const imports = new Set<string>();
+    let m: RegExpExecArray | null;
+    while ((m = importRe.exec(bridgeSource)) !== null) {
+      imports.add(m[1]);
+    }
+    expect(imports.size, "bridge should import at least one helper").toBeGreaterThan(0);
+
+    const resources: string[] = conf?.bundle?.resources ?? [];
+    for (const file of imports) {
+      const expected = `bridge/${file}`;
+      const found = resources.some((r) => r === expected);
+      expect(
+        found,
+        `bridge imports './${file}' but tauri.conf.json doesn't declare '${expected}' as a resource — bundled install will crash at runtime`,
+      ).toBe(true);
+    }
+  });
+
   it("every static (non-generated) bridge resource exists on disk", () => {
     const resources: string[] = conf?.bundle?.resources ?? [];
     for (const r of resources) {
