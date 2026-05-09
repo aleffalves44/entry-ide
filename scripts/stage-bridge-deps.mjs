@@ -44,6 +44,10 @@ const args = useCi
   : ["install", "--omit=dev", "--no-audit", "--no-fund"];
 
 console.log(`[stage-bridge-deps] running 'npm ${args.join(" ")}' in ${BRIDGE_DIR}`);
-const npmCmd = process.platform === "win32" ? "npm.cmd" : "npm";
-execFileSync(npmCmd, args, { cwd: BRIDGE_DIR, stdio: "inherit" });
+// Node 20+ on Windows refuses to spawnSync a .cmd file directly without
+// shell:true (EINVAL — CVE-2024-27980 mitigation), so always go through
+// the shell.  Args are static so there's no injection surface.
+const isWindows = process.platform === "win32";
+const npmCmd = isWindows ? "npm.cmd" : "npm";
+execFileSync(npmCmd, args, { cwd: BRIDGE_DIR, stdio: "inherit", shell: isWindows });
 console.log("[stage-bridge-deps] done");
