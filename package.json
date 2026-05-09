@@ -15,6 +15,7 @@
     "preflight": "npm run lint:tsc && npm test -- --run && cd src-tauri && cargo test --lib && cd .. && npm run test:agent-e2e",
     "lint:tsc": "tsc --noEmit",
     "postinstall": "patch-package",
+    "prepare:bridge": "node scripts/stage-bridge-deps.mjs",
     "bump": "node scripts/bump-version.mjs",
     "changelog": "bash scripts/generate-changelog.sh",
     "changelog:update": "UPDATE_CHANGELOG=true bash scripts/generate-changelog.sh"

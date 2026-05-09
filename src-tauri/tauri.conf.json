@@ -6,7 +6,7 @@
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "npm run build",
+    "beforeBuildCommand": "npm run prepare:bridge && npm run build",
     "frontendDist": "../dist"
   },
   "app": {
@@ -35,7 +35,9 @@
     "createUpdaterArtifacts": true,
     "resources": [
       "bridge/hermes-claude-bridge.mjs",
-      "bridge/canUseToolHelpers.mjs"
+      "bridge/canUseToolHelpers.mjs",
+      "bridge/package.json",
+      "bridge/node_modules"
     ],
     "icon": [
       "icons/32x32.png",
