@@ -1,12 +1,22 @@
 # Hermes IDE 1.1.3
 
-A focused hotfix that finishes restoring Agent mode in shipped builds.
+A focused hotfix that finishes restoring Agent mode in shipped builds, plus two reliability tightenings around tool permissions.
 
 ## Agent mode now actually starts
 
 1.1.2 was supposed to restore Agent mode for installed apps, but a piece of the agent runtime was still missing from the bundle — every conversation crashed within seconds with a *Cannot find package* error in the activity panel. 1.1.3 ships the missing runtime, so Agent mode starts and stays running on installed builds.
 
 If you were stuck on *Agent process crashed (code 1)* on 1.1.2, please update.
+
+## Reliability tightening
+
+- **Stopping an agent mid-permission-prompt no longer hangs.** If you press stop while a tool is waiting on your approval, the prompt now resolves immediately instead of leaving the conversation stuck.
+- **Bypass-permissions mode is now applied consistently** when selected — previously it could silently fall back to standard prompting in some launches.
+
+## Linux installers
+
+- `.deb` installers ship for both x86_64 and aarch64 (covers Ubuntu/Debian/Mint/Pop!_OS).
+- AppImage builds are temporarily paused while we trim the agent runtime; AppImage support is planned to return in a follow-up release.
 
 ---
 
