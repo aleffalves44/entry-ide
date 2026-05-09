@@ -18,10 +18,15 @@ on:
         required: true
         type: string
 
-# Only one release at a time
+# Dedup release runs per tag.  Both `push: tags: v*` and a manual
+# `workflow_dispatch` for the same tag end up in the same concurrency
+# group, so accidentally double-triggering (e.g. force-pushing a tag
+# AND firing `gh workflow run`) cancels the older run instead of
+# building twice.  Different tags don't share a group — a v1.1.4
+# release can run in parallel with v1.1.3 if needed.
 concurrency:
-  group: release
-  cancel-in-progress: false
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
   contents: write
