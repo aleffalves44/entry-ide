@@ -955,6 +955,349 @@
   height: auto;
 }
 
+/* "expand" button in the mermaid header — same chrome as the source toggle
+ * so the three actions (source / expand / copy) read as a unit.  Hidden by
+ * default; revealed on hover or when the diagram is being shown. */
+.agent-code-fence-expand {
+  background: transparent;
+  border: 0;
+  padding: 2px 6px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--ink-tertiary);
+  cursor: pointer;
+  transition: color 150ms ease, opacity 150ms ease;
+  opacity: 0;
+}
+
+.agent-code-fence:hover .agent-code-fence-expand {
+  opacity: 1;
+}
+
+.agent-code-fence-expand:hover:not(:disabled) {
+  color: var(--ink-secondary);
+}
+
+.agent-code-fence-expand:disabled {
+  opacity: 0;
+  cursor: default;
+}
+
+/* ─── Tables (MarkdownTable component) ─────────────────────────────
+ *
+ * The table wrapper now sits inside a small <figure> with a header strip
+ * matching the code-fence chrome so users can recognize the "expand" affordance.
+ */
+.agent-md-table-figure {
+  margin: 4px 0;
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  font-style: normal;
+}
+
+.agent-md-table-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--rule);
+  font: 10px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+
+.agent-md-table-label {
+  font-weight: 500;
+}
+
+.agent-md-table-expand {
+  background: transparent;
+  border: 0;
+  padding: 2px 6px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--ink-tertiary);
+  cursor: pointer;
+  transition: color 150ms ease, opacity 150ms ease;
+  opacity: 0;
+}
+
+.agent-md-table-figure:hover .agent-md-table-expand {
+  opacity: 1;
+}
+
+.agent-md-table-expand:hover {
+  color: var(--ink-secondary);
+}
+
+/* When the table sits inside the figure the wrapper no longer needs its
+ * own border — the figure draws it.  Strip the duplicate chrome. */
+.agent-md-table-figure .agent-md-table-wrap {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+/* ─── ExpandedViewModal (mermaid + table full-screen viewer) ──────── */
+
+.agent-expand-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  /* The Tauri window uses titleBarStyle: "Overlay" on macOS — the native
+   * title bar (with traffic lights) draws on top of the webview.  We add a
+   * top inset so the modal header isn't hidden underneath it.  ~44px clears
+   * macOS's standard title bar; on Windows/Linux this just becomes a
+   * generous top margin. */
+  padding: 44px 24px 24px;
+  background: color-mix(in srgb, #000 70%, transparent);
+  backdrop-filter: blur(3px);
+  animation: agent-expand-fade-in 120ms ease-out;
+}
+
+@keyframes agent-expand-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.agent-expand-panel {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg-paper, var(--bg-0));
+  border: 1px solid var(--rule-strong, var(--border-light));
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 24px 64px color-mix(in srgb, #000 50%, transparent);
+}
+
+.agent-expand-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-2);
+  border-bottom: 1px solid var(--rule-strong, var(--rule));
+  font: 11px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  flex: 0 0 auto;
+}
+
+.agent-expand-title {
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+
+.agent-expand-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.agent-expand-zoom {
+  background: var(--bg-1);
+  border: 1px solid var(--rule-strong, var(--rule));
+  color: var(--ink-primary);
+  font: 14px/1 var(--font-mono);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.agent-expand-zoom:hover:not(:disabled) {
+  background: var(--bg-2);
+  border-color: var(--brass, var(--accent));
+  color: var(--brass, var(--accent));
+}
+
+.agent-expand-zoom:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.agent-expand-zoom-level {
+  min-width: 52px;
+  text-align: center;
+  color: var(--ink-primary);
+  font: 12px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Pan group: 4 directional buttons in a single horizontal row, separated
+ * from the zoom block by a thin divider so the two control families read
+ * as distinct groups. */
+.agent-expand-pan-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-right: 8px;
+  margin-right: 4px;
+  border-right: 1px solid var(--rule-strong, var(--rule));
+}
+
+.agent-expand-pan {
+  background: var(--bg-1);
+  border: 1px solid var(--rule-strong, var(--rule));
+  color: var(--ink-primary);
+  font: 14px/1 var(--font-mono);
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.agent-expand-pan:hover {
+  background: var(--bg-2);
+  border-color: var(--brass, var(--accent));
+  color: var(--brass, var(--accent));
+}
+
+.agent-expand-pan:active {
+  transform: translateY(0.5px);
+}
+
+/* Reset button: text label, sits to the right of the zoom percent.
+ * Distinct from the icon buttons so users recognise it as a "snap back"
+ * affordance rather than a step control. */
+.agent-expand-reset {
+  background: transparent;
+  border: 1px solid var(--rule-strong, var(--rule));
+  color: var(--ink-secondary);
+  font: 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0 10px;
+  height: 26px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.agent-expand-reset:hover {
+  background: var(--bg-2);
+  border-color: var(--brass, var(--accent));
+  color: var(--brass, var(--accent));
+}
+
+.agent-expand-close {
+  background: var(--bg-1);
+  border: 1px solid var(--rule-strong, var(--rule));
+  color: var(--ink-primary);
+  font: 18px/1 var(--font-mono);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  margin-left: 4px;
+}
+
+.agent-expand-close:hover {
+  background: color-mix(in srgb, var(--red, #d9534f) 18%, var(--bg-1));
+  border-color: var(--red, #d9534f);
+  color: var(--red, #d9534f);
+}
+
+.agent-expand-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--bg-1);
+}
+
+/* Mermaid viewer layout
+ *
+ * Three nested elements:
+ *   .scroller — overflow:auto container that scrolls when content >
+ *               viewport.  Uses grid + safe centering so the frame is
+ *               centered when smaller than the viewport and aligned to
+ *               start (scrollable) when larger.
+ *   .frame    — has explicit pixel dimensions equal to natural × zoom.
+ *               This is what the scroll container measures, so panning
+ *               and scrollbars work correctly at every zoom level.
+ *   .stage    — has natural pixel dimensions and applies
+ *               `transform: scale(zoom)` from its top-left corner.
+ *               Transforms don't affect layout, so the visual scaling is
+ *               smooth (the SVG never reflows internally) — but the
+ *               frame around it has the scaled bounds, so the scroller
+ *               sees the scaled overflow rect.
+ *
+ * The previous attempt scaled the stage by changing its width/height
+ * directly, which made the SVG's intrinsic layout reflow on every zoom
+ * step (slow, jumpy, and visually "the canvas grew but the diagram
+ * didn't").  Transform-based scaling avoids that. */
+.agent-expand-mermaid-scroller {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  display: grid;
+  place-content: safe center;
+  padding: 32px;
+  box-sizing: border-box;
+  background: var(--bg-1);
+}
+
+.agent-expand-mermaid-frame {
+  position: relative;
+}
+
+.agent-expand-mermaid-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.agent-expand-mermaid-stage svg {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none;
+}
+
+/* Table viewer: full-height scroll container so sticky thead pins to the
+ * top of the modal body while long datasets scroll underneath. */
+.agent-expand-table-wrap {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 0;
+}
+
+.agent-expand-table {
+  font-size: 13px;
+}
+
+.agent-expand-table thead th {
+  top: 0;
+}
+
 /* ─── highlight.js token palette (mapped to our semantic tokens) ───
  *
  * No third-party theme imported.  We pick the hljs token classes that

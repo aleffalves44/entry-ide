@@ -75,11 +75,13 @@ describe("<MarkdownBody> — block elements", () => {
 });
 
 describe("<MarkdownBody> — GFM features", () => {
-  it("renders tables wrapped in a scroll container", () => {
+  it("renders tables wrapped in a scroll container with an expand affordance", () => {
     const md = `| col-a | col-b |\n|-------|-------|\n| one   | two   |`;
     const out = html(md);
     expect(out).toContain('class="agent-md-table-wrap"');
     expect(out).toContain('class="agent-md-table"');
+    expect(out).toContain('class="agent-md-table-figure"');
+    expect(out).toContain('class="agent-md-table-expand"');
     expect(out).toContain("col-a");
     expect(out).toContain("two");
   });

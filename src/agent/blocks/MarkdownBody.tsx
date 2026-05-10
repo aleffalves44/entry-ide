@@ -2,6 +2,7 @@ import { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { CodeFence } from "./CodeFence";
+import { MarkdownTable } from "./MarkdownTable";
 
 interface MarkdownBodyProps {
   source: string;
@@ -42,15 +43,11 @@ export const MarkdownBody = memo(function MarkdownBody({ source }: MarkdownBodyP
               <code className="agent-md-code-inline" {...props}>{children}</code>
             );
           },
-          // Tables: wrap in a scroll container so wide tables don't blow out
-          // the column.  The wrapper provides horizontal overflow without the
-          // table itself losing its sticky-header behavior.
+          // Tables: routed to <MarkdownTable>, which adds horizontal-scroll
+          // chrome and an "expand" button for inspecting wide tables in a
+          // full-screen modal with sticky headers.
           table({ children }) {
-            return (
-              <div className="agent-md-table-wrap">
-                <table className="agent-md-table">{children}</table>
-              </div>
-            );
+            return <MarkdownTable>{children}</MarkdownTable>;
           },
           a({ href, children, ...props }) {
             return (
