@@ -1,3 +1,45 @@
+# Hermes IDE 1.1.14
+
+A new dedicated workbench panel for Agent sessions, plus per-session
+notes and a few quality-of-life fixes around the file explorer.
+
+## Every Agent session now opens with a workbench on the right
+
+When you open an Agent session, the right side of the window now
+hosts a per-session workbench: a file tree on top, a notes drawer at
+the bottom, and a Context tab one click away. The workbench opens
+by default, takes about half the available width, and remembers its
+size and which tab you had open across restarts. Press ⌥⌘B (Alt+
+Ctrl+B on Windows/Linux) to toggle it.
+
+The legacy folder icon on the session row is gone for Agent
+sessions — the workbench is now the canonical Files surface for
+them. Terminal sessions are unchanged.
+
+## A scratchpad lives at the bottom of every Agent session
+
+Each Agent session has its own free-form notes area at the foot of
+the workbench: a place for plans, todos, snippets, paste-bin
+fragments — anything you'd otherwise lose track of in chat. Notes
+save as you type, persist across restarts, and follow the session,
+not the window. Switching to a different session pulls up that
+session's notes.
+
+## The file tree updates as you attach more folders
+
+When you attached a second folder to an Agent session in 1.1.13, the
+file tree didn't pick it up until you reopened the session. The new
+folder now appears immediately.
+
+## The Usage panel works again on Agent sessions
+
+In the right activity bar of an Agent session, clicking "Usage" now
+opens the plan / limits / cost view as expected. (1.1.13 had a
+window where the gate that picked between Workbench and Usage
+swallowed the click.)
+
+---
+
 # Hermes IDE 1.1.13
 
 A hotfix for a critical typing bug shipped in 1.1.12.
