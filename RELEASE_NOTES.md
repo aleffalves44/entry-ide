@@ -1,3 +1,27 @@
+# Hermes IDE 1.1.13
+
+A hotfix for a critical typing bug shipped in 1.1.12.
+
+## The composer no longer locks up and refuses to accept typing
+
+In 1.1.12 the message composer could occasionally stop accepting
+keystrokes — you'd see your cursor in the field but nothing would
+appear, and the only way to recover was to open a fresh session or
+restart the app. The trigger was an interaction between an
+international-keyboard or accent-key composition and a focus change
+mid-keystroke (clicking another input, switching tabs, pressing
+Escape on a half-typed accent), which left the composer convinced
+you were still in the middle of an IME composition.
+
+The composer now always commits what you type to the field, and a
+focus change resets the composition state defensively, so this state
+is no longer reachable.
+
+If you ran into the lockup before, no action is needed; the next
+launch of Hermes after updating runs the fixed composer.
+
+---
+
 # Hermes IDE 1.1.12
 
 A performance pass with two bug fixes you'll feel right away.
