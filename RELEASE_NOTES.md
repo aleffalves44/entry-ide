@@ -1,3 +1,46 @@
+# Hermes IDE 1.1.15
+
+A redesigned theme system. Eight themes, one identity.
+
+## Eight themes, four dark and four light, each with a distinct mood
+
+Hermes shipped with thirty themes through 1.1.14, fragmenting the
+visual identity. This release consolidates the catalog to eight,
+each with a clear mood and shared design grammar — the same triple-
+font system, the same brass-rail accents, the same editorial layout.
+What varies between them is feeling, not vocabulary.
+
+The dark themes are **Frosted Dark** (Apple-y modernist, the new
+default), **Atelier** (warm cocoa with terracotta accent),
+**Observatory** (deep navy with true brass — the strongest Hermes
+identity), and **Phosphor** (CRT green-on-black with scanlines, for
+the terminal soul).
+
+The light themes are **Frosted Light** (clean Apple-y light),
+**Linen** (warm cream paper with sepia ink), **Newsprint** (high-
+contrast off-white broadside), and **Atrium** (soft daylight blue-
+gray for long sessions).
+
+## Existing themes are migrated, not lost
+
+If you were using one of the twenty-two retired themes, Hermes will
+quietly switch you to its closest cousin on first launch — Hacker
+becomes Phosphor, Midnight becomes Observatory, Solarized Dark
+becomes Atelier, Lavender and Mint become Atrium, and so on. Your
+preference is then re-saved with the new name, so the switch happens
+once and never again.
+
+Embedded terminals now match the chrome too — pick Atelier and your
+shell goes warm cocoa, pick Phosphor and it goes CRT green.
+
+## Onboarding and Settings show only the eight that exist
+
+The first-run theme picker, the Settings drawer, and the status-bar
+theme switcher all reflect the new catalog. No more scrolling through
+a list of thirty options trying to remember which one was which.
+
+---
+
 # Hermes IDE 1.1.14
 
 A new dedicated workbench panel for Agent sessions, plus per-session
