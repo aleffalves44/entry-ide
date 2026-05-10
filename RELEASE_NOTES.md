@@ -1,3 +1,46 @@
+# Hermes IDE 1.1.10
+
+Three Agent-mode papercut fixes: collapsible thinking blocks now
+actually show the thinking, the first line of file-content code
+blocks lines up with the rest, and flipping the permission chip
+to Bypass mid-conversation now releases a perm prompt that's
+already on screen.
+
+## Thinking blocks now show the actual thinking
+
+Until now, expanding a "thinking" or "thought" panel under an
+Agent reply would reveal an empty pane — the elapsed timer ran
+correctly, but the reasoning text never appeared. The text was
+only ever delivered as a stream of small updates; we weren't
+collecting those updates into the panel. We are now, so when
+you expand a thinking block you see the model's full reasoning
+as it streamed in.
+
+This applies both while a turn is in flight ("thinking · 4.2s")
+and after it ends ("thought · 4.2s") — both reveal the populated
+text on click.
+
+## Code blocks: first line lines up with the rest
+
+In the line-numbered file content shown by the Read tool, the
+very first line was sitting on a slightly different vertical
+grid than the lines below it — small, but enough to notice once
+you saw it. The first line and every subsequent line now share
+the same baseline.
+
+## Flipping to Bypass actually dismisses an open permission prompt
+
+When a permission prompt was already on screen, switching the
+permission chip to "Bypass" should silently approve it and let
+the agent continue. The chip flipped visually, but the modal
+sat there until you sent a new message. The chip's choice now
+reaches the auto-allow path immediately, so the open prompt
+clears and the in-flight tool call proceeds without the manual
+click. Same goes the other direction: any permission-mode change
+now propagates everywhere it needs to in the same render.
+
+---
+
 # Hermes IDE 1.1.9
 
 A hotfix release. If you opened a fresh Agent session in 1.1.7 or
