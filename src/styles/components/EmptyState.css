@@ -22,14 +22,25 @@
   width: 100%;
   height: 100%;
   display: flex;
-  align-items: center;
+  /* `safe center` keeps the composition vertically centred when there's
+   *  room, but top-anchors the content when the viewport is shorter than
+   *  the composition — without this, plain `center` would clip the
+   *  masthead off the top edge on small displays and the user would
+   *  never see the "Hermes IDE" wordmark.  Pairs with `overflow-y: auto`
+   *  below so the user can scroll down to reach the logbook when the
+   *  whole composition doesn't fit. */
+  align-items: safe center;
   justify-content: center;
   /* Top padding bumped to clear the macOS Overlay title bar — Tauri's
    * `titleBarStyle: "Overlay"` (see src-tauri/tauri.conf.json) draws the
    * native title strip on top of the webview, so any content rendered
    * at y=0 gets clipped by the traffic-light strip.  72px is enough for
-   * the standard macOS title bar plus a touch of breathing room. */
-  padding: 72px 40px 48px;
+   * the standard macOS title bar plus a touch of breathing room.  The
+   * clamp() variants give shorter viewports a bit of room back. */
+  padding:
+    clamp(56px, 9vh, 72px)
+    clamp(20px, 4vw, 40px)
+    clamp(28px, 6vh, 48px);
   background:
     radial-gradient(
       ellipse 100% 70% at 30% -10%,
@@ -42,7 +53,15 @@
       transparent 70%
     ),
     var(--bg-0);
-  overflow: hidden;
+  /* Horizontal stays hidden so the off-screen drifting orbs don't paint
+   *  a horizontal scrollbar.  Vertical now scrolls when content overflows
+   *  — that's the fix for short / compact-window displays where the
+   *  logbook used to get clipped invisibly. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* Compose with overscroll so the empty-state's scroll doesn't bubble
+   *  into the parent layout when the user reaches the end. */
+  overscroll-behavior: contain;
 }
 
 /* ─── Atmospheric layer — drifting orbs + paper grain ────────── */
@@ -114,10 +133,37 @@
   max-width: 760px;
   display: flex;
   flex-direction: column;
-  gap: 56px;
+  /* Tighten the inter-section gap on short viewports.  At 56px the
+   *  vertical run of masthead → contents → logbook → footer was too tall
+   *  for ~700px windows, which is what triggered the original "logbook
+   *  cut off, no scroll" report. */
+  gap: clamp(28px, 5vh, 56px);
   /* Slight left bias so the composition reads off-center, like a
    * page in a printed book rather than centered web layout. */
   padding-left: clamp(0px, 4vw, 48px);
+  /* Don't let the frame collapse below its content's natural height —
+   *  combined with `align-items: safe center` on the stage this is what
+   *  actually triggers the scroll path on short displays. */
+  flex: 0 0 auto;
+}
+
+/* On short displays, also dial the title cap and hero-section spacing
+ *  down so the whole masthead + contents block fits more often without
+ *  needing the user to scroll at all. */
+@media (max-height: 760px) {
+  .es-title {
+    font-size: clamp(36px, 6vw, 84px);
+  }
+  .es-masthead { gap: 10px; }
+  .es-rule { margin: 2px 0 6px; }
+}
+
+@media (max-height: 580px) {
+  .es-title { font-size: clamp(30px, 5vw, 60px); }
+  .es-rule { display: none; }
+  .es-tagline { font-size: 14px; }
+  .es-tagline-mono { font-size: 12px; }
+  .es-foot { display: none; }
 }
 
 /* ─── Masthead ───────────────────────────────────────────────── */
