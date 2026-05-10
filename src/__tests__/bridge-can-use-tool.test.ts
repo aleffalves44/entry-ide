@@ -451,3 +451,60 @@ describe("createCanUseToolHandler — session allowlist", () => {
     expect(sessionAllowList.size).toBe(0);
   });
 });
+
+// ─── Memory-safety hardening — caps + overwrite guard ──────────────
+
+describe("createCanUseToolHandler — permPending overflow protection", () => {
+  it("rejects when permPending hits the cap and emits a deny for the oldest evicted entry", async () => {
+    const writes: string[] = [];
+    const stdout = { write: (chunk: string) => writes.push(chunk) };
+    const permPending: PermPending = new Map();
+    let nextId = 0;
+    const handler = createCanUseToolHandler({
+      stdout,
+      permPending,
+      idGen: () => `perm-${++nextId}`,
+      permPendingMaxSize: 3,
+    });
+    // Fill the cap with three never-resolved entries (host has gone away).
+    const p1 = handler("Bash", { command: "first" });
+    const p2 = handler("Bash", { command: "second" });
+    const p3 = handler("Bash", { command: "third" });
+    expect(permPending.size).toBe(3);
+    // Fourth call evicts the oldest (perm-1) by settling it with deny;
+    // the new request takes that slot.
+    const p4 = handler("Bash", { command: "fourth" });
+    // The first promise resolves with the synthetic eviction deny.
+    const r1 = await p1;
+    expect(r1.behavior).toBe("deny");
+    // perm-2, perm-3 still pending; perm-4 is queued.
+    expect(permPending.size).toBe(3);
+    // Resolve the rest so the test doesn't dangle.
+    permPending.get("perm-2")!.resolve({ behavior: "allow" });
+    permPending.get("perm-3")!.resolve({ behavior: "allow" });
+    permPending.get("perm-4")!.resolve({ behavior: "allow" });
+    await Promise.all([p2, p3, p4]);
+  });
+
+  it("refuses a duplicate id rather than silently overwriting", async () => {
+    const writes: string[] = [];
+    const stdout = { write: (chunk: string) => writes.push(chunk) };
+    const permPending: PermPending = new Map();
+    // idGen always returns the same id — simulates a bug in id generation.
+    const handler = createCanUseToolHandler({
+      stdout,
+      permPending,
+      idGen: () => "static-id",
+    });
+    const p1 = handler("Bash", { command: "first" });
+    // Second concurrent call uses the same id; should be denied
+    // synchronously rather than overwriting the entry for p1.
+    const r2 = await handler("Bash", { command: "second" });
+    expect(r2.behavior).toBe("deny");
+    expect((r2 as { message?: string }).message).toMatch(/collision/);
+    // p1's entry must still be intact.
+    expect(permPending.has("static-id")).toBe(true);
+    permPending.get("static-id")!.resolve({ behavior: "allow" });
+    await p1;
+  });
+});

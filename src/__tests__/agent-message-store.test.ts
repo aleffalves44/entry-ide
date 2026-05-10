@@ -634,3 +634,39 @@ describe("messageStore — streaming state (Phase 5)", () => {
     expect(state.resultEvent).not.toBeNull();
   });
 });
+
+// ─── Memory-safety regression: unknownEvents cap ───────────────────
+
+describe("messageStore — unknownEvents bounded growth", () => {
+  it("caps unknownEvents at 200 entries even under a flood of unknown event types", () => {
+    let state = emptyState();
+    // Inject 500 unknown events.  Without the cap, state.unknownEvents
+    // would grow to 500 entries; with it, the most-recent 200 are
+    // retained and earlier entries are dropped.
+    for (let i = 0; i < 500; i++) {
+      const evt = {
+        type: "_completely_unknown_type",
+        seq: i,
+      } as unknown as AgentEvent;
+      state = reduceEvent(state, evt);
+    }
+    expect(state.unknownEvents.length).toBeLessThanOrEqual(200);
+    // The most recent event is preserved (last entry, seq=499).
+    const last = state.unknownEvents[state.unknownEvents.length - 1] as { seq?: number };
+    expect(last.seq).toBe(499);
+    // The oldest retained entry is seq=300 (200 most recent of 0..499).
+    const first = state.unknownEvents[0] as { seq?: number };
+    expect(first.seq).toBe(300);
+  });
+
+  it("does not affect other state fields when capping", () => {
+    let state = emptyState();
+    for (let i = 0; i < 250; i++) {
+      const evt = { type: "_x_" + i } as unknown as AgentEvent;
+      state = reduceEvent(state, evt);
+    }
+    expect(state.messages.length).toBe(0);
+    expect(state.toolResults.size).toBe(0);
+    expect(state.unknownEvents.length).toBeLessThanOrEqual(200);
+  });
+});

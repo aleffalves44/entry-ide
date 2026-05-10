@@ -589,7 +589,7 @@ export function reduceEvent(
   if (isParseErrorEvent(event)) {
     return {
       ...state,
-      unknownEvents: [...state.unknownEvents, event],
+      unknownEvents: appendCappedUnknown(state.unknownEvents, event),
       lastError: event.error,
     };
   }
@@ -597,8 +597,30 @@ export function reduceEvent(
   // 8. Catch-all — never crash on unfamiliar event types.
   return {
     ...state,
-    unknownEvents: [...state.unknownEvents, event],
+    unknownEvents: appendCappedUnknown(state.unknownEvents, event),
   };
+}
+
+/**
+ * Cap on the diagnostic `unknownEvents` array.  In a healthy session
+ * this should be empty or near-empty; if a misbehaving bridge spams
+ * malformed events it would otherwise grow without bound (each entry
+ * is the full event payload).  We keep the most recent N entries and
+ * drop the oldest — the diagnostic value is in seeing what's
+ * happening *now*, not preserving thousand-event history. */
+const UNKNOWN_EVENT_BUFFER_CAP = 200;
+
+function appendCappedUnknown(
+  prev: AgentEvent[],
+  next: AgentEvent,
+): AgentEvent[] {
+  if (prev.length < UNKNOWN_EVENT_BUFFER_CAP) {
+    return [...prev, next];
+  }
+  // Slide window: drop oldest, keep cap-1 most recent + the new entry.
+  const slice = prev.slice(prev.length - UNKNOWN_EVENT_BUFFER_CAP + 1);
+  slice.push(next);
+  return slice;
 }
 
 /** Convenience: fold an array of events into a final state. */

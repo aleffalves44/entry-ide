@@ -158,6 +158,7 @@ export function createCanUseToolHandler({
   normalize = normalizeBridgeAllowDecision,
   permissionMode,
   sessionAllowList,
+  permPendingMaxSize = 1024,
 }) {
   return async function canUseTool(toolName, input, options) {
     const signal = options && options.signal;
@@ -178,7 +179,36 @@ export function createCanUseToolHandler({
         }
       }
     }
+    // Defensive cap on `permPending` — entries here represent a host
+    // that hasn't responded yet.  In a healthy session the map churns
+    // with at most a few in-flight entries.  If the host disappears
+    // mid-prompt the entries can leak (each carries the original tool
+    // input as a closure).  When we reach the cap, evict the OLDEST
+    // entry (Map preserves insertion order) by settling it with a
+    // synthetic deny so its closure becomes garbage-collectable.
+    if (permPending.size >= permPendingMaxSize) {
+      const oldestKey = permPending.keys().next().value;
+      if (oldestKey !== undefined) {
+        const oldest = permPending.get(oldestKey);
+        permPending.delete(oldestKey);
+        if (oldest && typeof oldest.resolve === "function") {
+          oldest.resolve({ behavior: "deny", message: "evicted (host unresponsive)" });
+        }
+      }
+    }
     const id = idGen();
+    // Overwrite guard — `permPending.set(id, ...)` on a duplicate key
+    // would silently lose the prior entry's resolver.  Practically
+    // unreachable given idGen's monotonic counter + timestamp, but the
+    // invariant "one entry per id" is worth enforcing in code rather
+    // than trusting the gen.  Treat the dup as a deny so the SDK
+    // doesn't hang.
+    if (permPending.has(id)) {
+      return normalize(
+        { behavior: "deny", message: "perm request id collision" },
+        input,
+      );
+    }
     const decision = await new Promise((resolve) => {
       // Single-shot resolver — first caller wins.  Prevents a double
       // resolve when the host's response and an abort race each other.

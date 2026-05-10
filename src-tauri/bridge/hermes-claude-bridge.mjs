@@ -99,6 +99,53 @@ let inputClosed = false;
 let aborted = false;
 const abortController = new AbortController();
 
+/** Soft cap on the user-input queue.  Without this, a misbehaving host
+ *  (or a runaway test harness) could push messages into `inputBuffer`
+ *  faster than the SDK consumes them, growing memory without limit.
+ *  When we hit the watermark we pause the readline stream until the
+ *  consumer drains; resumed automatically in the iterator. */
+const INPUT_BUFFER_HIGH_WATER = 256;
+const INPUT_BUFFER_LOW_WATER = 128;
+let stdinPaused = false;
+
+/** Backpressure-respecting stdout writer.
+ *
+ *  Default `stdout.write` returns false when the kernel/Node-side pipe
+ *  buffer is full but we previously ignored that signal.  With
+ *  `includePartialMessages: true` the SDK can produce ~MB/s of JSON
+ *  during a streaming turn; if the Rust child-process reader stalls
+ *  for any reason (a slow event listener, a frozen renderer, an OS
+ *  scheduler hiccup) the unsent data accumulates in a Node-internal
+ *  list-of-buffers and the bridge process resident memory climbs
+ *  without bound.  Awaiting `'drain'` makes the producer block until
+ *  the consumer catches up, transferring backpressure all the way to
+ *  the SDK iterator.
+ *
+ *  We must also resolve on `error` / `close` — if the Rust parent
+ *  dies mid-drain, the `'drain'` event will NEVER fire, and a naive
+ *  await would wedge the bridge process forever (zombie until
+ *  SIGKILL).  In that case we resolve and let the next write fail
+ *  loudly — which propagates up to the SDK iterator and tears down
+ *  cleanly. */
+async function safeStdoutWrite(line) {
+  if (stdout.destroyed) return;
+  if (stdout.write(line)) return;
+  await new Promise((resolve) => {
+    const cleanup = () => {
+      stdout.off("drain", onSettle);
+      stdout.off("error", onSettle);
+      stdout.off("close", onSettle);
+    };
+    const onSettle = () => {
+      cleanup();
+      resolve();
+    };
+    stdout.once("drain", onSettle);
+    stdout.once("error", onSettle);
+    stdout.once("close", onSettle);
+  });
+}
+
 /** Map of pending canUseTool requests keyed by request id.  When the
  *  host sends back a `_hermes_perm_response` with the matching id, the
  *  promise is resolved and the SDK callback returns. */
@@ -157,6 +204,13 @@ rl.on("close", () => {
 
 function pushInput(msg) {
   inputBuffer.push(msg);
+  // Backpressure: pause the readline stream when the queue gets too
+  // big.  The kernel pipe will absorb a small amount of extra data;
+  // the host gets natural backpressure on its writes.
+  if (!stdinPaused && inputBuffer.length >= INPUT_BUFFER_HIGH_WATER) {
+    stdinPaused = true;
+    try { rl.pause(); } catch { /* readline may have closed */ }
+  }
   if (pendingResolve) {
     const r = pendingResolve;
     pendingResolve = null;
@@ -179,6 +233,13 @@ async function* userInputIterator() {
         yieldedFirst = true;
       }
       const next = inputBuffer.shift();
+      // Resume the stdin reader once the queue has drained below the
+      // low watermark.  Hysteresis avoids paddling pause/resume around
+      // the high watermark when the consumer is at saturation.
+      if (stdinPaused && inputBuffer.length <= INPUT_BUFFER_LOW_WATER) {
+        stdinPaused = false;
+        try { rl.resume(); } catch { /* readline may have closed */ }
+      }
       // Normalize to the SDKUserMessage shape the SDK expects.  Old Hermes
       // envelopes lack `parent_tool_use_id`; the SDK wants null, not absent.
       // session_id falls back to whatever Rust gave us; the SDK fills it
@@ -282,7 +343,7 @@ function buildHermesMcpServer() {
           uuid: globalThis.crypto?.randomUUID?.() ?? `evt-${Date.now()}`,
           session_id: flags.sessionId ?? undefined,
         };
-        stdout.write(JSON.stringify(evt) + "\n");
+        await safeStdoutWrite(JSON.stringify(evt) + "\n");
         return { content: [{ type: "text", text: `opened ${path}${line ? ` at line ${line}` : ""}` }] };
       },
     ),
@@ -543,7 +604,7 @@ async function main() {
           liveRuntime.reportedModel !== before.model
           || liveRuntime.reportedPermissionMode !== before.permissionMode;
         if (changed) {
-          stdout.write(JSON.stringify({
+          await safeStdoutWrite(JSON.stringify({
             type: "_hermes_state_changed",
             session_id: canonicalSessionId,
             ...(liveRuntime.reportedModel
@@ -574,7 +635,7 @@ async function main() {
                 uuid: globalThis.crypto?.randomUUID?.() ?? `evt-${Date.now()}`,
                 session_id: canonicalSessionId,
               };
-              stdout.write(JSON.stringify(evt) + "\n");
+              await safeStdoutWrite(JSON.stringify(evt) + "\n");
             } catch (err) {
               stderr.write(`[hermes-bridge] accountInfo() failed: ${err}\n`);
             }
@@ -585,7 +646,9 @@ async function main() {
       if (!stamped.session_id && canonicalSessionId) {
         stamped.session_id = canonicalSessionId;
       }
-      stdout.write(JSON.stringify(stamped) + "\n");
+      // Awaited write so the SDK iterator pauses when the Rust reader
+      // can't keep up — prevents an unbounded internal write buffer.
+      await safeStdoutWrite(JSON.stringify(stamped) + "\n");
     }
   } catch (err) {
     stderr.write(`[hermes-bridge] query iteration error: ${err && err.stack ? err.stack : err}\n`);

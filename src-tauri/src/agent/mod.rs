@@ -15,10 +15,18 @@ use std::time::Duration;
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{AsyncBufRead, AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::{Child, ChildStdin, Command};
 use tokio::sync::Mutex;
+use tokio::task::JoinHandle;
 use tokio::time::timeout;
+
+/// Hard cap on a single bridge stdout/stderr line.  Without this, a
+/// hostile or buggy line (e.g. a tool result that dumps a multi-megabyte
+/// blob without newlines) would force `Lines::next_line()` to grow its
+/// internal `String` until OOM.  8 MiB is generous for any legitimate
+/// JSON payload the SDK might emit while still bounding the worst case.
+const MAX_LINE_BYTES: usize = 8 * 1024 * 1024;
 
 // ─── State ─────────────────────────────────────────────────────────
 
@@ -57,6 +65,23 @@ struct AgentChild {
     /// PID of the subprocess (best-effort).
     #[allow(dead_code)]
     pid: Option<u32>,
+    /// Handles of the per-session reader / waiter tasks so they can be
+    /// aborted on close.  Without these, a child whose pipes never close
+    /// (rare, but possible if the subprocess hangs after we kill it)
+    /// leaves the readers spinning indefinitely.  Stored as a Vec so the
+    /// `Drop` impl can sweep all three with one `for` loop.
+    task_handles: Vec<JoinHandle<()>>,
+}
+
+impl Drop for AgentChild {
+    fn drop(&mut self) {
+        // Abort any reader / waiter tasks that are still alive.  Tokio's
+        // `kill_on_drop(true)` handles the OS process; this handles the
+        // tasks hanging off its pipes.
+        for handle in self.task_handles.drain(..) {
+            handle.abort();
+        }
+    }
 }
 
 // ─── Public types ──────────────────────────────────────────────────
@@ -551,23 +576,39 @@ pub async fn spawn_agent_session(
     let pid = child.id();
 
     // stdout reader: parse each line as JSON, emit on `agent-event-{session_id}`.
-    {
+    let stdout_task = {
         let app = app.clone();
         let sid = session_id.clone();
         tokio::spawn(async move {
-            let mut lines = BufReader::new(stdout).lines();
+            let mut reader = BufReader::new(stdout);
+            let mut buf = Vec::with_capacity(4096);
             loop {
-                match lines.next_line().await {
-                    Ok(Some(line)) => emit_stdout_line(&app, &sid, &line),
-                    Ok(None) => break,
+                match read_bounded_line(&mut reader, &mut buf, MAX_LINE_BYTES).await {
+                    Ok(BoundedLine::Line(line)) => emit_stdout_line(&app, &sid, &line),
+                    Ok(BoundedLine::Oversize) => {
+                        log::warn!(
+                            "agent[{}] dropped oversize stdout line (>{} bytes)",
+                            sid,
+                            MAX_LINE_BYTES
+                        );
+                        let synth = serde_json::json!({
+                            "type": "_hermes_event",
+                            "subtype": "parse_error",
+                            "reason": "oversize_line",
+                            "limit": MAX_LINE_BYTES,
+                            "session_id": &sid,
+                        });
+                        emit_stdout_line(&app, &sid, &synth.to_string());
+                    }
+                    Ok(BoundedLine::Eof) => break,
                     Err(e) => {
                         log::warn!("agent[{}] stdout read error: {}", sid, e);
                         break;
                     }
                 }
             }
-        });
-    }
+        })
+    };
 
     // stderr reader: emit raw lines on `agent-stderr-{session_id}`.  The
     // frontend's <AgentSessionView> listener types this channel as `string`,
@@ -575,29 +616,47 @@ pub async fn spawn_agent_session(
     // it concatenates `[object Object]` into the rendered stderr buffer.
     // Trailing newline is added so concatenated lines stay one-per-line in
     // the UI.
-    {
+    let stderr_task = {
         let app = app.clone();
         let sid = session_id.clone();
         tokio::spawn(async move {
-            let mut lines = BufReader::new(stderr).lines();
+            let mut reader = BufReader::new(stderr);
+            let mut buf = Vec::with_capacity(2048);
             loop {
-                match lines.next_line().await {
-                    Ok(Some(line)) => {
+                match read_bounded_line(&mut reader, &mut buf, MAX_LINE_BYTES).await {
+                    Ok(BoundedLine::Line(line)) => {
                         let mut payload = line;
                         payload.push('\n');
                         let _ = app.emit(&format!("agent-stderr-{}", sid), &payload);
                     }
-                    Ok(None) => break,
+                    Ok(BoundedLine::Oversize) => {
+                        log::warn!(
+                            "agent[{}] dropped oversize stderr line (>{} bytes)",
+                            sid,
+                            MAX_LINE_BYTES
+                        );
+                        let _ = app.emit(
+                            &format!("agent-stderr-{}", sid),
+                            &format!(
+                                "[hermes] dropped oversize stderr line (>{} bytes)\n",
+                                MAX_LINE_BYTES
+                            ),
+                        );
+                    }
+                    Ok(BoundedLine::Eof) => break,
                     Err(e) => {
                         log::warn!("agent[{}] stderr read error: {}", sid, e);
                         break;
                     }
                 }
             }
-        });
-    }
+        })
+    };
 
-    // Stash the live child + stdin for later input / interrupt / close.
+    // Stash the live child + stdin + reader handles for later
+    // input / interrupt / close.  The waiter task is spawned below and its
+    // handle is appended to `task_handles` after insertion so all three
+    // tasks get aborted together when the entry is dropped.
     let sessions_handle = state.handle();
     {
         let mut sessions = sessions_handle.lock().await;
@@ -610,6 +669,7 @@ pub async fn spawn_agent_session(
                 child: Some(child),
                 stdin: Some(stdin),
                 pid,
+                task_handles: vec![stdout_task, stderr_task],
             },
         );
     }
@@ -617,16 +677,105 @@ pub async fn spawn_agent_session(
     // Child waiter: takes ownership of the Child handle out of the state map
     // when the process exits, emits an `agent-exit-{session_id}` event, and
     // removes the entry so subsequent `send_agent_input` calls fail fast.
-    {
+    let waiter_task = {
         let app = app.clone();
         let sid = session_id.clone();
         let waiter_handle = Arc::clone(&sessions_handle);
         tokio::spawn(async move {
             await_child_exit(waiter_handle, app, sid).await;
-        });
+        })
+    };
+    {
+        let mut sessions = sessions_handle.lock().await;
+        if let Some(entry) = sessions.get_mut(&session_id) {
+            entry.task_handles.push(waiter_task);
+        }
     }
 
     Ok(claude_session_id)
+}
+
+/// Outcome of a bounded line read.
+enum BoundedLine {
+    /// Successfully read a line under the byte limit.
+    Line(String),
+    /// The line exceeded `max_bytes` — caller should emit a synthetic
+    /// parse-error event and continue.  The buffer is drained up to the
+    /// next `\n` so subsequent reads stay aligned.
+    Oversize,
+    /// EOF without further data.
+    Eof,
+}
+
+/// Read a line from `reader` into `buf`, capping at `max_bytes`.  Replaces
+/// `tokio::io::Lines::next_line()`, which has no length cap and will
+/// allocate without bound for an unfriendly producer.
+///
+/// Uses `AsyncBufRead`'s `fill_buf` / `consume` directly so we read in
+/// chunks the size of the BufReader's internal buffer instead of
+/// byte-by-byte.  On overshoot we keep consuming subsequent chunks
+/// without appending until we find a newline, so the byte stream stays
+/// aligned to subsequent line boundaries.
+async fn read_bounded_line<R: AsyncBufRead + Unpin>(
+    reader: &mut R,
+    buf: &mut Vec<u8>,
+    max_bytes: usize,
+) -> std::io::Result<BoundedLine> {
+    buf.clear();
+    let mut overshoot = false;
+    loop {
+        let available = reader.fill_buf().await?;
+        if available.is_empty() {
+            if overshoot {
+                return Ok(BoundedLine::Oversize);
+            }
+            if buf.is_empty() {
+                return Ok(BoundedLine::Eof);
+            }
+            // Last line without a trailing newline.
+            let s = String::from_utf8_lossy(buf).into_owned();
+            return Ok(BoundedLine::Line(s));
+        }
+
+        // Look for the newline within the currently buffered bytes.
+        if let Some(pos) = available.iter().position(|&b| b == b'\n') {
+            if !overshoot {
+                let take = pos.min(max_bytes.saturating_sub(buf.len()));
+                buf.extend_from_slice(&available[..take]);
+                let consumed = pos + 1;
+                reader.consume(consumed);
+                if buf.len() + (pos - take) > max_bytes {
+                    // We were about to overflow on this line — treat as
+                    // oversize even though we found the terminator.
+                    return Ok(BoundedLine::Oversize);
+                }
+                if buf.last().copied() == Some(b'\r') {
+                    buf.pop();
+                }
+                let s = String::from_utf8_lossy(buf).into_owned();
+                return Ok(BoundedLine::Line(s));
+            }
+            // We were already in overshoot mode — finish draining at the
+            // newline boundary.
+            let consumed = pos + 1;
+            reader.consume(consumed);
+            return Ok(BoundedLine::Oversize);
+        }
+
+        // No newline in this chunk: append (or skip if already overshooting)
+        // and consume the whole chunk.
+        let len = available.len();
+        if !overshoot {
+            let remaining = max_bytes.saturating_sub(buf.len());
+            if len > remaining {
+                buf.extend_from_slice(&available[..remaining]);
+                overshoot = true;
+            } else {
+                buf.extend_from_slice(available);
+            }
+        }
+        reader.consume(len);
+    }
 }
 
 /// Write one NDJSON event to the agent's stdin.  `payload` is serialized + a
@@ -1719,6 +1868,98 @@ mod tests {
             match prev {
                 Some(v) => std::env::set_var("PATH", v),
                 None => std::env::remove_var("PATH"),
+            }
+        }
+    }
+
+    // ─── read_bounded_line ────────────────────────────────────────────
+
+    use tokio::io::BufReader;
+
+    #[tokio::test]
+    async fn read_bounded_line_returns_each_line_in_order() {
+        let input = b"first\nsecond\nthird\n".to_vec();
+        let mut reader = BufReader::new(&input[..]);
+        let mut buf = Vec::new();
+        let r1 = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+        match r1 {
+            BoundedLine::Line(s) => assert_eq!(s, "first"),
+            _ => panic!("expected Line(\"first\")"),
+        }
+        let r2 = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+        match r2 {
+            BoundedLine::Line(s) => assert_eq!(s, "second"),
+            _ => panic!("expected Line(\"second\")"),
+        }
+        let r3 = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+        match r3 {
+            BoundedLine::Line(s) => assert_eq!(s, "third"),
+            _ => panic!("expected Line(\"third\")"),
+        }
+        let r4 = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+        assert!(matches!(r4, BoundedLine::Eof));
+    }
+
+    #[tokio::test]
+    async fn read_bounded_line_strips_crlf() {
+        let input = b"hello\r\nworld\r\n".to_vec();
+        let mut reader = BufReader::new(&input[..]);
+        let mut buf = Vec::new();
+        let r1 = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+        match r1 {
+            BoundedLine::Line(s) => assert_eq!(s, "hello"),
+            _ => panic!("expected Line(\"hello\")"),
+        }
+        let r2 = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+        match r2 {
+            BoundedLine::Line(s) => assert_eq!(s, "world"),
+            _ => panic!("expected Line(\"world\")"),
+        }
+    }
+
+    #[tokio::test]
+    async fn read_bounded_line_signals_oversize_and_keeps_alignment() {
+        // First line is way over max_bytes; second line must still parse.
+        let mut input = vec![b'x'; 100];
+        input.push(b'\n');
+        input.extend_from_slice(b"ok\n");
+        let mut reader = BufReader::new(&input[..]);
+        let mut buf = Vec::new();
+        let r1 = read_bounded_line(&mut reader, &mut buf, 16).await.unwrap();
+        assert!(matches!(r1, BoundedLine::Oversize), "expected Oversize");
+        // The next read must align on the next line, NOT continue inside the
+        // oversize one.
+        let r2 = read_bounded_line(&mut reader, &mut buf, 16).await.unwrap();
+        match r2 {
+            BoundedLine::Line(s) => assert_eq!(s, "ok"),
+            _ => panic!("expected Line(\"ok\") after recovering from Oversize"),
+        }
+    }
+
+    #[tokio::test]
+    async fn read_bounded_line_handles_eof_with_no_trailing_newline() {
+        let input = b"trailing".to_vec();
+        let mut reader = BufReader::new(&input[..]);
+        let mut buf = Vec::new();
+        let r1 = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+        match r1 {
+            BoundedLine::Line(s) => assert_eq!(s, "trailing"),
+            _ => panic!("expected the unterminated line to be returned"),
+        }
+        let r2 = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+        assert!(matches!(r2, BoundedLine::Eof));
+    }
+
+    #[tokio::test]
+    async fn read_bounded_line_handles_empty_lines() {
+        let input = b"\n\nx\n".to_vec();
+        let mut reader = BufReader::new(&input[..]);
+        let mut buf = Vec::new();
+        for expected in ["", "", "x"] {
+            let r = read_bounded_line(&mut reader, &mut buf, 64).await.unwrap();
+            match r {
+                BoundedLine::Line(s) => assert_eq!(s, expected),
+                _ => panic!("expected Line(\"{}\")", expected),
             }
         }
     }

@@ -1,5 +1,5 @@
 import "../styles/components/agent/AgentSessionView.css";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type {
   AgentEvent,
@@ -35,7 +35,7 @@ import {
   buildPermResponse,
   type PermissionDecision,
 } from "../utils/permissionRequest";
-import { extractTodos } from "../utils/todoStore";
+import { extractTodosFromMessages } from "../utils/todoStore";
 
 interface AgentSessionViewProps {
   sessionId: string;
@@ -183,8 +183,13 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
   // see <InteractivePermissionDispatcher /> below.  That's the SDK's
   // contract: the host injects answers as `updatedInput` rather than
   // writing a tool_result envelope.  No tool_use scanning needed here.
-  const todos = extractTodos(
-    state.messages.flatMap((m) => (m.role === "assistant" ? m.blocks : [])),
+  // Memoize so we don't reallocate per render and so we walk
+  // newest-first directly instead of materialising a flat block list
+  // for every assistant turn in history.  Cheap fix; large GC win in
+  // long sessions where extractTodos used to dominate per-frame cost.
+  const todos = useMemo(
+    () => extractTodosFromMessages(state.messages),
+    [state.messages],
   );
   const permissionMode = state.initEvent?.permissionMode ?? "default";
 

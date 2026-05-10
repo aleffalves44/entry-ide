@@ -6,7 +6,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { render, screen, cleanup } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
-import { extractTodos, type TodoItem } from "../utils/todoStore";
+import { extractTodos, extractTodosFromMessages, type TodoItem } from "../utils/todoStore";
 import { TodoPanel } from "../components/TodoPanel";
 
 const SAMPLE: TodoItem[] = [
@@ -48,6 +48,77 @@ describe("extractTodos (t-1, t-2, t-3, t-17)", () => {
     ];
     const got = extractTodos(blocks);
     expect(got[0].status).toBe("unknown");
+  });
+});
+
+describe("extractTodosFromMessages (memory: walks newest-first, no flatMap)", () => {
+  it("returns the latest TodoWrite when present in the most recent message", () => {
+    const messages = [
+      {
+        role: "assistant",
+        blocks: [
+          { type: "tool_use", name: "Bash", id: "b", input: {} },
+        ],
+      },
+      {
+        role: "assistant",
+        blocks: [
+          { type: "tool_use", name: "TodoWrite", id: "tw", input: { todos: SAMPLE } },
+        ],
+      },
+    ];
+    const got = extractTodosFromMessages(messages);
+    expect(got).toEqual(SAMPLE);
+  });
+
+  it("walks back through older messages if the newest has no TodoWrite", () => {
+    const older: TodoItem[] = [{ content: "older", status: "pending" }];
+    const messages = [
+      {
+        role: "assistant",
+        blocks: [
+          { type: "tool_use", name: "TodoWrite", id: "tw", input: { todos: older } },
+        ],
+      },
+      {
+        role: "assistant",
+        blocks: [{ type: "text", id: "t", text: "no todos here" } as never],
+      },
+    ];
+    const got = extractTodosFromMessages(messages);
+    expect(got).toEqual(older);
+  });
+
+  it("ignores user-role messages", () => {
+    const messages = [
+      {
+        role: "user",
+        blocks: [
+          { type: "tool_use", name: "TodoWrite", id: "tw", input: { todos: SAMPLE } },
+        ],
+      },
+    ];
+    expect(extractTodosFromMessages(messages)).toEqual([]);
+  });
+
+  it("returns [] when no TodoWrite anywhere", () => {
+    const messages = [
+      { role: "assistant", blocks: [{ type: "text" as never }] },
+      { role: "assistant", blocks: [] },
+    ];
+    expect(extractTodosFromMessages(messages)).toEqual([]);
+  });
+
+  it("matches extractTodos behaviour for the latest TodoWrite (cross-check)", () => {
+    const blocks = [
+      { type: "tool_use", name: "TodoWrite", id: "old", input: { todos: [{ content: "stale", status: "pending" }] } },
+      { type: "tool_use", name: "TodoWrite", id: "new", input: { todos: SAMPLE } },
+    ];
+    const flat = extractTodos(blocks);
+    const nested = extractTodosFromMessages([
+      { role: "assistant", blocks },
+    ]);
+    expect(nested).toEqual(flat);
   });
 });
 

@@ -1,3 +1,48 @@
+# Hermes IDE 1.1.7
+
+A memory-hardening release for Agent mode. No new features — every
+change is about making long agent sessions stay responsive and free
+of memory growth that earlier builds let accumulate over hours of use.
+
+## Long agent sessions stay lean
+
+Several places in Agent mode used to hold on to data that should have
+been freed:
+- A diagnostic buffer for unrecognised events could grow without
+  bound if the bridge misbehaved.
+- The TODO panel re-walked every assistant message in history on
+  every paint, creating heavy GC pressure during long conversations.
+- Reader tasks behind a closed session could keep running in the
+  background until the app quit.
+
+All of these are now bounded or cleaned up at session close. After
+hours of use, the app should reclaim memory the way you'd expect
+when a session ends.
+
+## More resilient under load
+
+- The bridge now respects backpressure when the app is briefly busy
+  (a slow renderer, a temporary OS hiccup) instead of buffering an
+  unbounded amount of streaming output in memory.
+- Pasting a flood of input no longer grows the bridge's internal
+  queue without limit; it briefly pauses reading from the host until
+  the queue drains.
+- A single oversized line of bridge output is dropped with a clear
+  diagnostic event, instead of being held in memory while the app
+  tries (and fails) to consume it.
+- If the host process disappears mid-write, the bridge no longer
+  hangs waiting forever — it cleans up and exits.
+
+## Permission cache hardening
+
+- Approval rules with command-prefix wildcards now require a word
+  boundary, so an approval for `ls` can no longer match `lsof`.
+- Empty-prefix and bare-tool wildcards are refused for sensitive
+  tools as a defence-in-depth check, even though the in-app UI never
+  emits them.
+
+---
+
 # Hermes IDE 1.1.6
 
 A polish release focused on a smoother conversation surface, a more
