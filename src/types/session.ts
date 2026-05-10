@@ -220,6 +220,13 @@ export interface SavedWorkspace {
   layout: unknown; // serialized LayoutNode
   focused_pane_id: string | null;
   active_session_id: string | null;
+  /** Right-rail Workbench layout (open / tab / ratio / files-notes split).
+   *  Added in v1.1.14.  Older saves omit this; the loader falls back to
+   *  defaults from `utils/workbenchLayout.ts`. */
+  workbench?: unknown;
+  /** Per-session free-form notes (1.1.14).  Map of sessionId -> string,
+   *  capped at NOTES_MAX_LEN per entry by the loader. */
+  notes?: Record<string, string>;
 }
 
 /** Current schema version for SavedWorkspace serialisation.
@@ -344,5 +351,20 @@ export type SessionAction =
   // File preview
   | { type: "SET_FILE_PREVIEW"; projectId: string; filePath: string }
   | { type: "CLOSE_FILE_PREVIEW" }
+  // Right-rail Workbench (v1.1.14) — agent-mode only.  See
+  // `utils/workbenchLayout.ts` for the persisted shape.
+  | { type: "TOGGLE_WORKBENCH" }
+  | { type: "SET_WORKBENCH_OPEN"; open: boolean }
+  | { type: "SET_WORKBENCH_TAB"; tab: "files" | "context" }
+  | { type: "SET_WORKBENCH_RATIO"; ratio: number }
+  | { type: "SET_WORKBENCH_FILES_NOTES_SPLIT"; ratio: number }
+  // Per-session notes (1.1.14) — replaces or complements the
+  // session-row description as a longer-form scratchpad.
+  | { type: "SET_SESSION_NOTE"; sessionId: string; content: string }
   // Workspace restore
-  | { type: "RESTORE_LAYOUT"; root: unknown; focusedPaneId: string | null; activeSessionId: string | null };
+  | { type: "RESTORE_LAYOUT"; root: unknown; focusedPaneId: string | null; activeSessionId: string | null }
+  // Workbench restore — applied alongside RESTORE_LAYOUT after a saved
+  // workspace is parsed.  Both notes and panel layout come from the
+  // same JSON blob, but the reducer treats them as separate slices so
+  // a partial restore can apply notes without resetting the panel.
+  | { type: "RESTORE_WORKBENCH"; layout: import("../utils/workbenchLayout").PersistedWorkbenchLayout; notes: Record<string, string> };

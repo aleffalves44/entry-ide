@@ -1016,7 +1016,14 @@ export function SessionList({ sessions, activeSessionId, onSelect, onClose, onNe
                   <line x1="11" y1="11" x2="15.5" y2="15.5" />
                 </svg>
               )},
-            ]).map((item) => (
+            ]).filter((item) => {
+              // For agent-mode sessions the Files surface lives in the
+              // right-rail Workbench (1.1.14), so the per-row Files
+              // button is redundant.  Drop it to avoid two paths to
+              // the same place.
+              if (item.id === "files" && session.mode === "agent") return false;
+              return true;
+            }).map((item) => (
               <button
                 key={item.id}
                 className={`session-subview-btn${activeView === item.id ? " session-subview-active" : ""}`}

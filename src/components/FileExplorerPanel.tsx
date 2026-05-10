@@ -629,7 +629,13 @@ export function FileExplorerPanel({ visible }: FileExplorerPanelProps) {
     };
   }, [isSSH, visible, state.activeSessionId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load projects for active session
+  // Load projects for active session.  Re-runs when the session's
+  // attached folder set changes — without `workspace_paths` in the
+  // deps, a folder added mid-session would never appear in the tree
+  // because this effect wouldn't refetch (1.1.14 fix).  We key on a
+  // joined string so reference changes that don't affect the path
+  // list don't pointlessly re-trigger the fetch.
+  const wsPathsKey = activeSession?.workspace_paths.join("|") ?? "";
   useEffect(() => {
     if (!state.activeSessionId || !visible) {
       setProjects([]);
@@ -640,7 +646,7 @@ export function FileExplorerPanel({ visible }: FileExplorerPanelProps) {
         setProjects(projects.map((r) => ({ id: r.id, name: r.name, path: r.path })));
       })
       .catch(() => setProjects([]));
-  }, [state.activeSessionId, visible]);
+  }, [state.activeSessionId, visible, wsPathsKey]);
 
   // Clear search when session changes
   useEffect(() => {

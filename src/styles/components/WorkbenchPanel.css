@@ -1,0 +1,391 @@
+/* ─────────────────────────────────────────────────────────────────
+ * Right-rail Workbench (v1.1.14, agent-mode only)
+ *
+ * Stacked split: tabs + active-tab body on top, brass splitter,
+ * Notes drawer on the bottom.  Default 50/50 with the chat.  Replaces
+ * the per-session-row folder icon and the legacy AgentContextPanel
+ * mount.
+ *
+ * Visual spec: docs/mockups/right-rail-workbench.html
+ * ────────────────────────────────────────────────────────────────── */
+
+.workbench-panel {
+  /* Width comes from --context-w (existing right-rail var); the
+   * App.tsx inline style sets it from state.ui.workbench.ratio. */
+  width: var(--context-w, 50vw);
+  height: 100%;
+  background: var(--bg-0);
+  border-left: 1px solid var(--rule-strong, var(--rule));
+  display: grid;
+  grid-template-rows: auto 1fr 6px minmax(140px, var(--workbench-notes-h, 30%));
+  overflow: hidden;
+  position: relative;
+  flex: none;
+}
+
+/* Brass rail — matches the mockup's identifying detail.  Lives on
+ * the inside (left) edge of the panel.  Pointer-events disabled so
+ * clicks reach the resize handle behind it. */
+.workbench-panel::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--brass-dim, rgba(212, 168, 106, 0.18)) 8%,
+    var(--brass, #d4a86a) 30%,
+    var(--brass, #d4a86a) 70%,
+    var(--brass-dim, rgba(212, 168, 106, 0.18)) 92%,
+    transparent 100%
+  );
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* External resize handle — chat ↔ workbench split.  Pinned to the
+ * left edge of the panel; the brass rail sits above it visually but
+ * the handle still gets pointer events because of z-index ordering. */
+.workbench-panel-external-handle {
+  position: absolute;
+  left: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  z-index: 2;
+  background: transparent;
+}
+
+.workbench-panel-external-handle:hover,
+.workbench-panel-external-handle:focus-visible {
+  background: var(--brass-dim, rgba(212, 168, 106, 0.18));
+}
+
+/* ─── Header (session pill + tabs) ───────────────────────────── */
+
+.workbench-head {
+  padding: 12px 14px 0;
+  border-bottom: 1px solid var(--rule);
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+}
+
+.workbench-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.workbench-session-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--brass-dim, rgba(212, 168, 106, 0.18));
+  background: rgba(212, 168, 106, 0.06);
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--brass-bright, #e8c485);
+  letter-spacing: 0.06em;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workbench-session-pill .ledge {
+  width: 6px;
+  height: 6px;
+  background: var(--brass, #d4a86a);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--brass-dim, rgba(212, 168, 106, 0.18));
+  flex: none;
+}
+
+.workbench-scope {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.workbench-close {
+  background: transparent;
+  border: 0;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 14px;
+  line-height: 1;
+}
+.workbench-close:hover {
+  color: var(--text-1);
+  background: var(--bg-2);
+}
+
+.workbench-tabs {
+  display: flex;
+  gap: 0;
+  margin: 0 -14px -1px;
+  padding: 0 14px;
+}
+
+.workbench-tab {
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-3);
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.workbench-tab:hover {
+  color: var(--text-1);
+}
+
+.workbench-tab[aria-selected="true"] {
+  color: var(--brass-bright, #e8c485);
+  border-bottom-color: var(--brass, #d4a86a);
+}
+
+.workbench-tab[aria-selected="true"] .workbench-tab-count {
+  background: var(--brass-dim, rgba(212, 168, 106, 0.18));
+  color: var(--brass-bright, #e8c485);
+}
+
+.workbench-tab-count {
+  font-size: 9px;
+  color: var(--text-3);
+  padding: 0 4px;
+  background: var(--bg-2);
+  border-radius: 6px;
+}
+
+/* ─── Active tab body ─────────────────────────────────────────── */
+
+.workbench-body {
+  overflow: auto;
+  position: relative;
+}
+
+.workbench-body[hidden] {
+  display: none;
+}
+
+/* Embedded variants — when FileExplorerPanel / AgentContextPanel are
+ * mounted INSIDE the workbench, they should not render their own
+ * width chrome (resize handle, fixed-width style).  CSS overrides
+ * land here so we don't have to thread props all the way down.
+ *
+ * Note: FileExplorerPanel's *outer* class is `.file-explorer` (not
+ * `.file-explorer-panel`), and the file's stock width is `var(--sidebar-w)`
+ * with a hard `max-width: 400px` for the left-rail use case.  Inside
+ * the workbench we want it to fill the tab body, so we override
+ * both — and the right-border meant for the left-rail case has to go
+ * too.  AgentContextPanel uses `.agent-context-panel` and pins itself
+ * via inline `style={width}` (drag-handle drives that), so we have
+ * to !important-override it. */
+.workbench-body .file-explorer,
+.workbench-body .agent-context-panel {
+  width: 100% !important;
+  max-width: none !important;
+  min-width: 0 !important;
+  height: 100%;
+  border-left: none;
+  border-right: none;
+  position: static;
+}
+
+.workbench-body .agent-context-panel-resize-handle {
+  display: none;
+}
+
+/* ─── Splitter (Files ↔ Notes) ────────────────────────────────── */
+
+.workbench-split {
+  background: var(--bg-0);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  cursor: ns-resize;
+  position: relative;
+}
+
+.workbench-split::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px;
+  height: 1px;
+  background: var(--brass, #d4a86a);
+  opacity: 0.6;
+}
+
+.workbench-split:hover::after {
+  opacity: 1;
+}
+
+/* ─── Notes section ───────────────────────────────────────────── */
+
+.workbench-notes {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent 21px,
+      rgba(123, 147, 219, 0.04) 21px,
+      rgba(123, 147, 219, 0.04) 22px
+    ),
+    var(--bg-0);
+}
+
+.workbench-notes-head {
+  padding: 10px 14px 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: none;
+}
+
+.workbench-notes-head h4 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 13px;
+  margin: 0;
+  color: var(--text-1);
+}
+
+.workbench-notes-head .stamp {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.workbench-notes-head .saved {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+.workbench-notes-head .saved[data-state="saved"] {
+  color: var(--green, #34d399);
+}
+
+.workbench-notes-head .saved[data-state="dirty"] {
+  color: var(--text-3);
+}
+
+.workbench-notes-textarea {
+  width: 100%;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  resize: none;
+  outline: none;
+  padding: 0 14px 12px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 13.5px;
+  line-height: 22px; /* matches the ruled lines */
+  color: var(--text-1);
+  caret-color: var(--brass, #d4a86a);
+}
+
+.workbench-notes-textarea:focus {
+  outline: none;
+}
+
+.workbench-notes-textarea::placeholder {
+  color: var(--text-3);
+  font-style: italic;
+}
+
+.workbench-notes-foot {
+  border-top: 1px dashed var(--rule);
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.12em;
+  flex: none;
+}
+
+.workbench-notes-foot .key {
+  border: 1px solid var(--rule);
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--bg-1);
+  color: var(--text-2);
+  font-family: var(--font-mono);
+}
+
+/* ─── Empty state for the Files tab when no project is attached ─ */
+
+.workbench-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 32px 24px;
+  height: 100%;
+}
+
+.workbench-empty .glyph {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--brass-dim, rgba(212, 168, 106, 0.18));
+  border-radius: 50%;
+  margin-bottom: 14px;
+  color: var(--brass, #d4a86a);
+  font-family: var(--font-mono);
+  font-size: 18px;
+}
+
+.workbench-empty .msg {
+  font-family: var(--font-serif, Georgia, serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text-1);
+  margin-bottom: 6px;
+}
+
+.workbench-empty .hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+
+/* When workbench is closed, the panel collapses to nothing.  The
+ * external resize handle + brass rail go with it.  App.tsx is
+ * responsible for not mounting the component at all in this case
+ * (so the chat can grow into the freed space without a stale
+ * --context-w value pinning it). */

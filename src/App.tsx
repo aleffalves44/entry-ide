@@ -24,10 +24,11 @@ import { SessionProvider, useSession, useActiveSession, useSessionList, useSideb
 import { getSetting } from "./api/settings";
 import { SessionList } from "./components/SessionList";
 import { ContextPanel } from "./components/ContextPanel";
-import { AgentContextPanel } from "./components/AgentContextPanel";
 import { hideOpeningOverlay, showOpeningOverlay } from "./utils/sessionCreatorOverlay";
 import { UsagePanel } from "./components/UsagePanel";
-import { ActivityBar, SessionsIcon, ContextIcon, UsageIcon, PlusIcon, PluginsIcon, SettingsIcon } from "./components/ActivityBar";
+import { ActivityBar, SessionsIcon, ContextIcon, UsageIcon, WorkbenchIcon, PlusIcon, PluginsIcon, SettingsIcon } from "./components/ActivityBar";
+import { WorkbenchPanel } from "./components/WorkbenchPanel";
+import { workbenchPixelWidth } from "./utils/workbenchLayout";
 import type { SessionView } from "./components/SessionList";
 
 import { ProcessPanel } from "./components/ProcessPanel";
@@ -153,6 +154,29 @@ function AppContent() {
   const [activityBarOrder, setActivityBarOrder] = useState<string[]>([]);
   const [leftPanelWidth, setLeftPanelWidth] = useState(240);
   const [rightPanelWidth, setRightPanelWidth] = useState(300);
+
+  // Right-rail Workbench width tracks the viewport, since its persisted
+  // size is a *ratio* of the chat+workbench area (so a workspace saved
+  // on a 27" display doesn't open with the chat squashed to nothing on
+  // a 13" laptop).  The "available" budget is the viewport MINUS the
+  // sidebar columns and both activity bars — i.e. the space that the
+  // chat and workbench actually share.  Without this subtraction the
+  // workbench would steal pixels from itself when the user opened the
+  // sessions sidebar, and the "50/50" default felt closer to 25/75.
+  const [viewportWidth, setViewportWidth] = useState(() =>
+    typeof window === "undefined" ? 1440 : window.innerWidth,
+  );
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const ACTIVITY_BAR_W = 36; // mirrors --activity-bar-w in tokens.css
+  const sidebarBudget =
+    (ui.flowMode ? 0 : ACTIVITY_BAR_W * 2) +
+    (ui.sessionListCollapsed ? 0 : leftPanelWidth);
+  const chatWorkbenchSpace = Math.max(640, viewportWidth - sidebarBudget);
+  const workbenchWidth = workbenchPixelWidth(chatWorkbenchSpace, ui.workbench.ratio);
   const toastStore = useToastStore();
   const toastStoreRef = useRef(toastStore);
   toastStoreRef.current = toastStore;
@@ -436,6 +460,20 @@ function AppContent() {
         e.preventDefault();
         dispatch({ type: "TOGGLE_PALETTE" });
         return;
+      }
+
+      // Cmd+Alt+B (mac) / Ctrl+Alt+B (other) — toggle the right-rail
+      // Workbench (1.1.14).  Only meaningful for agent-mode sessions;
+      // for terminal sessions the workbench isn't mounted, so we noop
+      // rather than swallow the keystroke.
+      if (e.altKey && (e.key === "B" || e.key === "b")) {
+        const sid = state.activeSessionId;
+        const sess = sid ? state.sessions[sid] : null;
+        if (sess?.mode === "agent") {
+          e.preventDefault();
+          dispatch({ type: "TOGGLE_WORKBENCH" });
+          return;
+        }
       }
 
       // Suppress session-switch shortcuts while any modal/overlay is open
@@ -759,7 +797,19 @@ function AppContent() {
 
       </div>
 
-      <div className="app-body" style={{ "--sidebar-w": `${leftPanelWidth}px`, "--context-w": `${rightPanelWidth}px` } as React.CSSProperties}>
+      <div
+        className="app-body"
+        style={{
+          "--sidebar-w": `${leftPanelWidth}px`,
+          // Right-rail width: when an agent session has the workbench
+          // open, the panel uses its own viewport-ratio-derived width;
+          // otherwise (terminal mode, workbench closed) we fall back to
+          // the legacy local rightPanelWidth state.
+          "--context-w": activeSession?.mode === "agent" && ui.workbench.open
+            ? `${workbenchWidth}px`
+            : `${rightPanelWidth}px`,
+        } as React.CSSProperties}
+      >
         {!ui.flowMode && (
           <ActivityBar
             side="left"
@@ -923,17 +973,18 @@ function AppContent() {
           </div>
           {/* Right rail.
            *
-           *  Agent-mode sessions get the always-on AgentContextPanel
-           *  (M0 of the v1.0 TUI-parity plan).  No toggle — the panel
-           *  is part of the agent surface itself.
+           *  Agent-mode sessions get the new Workbench (1.1.14) — a
+           *  per-session right rail with Files / Context tabs and a
+           *  Notes drawer.  Replaces both the per-session-row folder
+           *  icon and the legacy AgentContextPanel mount.  Default
+           *  open; toggled from the activity bar (or ⌥⌘B).
            *
            *  Terminal-mode (and any other) sessions keep the legacy
-           *  toggleable ContextPanel + UsagePanel pair.  Both can be
-           *  cycled from the activity bar.
+           *  toggleable ContextPanel + UsagePanel pair.
            */}
-          {!ui.flowMode && activeSession?.mode === "agent" && ui.contextPanelOpen && (
-            <PanelErrorBoundary panelName="Agent Context Panel">
-              <AgentContextPanel session={activeSession} />
+          {!ui.flowMode && activeSession?.mode === "agent" && ui.workbench.open && (
+            <PanelErrorBoundary panelName="Workbench">
+              <WorkbenchPanel session={activeSession} />
             </PanelErrorBoundary>
           )}
           {ui.contextPanelOpen && !ui.flowMode && activeSession && activeSession.mode !== "agent" && (
@@ -944,9 +995,19 @@ function AppContent() {
               </PanelErrorBoundary>
             </>
           )}
-          {ui.usagePanelOpen && !ui.contextPanelOpen && !ui.flowMode && activeSession && (
+          {/* Usage panel.  Mounted for both agent and terminal sessions,
+              mutex with the right-rail occupant of the moment:
+              - terminal: mutex with ContextPanel (same column)
+              - agent:    mutex with WorkbenchPanel (same column)
+              When the user clicks the Usage activity-bar tab on an
+              agent session, the click handler closes the workbench
+              first so this clause renders. */}
+          {ui.usagePanelOpen && !ui.contextPanelOpen && !ui.flowMode && activeSession &&
+            (activeSession.mode !== "agent" || !ui.workbench.open) && (
             <>
-              <PanelResizeHandle direction="horizontal" onResize={handleRightResize} onResizeEnd={refitActive} />
+              {activeSession.mode !== "agent" && (
+                <PanelResizeHandle direction="horizontal" onResize={handleRightResize} onResizeEnd={refitActive} />
+              )}
               <PanelErrorBoundary panelName="Usage Panel">
                 <UsagePanel session={activeSession} />
               </PanelErrorBoundary>
@@ -956,16 +1017,56 @@ function AppContent() {
         {!ui.flowMode && (
           <ActivityBar
             side="right"
-            tabs={[
-              { id: "context", label: `Context (${fmt("{mod}E")})`, icon: ContextIcon },
-              { id: "usage", label: "Usage · plan & limits", icon: UsageIcon },
-            ]}
+            tabs={
+              activeSession?.mode === "agent"
+                ? [
+                    {
+                      id: "workbench",
+                      label: `Workbench (${fmt("{mod}{alt}B")})`,
+                      icon: WorkbenchIcon,
+                    },
+                    { id: "usage", label: "Usage · plan & limits", icon: UsageIcon },
+                  ]
+                : [
+                    { id: "context", label: `Context (${fmt("{mod}E")})`, icon: ContextIcon },
+                    { id: "usage", label: "Usage · plan & limits", icon: UsageIcon },
+                  ]
+            }
             activeTabId={
-              ui.contextPanelOpen ? "context" : ui.usagePanelOpen ? "usage" : null
+              activeSession?.mode === "agent"
+                ? ui.workbench.open
+                  ? "workbench"
+                  : ui.usagePanelOpen
+                    ? "usage"
+                    : null
+                : ui.contextPanelOpen
+                  ? "context"
+                  : ui.usagePanelOpen
+                    ? "usage"
+                    : null
             }
             onTabClick={(tabId) => {
-              if (tabId === "context") dispatch({ type: "TOGGLE_CONTEXT" });
-              else if (tabId === "usage") dispatch({ type: "TOGGLE_USAGE" });
+              // Right-rail tabs are mutex within the same column — clicking
+              // one tab implicitly closes whatever else was occupying the
+              // panel.  TOGGLE_USAGE / TOGGLE_CONTEXT / TOGGLE_WORKBENCH
+              // are independent flags in state, so we mirror the mutex
+              // here in the dispatch handler.
+              if (tabId === "workbench") {
+                if (ui.usagePanelOpen) dispatch({ type: "TOGGLE_USAGE" });
+                dispatch({ type: "TOGGLE_WORKBENCH" });
+              } else if (tabId === "context") {
+                if (ui.usagePanelOpen) dispatch({ type: "TOGGLE_USAGE" });
+                dispatch({ type: "TOGGLE_CONTEXT" });
+              } else if (tabId === "usage") {
+                // Closing the workbench when opening Usage so the right
+                // column has room.  If Usage is already open, this is a
+                // toggle-off → leave the workbench in whatever state it
+                // was in.
+                if (!ui.usagePanelOpen && ui.workbench.open) {
+                  dispatch({ type: "SET_WORKBENCH_OPEN", open: false });
+                }
+                dispatch({ type: "TOGGLE_USAGE" });
+              }
             }}
           />
         )}

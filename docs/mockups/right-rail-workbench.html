@@ -1,0 +1,1294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hermes — Right-Rail Workbench mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Newsreader:ital,wght@0,300;0,400;0,600;1,400&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  /* ─── Tokens (mirrors src/styles/tokens.css) ─────────────────── */
+  :root {
+    --bg-0: #0B0F14;
+    --bg-1: #111820;
+    --bg-2: #1a222d;
+    --bg-3: #1f2937;
+    --bg-hover: #1f2937;
+    --bg-active: #2a3444;
+    --text-0: #e2e8f0;
+    --text-1: #c8d6e5;
+    --text-2: #7f8c9b;
+    --text-3: #4a5568;
+    --accent: #7b93db;
+    --accent-paper: #6b88d0;
+    --accent-dim: #7b93db26;
+    --green: #34d399;
+    --green-dim: #34d39926;
+    --red: #ff4444;
+    --yellow: #ffb000;
+    --violet: #a78bfa;
+    --brass: #d4a86a;
+    --brass-bright: #e8c485;
+    --brass-dim: rgba(212, 168, 106, 0.18);
+    --rule: #1a2230;
+    --rule-strong: #243040;
+    --border: #1a2332;
+    --border-light: #243040;
+    --radius: 3px;
+    --radius-lg: 6px;
+    --topbar-h: 40px;
+    --statusbar-h: 28px;
+    --activity-bar-w: 36px;
+    --font-mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+    --font-ui: "Inter Tight", system-ui, sans-serif;
+    --font-serif: "Newsreader", Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg-0);
+    color: var(--text-0);
+    font-family: var(--font-ui);
+    font-size: 13px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── Page layout ────────────────────────────────────────────── */
+  .page {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 48px 32px 96px;
+  }
+
+  .page-head {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 48px;
+    align-items: end;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 48px;
+  }
+
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--brass);
+    margin: 0 0 16px;
+  }
+
+  .eyebrow::before {
+    content: "◊ ";
+    color: var(--brass-bright);
+  }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 56px;
+    line-height: 1.0;
+    margin: 0;
+    color: var(--text-0);
+    letter-spacing: -0.01em;
+  }
+  h1 em {
+    color: var(--brass);
+    font-style: italic;
+  }
+
+  .lede {
+    font-family: var(--font-serif);
+    font-size: 17px;
+    line-height: 1.55;
+    color: var(--text-1);
+    margin: 0;
+  }
+  .lede strong { color: var(--brass-bright); font-weight: 600; }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin-bottom: 64px;
+  }
+  .meta-cell {
+    background: var(--bg-1);
+    padding: 14px 16px;
+  }
+  .meta-cell .k {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: var(--text-3);
+    margin-bottom: 6px;
+  }
+  .meta-cell .v {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-0);
+  }
+  .meta-cell .v .brass { color: var(--brass-bright); }
+
+  /* ─── Section heading rhythm ─────────────────────────────────── */
+  .section { margin-bottom: 80px; }
+  .section-label {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--brass);
+    border: 1px solid var(--brass-dim);
+    padding: 3px 7px;
+    letter-spacing: 0.1em;
+  }
+  .section-name {
+    font-family: var(--font-serif);
+    font-size: 28px;
+    font-style: italic;
+    font-weight: 400;
+    margin: 0;
+    color: var(--text-0);
+  }
+  .section-sub {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-2);
+    margin-left: auto;
+  }
+
+  /* ─── App-frame mockup ───────────────────────────────────────── */
+  .frame {
+    background: var(--bg-0);
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.6), 0 8px 20px -10px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .frame-caption {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: var(--text-2);
+    text-transform: uppercase;
+  }
+  .frame-caption .dot {
+    width: 6px; height: 6px;
+    background: var(--brass);
+    border-radius: 50%;
+  }
+  .frame-caption strong {
+    color: var(--text-0);
+    font-weight: 500;
+  }
+
+  .topbar {
+    height: var(--topbar-h);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    gap: 12px;
+  }
+  .topbar .lights { display: flex; gap: 8px; margin-right: 8px; }
+  .topbar .lights span {
+    width: 11px; height: 11px; border-radius: 50%;
+    background: var(--bg-3);
+  }
+  .topbar .lights span:nth-child(1) { background: #ff5f57; }
+  .topbar .lights span:nth-child(2) { background: #febc2e; }
+  .topbar .lights span:nth-child(3) { background: #28c840; }
+  .topbar .title {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-2);
+    letter-spacing: 0.12em;
+  }
+  .topbar .title strong { color: var(--text-0); }
+  .topbar .title .brass-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--brass);
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+    box-shadow: 0 0 8px var(--brass-dim);
+  }
+
+  .body {
+    display: grid;
+    grid-template-columns: var(--activity-bar-w) 220px 1fr 360px var(--activity-bar-w);
+    height: 580px;
+  }
+
+  /* Activity bars */
+  .activity-bar {
+    background: var(--bg-0);
+    border-right: 1px solid var(--rule);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 0;
+    gap: 4px;
+  }
+  .activity-bar.right {
+    border-right: none;
+    border-left: 1px solid var(--rule);
+  }
+  .ab-btn {
+    width: 28px; height: 28px;
+    display: grid; place-items: center;
+    color: var(--text-3);
+    cursor: pointer;
+    border-radius: 4px;
+    position: relative;
+  }
+  .ab-btn:hover { color: var(--text-1); background: var(--bg-1); }
+  .ab-btn.active {
+    color: var(--brass-bright);
+  }
+  .ab-btn.active::before {
+    content: "";
+    position: absolute;
+    left: -8px; top: 4px; bottom: 4px;
+    width: 2px;
+    background: var(--brass);
+  }
+  .activity-bar.right .ab-btn.active::before {
+    left: auto; right: -8px;
+  }
+  .ab-btn svg { width: 16px; height: 16px; }
+  .ab-sep { width: 18px; height: 1px; background: var(--rule); margin: 6px 0; }
+  .ab-spacer { flex: 1; }
+
+  /* Session list */
+  .sidebar {
+    background: var(--bg-0);
+    border-right: 1px solid var(--rule);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  .sidebar-head {
+    padding: 10px 12px 8px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    color: var(--text-3);
+    text-transform: uppercase;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sidebar-list { padding: 0 6px; display: flex; flex-direction: column; gap: 1px; }
+  .session-row {
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    border-left: 2px solid transparent;
+  }
+  .session-row:hover { background: var(--bg-1); }
+  .session-row.active {
+    background: var(--bg-1);
+    border-left-color: var(--brass);
+  }
+  .session-row .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    flex: none;
+  }
+  .session-row.active .dot { background: var(--brass); box-shadow: 0 0 6px var(--brass-dim); }
+  .session-row .label {
+    font-size: 12px;
+    color: var(--text-1);
+    flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .session-row.active .label { color: var(--text-0); }
+  .session-row .meta {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-3);
+  }
+
+  /* Center pane (agent surface) */
+  .center {
+    background: var(--bg-0);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+  .pane-head {
+    border-bottom: 1px solid var(--rule);
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-2);
+  }
+  .pane-head .label { color: var(--text-0); }
+  .pane-head .phase {
+    color: var(--green);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 2px 6px;
+    border: 1px solid var(--green-dim);
+    background: var(--green-dim);
+    border-radius: 2px;
+  }
+  .pane-head .right { margin-left: auto; color: var(--text-3); }
+
+  .agent-stream {
+    flex: 1;
+    padding: 24px 28px;
+    overflow: hidden;
+    background:
+      radial-gradient(1200px 400px at 30% -20%, rgba(212,168,106,0.04), transparent 60%),
+      var(--bg-0);
+  }
+  .turn { margin-bottom: 24px; }
+  .turn-meta {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--brass);
+    letter-spacing: 0.12em;
+    margin-bottom: 8px;
+  }
+  .turn-meta .you { color: var(--brass-bright); }
+  .prose {
+    font-family: var(--font-serif);
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text-1);
+  }
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--bg-1);
+    padding: 1px 5px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    color: var(--text-0);
+  }
+  .tool-card {
+    margin-top: 12px;
+    border: 1px solid var(--rule-strong);
+    border-radius: var(--radius);
+    background: var(--bg-1);
+    overflow: hidden;
+  }
+  .tool-head {
+    padding: 8px 12px;
+    border-bottom: 1px dashed var(--rule);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-1);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tool-head .glyph { color: var(--violet); }
+  .tool-body {
+    padding: 10px 12px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-2);
+  }
+  .composer {
+    border-top: 1px solid var(--rule);
+    padding: 10px 16px;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg-0);
+  }
+  .composer .stub {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-3);
+    border: 1px solid var(--rule);
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    background: var(--bg-1);
+  }
+  .composer .stub::before { content: "› "; color: var(--brass); }
+
+  /* ──────────────────────────────────────────────────────────────
+   *  THE NEW THING — Right-rail Workbench
+   * ────────────────────────────────────────────────────────────── */
+  .workbench {
+    background: var(--bg-0);
+    border-left: 1px solid var(--rule-strong);
+    display: grid;
+    grid-template-rows: auto 1fr 6px minmax(140px, 30%);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Brass rail running floor-to-ceiling on the inside edge */
+  .workbench::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg,
+      transparent 0%,
+      var(--brass-dim) 8%,
+      var(--brass) 30%,
+      var(--brass) 70%,
+      var(--brass-dim) 92%,
+      transparent 100%
+    );
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .wb-head {
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--rule);
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+  }
+  .wb-title {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .wb-title .session-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px;
+    border: 1px solid var(--brass-dim);
+    background: rgba(212,168,106,0.06);
+    border-radius: 10px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--brass-bright);
+    letter-spacing: 0.06em;
+  }
+  .wb-title .session-pill .ledge {
+    width: 6px; height: 6px; background: var(--brass);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--brass-dim);
+  }
+  .wb-title h3 {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 15px;
+    margin: 0;
+    color: var(--text-0);
+  }
+  .wb-title .scope {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .wb-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid transparent;
+    margin: 0 -14px -10px;
+    padding: 0 14px;
+  }
+  .wb-tab {
+    padding: 8px 12px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--text-3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .wb-tab .count {
+    font-size: 9px; color: var(--text-3);
+    padding: 0 4px;
+    background: var(--bg-2);
+    border-radius: 6px;
+  }
+  .wb-tab:hover { color: var(--text-1); }
+  .wb-tab.active {
+    color: var(--brass-bright);
+    border-bottom-color: var(--brass);
+  }
+  .wb-tab.active .count {
+    background: var(--brass-dim);
+    color: var(--brass-bright);
+  }
+
+  /* File tree section */
+  .wb-files {
+    overflow: auto;
+    padding: 10px 0 14px;
+  }
+  .wb-breadcrumb {
+    padding: 4px 14px 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    display: flex; align-items: center; gap: 4px;
+    flex-wrap: wrap;
+  }
+  .wb-breadcrumb .seg { color: var(--text-2); }
+  .wb-breadcrumb .seg:last-child { color: var(--brass-bright); }
+  .wb-breadcrumb .sep { color: var(--text-3); }
+
+  .tree { padding: 0 6px; }
+  .tree-row {
+    display: flex; align-items: center; gap: 6px;
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-size: 12px;
+    color: var(--text-1);
+    cursor: pointer;
+    line-height: 1.3;
+    position: relative;
+  }
+  .tree-row:hover { background: var(--bg-1); }
+  .tree-row.active {
+    background: var(--brass-dim);
+    color: var(--text-0);
+  }
+  .tree-row .twist {
+    width: 10px; color: var(--text-3);
+    font-family: var(--font-mono); font-size: 9px;
+    flex: none; text-align: center;
+  }
+  .tree-row .ico {
+    width: 18px; height: 14px;
+    display: grid; place-items: center;
+    font-family: var(--font-mono);
+    font-size: 8px;
+    font-weight: 700;
+    color: var(--bg-0);
+    border-radius: 2px;
+    flex: none;
+  }
+  .tree-row .ico.dir { background: transparent; color: var(--brass); font-size: 11px; }
+  .tree-row .ico.ts  { background: #3178c6; color: #fff; }
+  .tree-row .ico.tsx { background: #3178c6; color: #fff; }
+  .tree-row .ico.css { background: #6b88d0; color: #fff; }
+  .tree-row .ico.md  { background: var(--bg-2); color: var(--text-1); }
+  .tree-row .ico.rs  { background: #dea584; color: var(--bg-0); }
+  .tree-row .ico.json{ background: #d4a86a; color: var(--bg-0); }
+  .tree-row .name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tree-row .git-mark {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    width: 12px; text-align: center; flex: none;
+  }
+  .tree-row .git-mark.m { color: var(--yellow); }
+  .tree-row .git-mark.a { color: var(--green); }
+  .tree-row .git-mark.u { color: var(--accent); }
+
+  .tree-row.depth-1 { padding-left: 22px; }
+  .tree-row.depth-2 { padding-left: 38px; }
+  .tree-row.depth-3 { padding-left: 54px; }
+
+  .tree-section-head {
+    padding: 10px 14px 4px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tree-section-head .branch {
+    color: var(--brass-bright);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 10px;
+  }
+  .tree-section-head + .tree { margin-top: 2px; }
+
+  /* Splitter */
+  .wb-split {
+    background: var(--bg-0);
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    cursor: ns-resize;
+    position: relative;
+  }
+  .wb-split::after {
+    content: "";
+    position: absolute;
+    left: 50%; top: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px; height: 1px;
+    background: var(--brass);
+    opacity: 0.6;
+  }
+
+  /* Notes section */
+  .wb-notes {
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    background:
+      repeating-linear-gradient(
+        180deg,
+        transparent 0,
+        transparent 21px,
+        rgba(123, 147, 219, 0.04) 21px,
+        rgba(123, 147, 219, 0.04) 22px
+      ),
+      var(--bg-0);
+  }
+  .wb-notes-head {
+    padding: 10px 14px 6px;
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .wb-notes-head h4 {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 13px;
+    margin: 0;
+    color: var(--text-1);
+  }
+  .wb-notes-head .stamp {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-3);
+    letter-spacing: 0.12em;
+  }
+  .wb-notes-head .saved {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--green);
+    letter-spacing: 0.1em;
+  }
+  .wb-notes-body {
+    padding: 0 14px 12px;
+    flex: 1;
+    overflow: auto;
+    font-family: var(--font-serif);
+    font-size: 13.5px;
+    line-height: 22px; /* matches the ruled lines */
+    color: var(--text-1);
+  }
+  .wb-notes-body .h {
+    font-weight: 600;
+    font-style: italic;
+    color: var(--brass-bright);
+  }
+  .wb-notes-body .checkmark { color: var(--green); font-weight: 700; }
+  .wb-notes-body .strike { color: var(--text-3); text-decoration: line-through; }
+  .wb-notes-body code {
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    background: var(--bg-1);
+    border: 1px solid var(--rule);
+    padding: 1px 4px;
+    border-radius: 2px;
+    color: var(--text-0);
+  }
+
+  .wb-notes-foot {
+    border-top: 1px dashed var(--rule);
+    padding: 6px 14px;
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--text-3);
+    letter-spacing: 0.12em;
+  }
+  .wb-notes-foot .key {
+    border: 1px solid var(--rule);
+    padding: 1px 5px;
+    border-radius: 2px;
+    background: var(--bg-1);
+    color: var(--text-2);
+  }
+
+  .statusbar {
+    height: var(--statusbar-h);
+    border-top: 1px solid var(--rule);
+    background: var(--bg-1);
+    display: flex; align-items: center; padding: 0 14px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    gap: 14px;
+  }
+  .statusbar .br { color: var(--brass); }
+  .statusbar .rt { margin-left: auto; }
+
+  /* ─── Variant cards (smaller mockups) ────────────────────────── */
+  .variants {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .variant {
+    background: var(--bg-1);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .variant-head {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .variant-head h4 {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 18px;
+    margin: 0 0 4px;
+    color: var(--text-0);
+  }
+  .variant-head h4 .num {
+    font-family: var(--font-mono);
+    font-style: normal;
+    font-size: 10px;
+    color: var(--brass);
+    margin-right: 8px;
+    letter-spacing: 0.12em;
+  }
+  .variant-head p {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-2);
+    margin: 0;
+    line-height: 1.5;
+  }
+  .variant-body {
+    height: 320px;
+    display: flex;
+    background: var(--bg-0);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Variant A — Stacked split (recommended) */
+  .va-rail {
+    flex: 1;
+    display: grid;
+    grid-template-rows: auto 1fr 4px 36%;
+  }
+  .va-tabs { padding: 8px 12px; border-bottom: 1px solid var(--rule); display: flex; gap: 12px; }
+  .va-tab { font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-3); }
+  .va-tab.on { color: var(--brass-bright); }
+  .va-files { padding: 8px 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-1); overflow: hidden; }
+  .va-files div { padding: 2px 8px; }
+  .va-files .dir { color: var(--brass); }
+  .va-split { background: var(--rule); position: relative; }
+  .va-split::after { content: ""; position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%); width: 18px; height: 1px; background: var(--brass); }
+  .va-notes { padding: 8px 12px; font-family: var(--font-serif); font-size: 12px; color: var(--text-1); line-height: 19px; background: repeating-linear-gradient(180deg, transparent 0, transparent 18px, rgba(123,147,219,0.04) 18px, rgba(123,147,219,0.04) 19px); overflow: hidden; }
+
+  /* Variant B — Tabbed (Files | Notes | Refs) */
+  .vb-rail {
+    flex: 1;
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+  .vb-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    border-bottom: 1px solid var(--rule);
+  }
+  .vb-tab {
+    padding: 12px 8px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-3);
+    border-right: 1px solid var(--rule);
+  }
+  .vb-tab:last-child { border-right: none; }
+  .vb-tab.on { color: var(--brass-bright); background: var(--bg-1); position: relative; }
+  .vb-tab.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--brass); }
+  .vb-body { padding: 10px 12px; font-family: var(--font-mono); font-size: 11px; color: var(--text-1); overflow: hidden; }
+  .vb-body div { padding: 2px 0; }
+  .vb-body .dir { color: var(--brass); }
+
+  /* Variant C — Sticky notes drawer (Files dominant; notes pop-up) */
+  .vc-rail {
+    flex: 1;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    position: relative;
+  }
+  .vc-head { padding: 10px 12px; border-bottom: 1px solid var(--rule); font-family: var(--font-mono); font-size: 10px; color: var(--brass-bright); letter-spacing: 0.12em; text-transform: uppercase; }
+  .vc-files { padding: 8px 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-1); overflow: hidden; }
+  .vc-files div { padding: 2px 8px; }
+  .vc-files .dir { color: var(--brass); }
+  .vc-drawer {
+    border-top: 1px solid var(--rule);
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+  }
+  .vc-drawer .pin { color: var(--brass); }
+  .vc-drawer .lbl { font-family: var(--font-mono); font-size: 10px; color: var(--text-1); letter-spacing: 0.1em; }
+  .vc-drawer .count { margin-left: auto; font-family: var(--font-mono); font-size: 9px; color: var(--text-3); border: 1px solid var(--rule); padding: 1px 5px; border-radius: 2px; }
+
+  .recommendation {
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: rgba(212,168,106,0.06);
+    border: 1px solid var(--brass-dim);
+    border-left: 3px solid var(--brass);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-1);
+    line-height: 1.6;
+  }
+  .recommendation strong {
+    color: var(--brass-bright);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* ─── State row (3 small panels showing different states) ────── */
+  .states {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+  .state {
+    background: var(--bg-1);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .state-head {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule);
+    display: flex; align-items: baseline; gap: 8px;
+  }
+  .state-head .tag {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--brass);
+    letter-spacing: 0.12em;
+  }
+  .state-head h5 {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 16px;
+    margin: 0;
+    color: var(--text-0);
+  }
+  .state-body {
+    height: 240px;
+    padding: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    background: var(--bg-0);
+  }
+  .state-body .glyph {
+    width: 48px; height: 48px;
+    display: grid; place-items: center;
+    border: 1px dashed var(--brass-dim);
+    border-radius: 50%;
+    margin-bottom: 14px;
+    color: var(--brass);
+    font-family: var(--font-mono);
+    font-size: 18px;
+  }
+  .state-body .msg {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-1);
+    margin-bottom: 6px;
+  }
+  .state-body .hint {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+  }
+  .state-body .hint .key {
+    border: 1px solid var(--rule);
+    background: var(--bg-1);
+    color: var(--text-1);
+    padding: 1px 5px;
+    border-radius: 2px;
+    margin: 0 2px;
+  }
+
+  footer {
+    margin-top: 96px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-3);
+    letter-spacing: 0.12em;
+    text-align: center;
+  }
+  footer strong { color: var(--brass); }
+</style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- ── HEAD ────────────────────────────────────────────── -->
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Mockup · Right-rail Workbench · v0.1</p>
+        <h1>A workbench, <em>per session</em>.</h1>
+      </div>
+      <p class="lede">
+        Promote the file explorer out of the session-row icon and give every session its own
+        <strong>right-side workbench</strong> — files on top, a small notes drawer underneath.
+        Like Conductor's right rail, but in Hermes's vintage-instrument idiom.
+      </p>
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-cell"><div class="k">Surface</div><div class="v">Right rail · per-session</div></div>
+      <div class="meta-cell"><div class="k">Replaces</div><div class="v">Folder icon on session row</div></div>
+      <div class="meta-cell"><div class="k">Adds</div><div class="v"><span class="brass">Notes</span> (per session, persistent)</div></div>
+      <div class="meta-cell"><div class="k">Activity bar</div><div class="v">"Workbench" tab on right side</div></div>
+    </div>
+
+    <!-- ── PRIMARY MOCKUP ──────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-num">01</span>
+        <h2 class="section-name">Primary direction — files above, notes below</h2>
+        <span class="section-sub">in-context view</span>
+      </div>
+
+      <div class="frame-caption">
+        <span class="dot"></span>
+        <strong>HERMES IDE</strong> · session: <strong>auth-refactor</strong> · workbench open
+      </div>
+
+      <div class="frame">
+        <!-- topbar -->
+        <div class="topbar">
+          <div class="lights"><span></span><span></span><span></span></div>
+          <div class="title"><span class="brass-dot"></span><strong>auth-refactor</strong> &nbsp;·&nbsp; ~/work/h-ide &nbsp;·&nbsp; agent</div>
+        </div>
+
+        <!-- body grid -->
+        <div class="body">
+          <!-- left activity bar -->
+          <aside class="activity-bar">
+            <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg></div>
+            <div class="ab-sep"></div>
+            <div class="ab-btn active"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="14" height="10" rx="2"/><rect x="4" y="3" width="10" height="6" rx="1.5" opacity="0.5"/></svg></div>
+            <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7.5" cy="7.5" r="5"/><line x1="11" y1="11" x2="15.5" y2="15.5"/></svg></div>
+            <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="2"/><circle cx="13" cy="5" r="2"/><circle cx="9" cy="14" r="2"/><line x1="5" y1="7" x2="5" y2="10"/><line x1="13" y1="7" x2="13" y2="10"/></svg></div>
+            <div class="ab-spacer"></div>
+            <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="3"/><path d="M14 9 a 5 5 0 0 0 -0.5 -2 l 1 -1 -1.5 -1.5 -1 1 a 5 5 0 0 0 -2 -0.5 v -1.5 h -2 v 1.5"/></svg></div>
+          </aside>
+
+          <!-- session list -->
+          <aside class="sidebar">
+            <div class="sidebar-head"><span>SESSIONS · 4</span><span>+</span></div>
+            <div class="sidebar-list">
+              <div class="session-row"><div class="dot" style="background: #58a6ff"></div><div class="label">api-typings</div><div class="meta">2m</div></div>
+              <div class="session-row active"><div class="dot"></div><div class="label">auth-refactor</div><div class="meta">now</div></div>
+              <div class="session-row"><div class="dot" style="background: #34d399"></div><div class="label">migration-script</div><div class="meta">14m</div></div>
+              <div class="session-row"><div class="dot" style="background: #a78bfa"></div><div class="label">design-tokens</div><div class="meta">1h</div></div>
+            </div>
+          </aside>
+
+          <!-- center pane (agent surface) -->
+          <main class="center">
+            <div class="pane-head">
+              <span class="label">auth-refactor</span>
+              <span class="phase">idle</span>
+              <span class="right">claude · sonnet 4.7</span>
+            </div>
+
+            <div class="agent-stream">
+              <div class="turn">
+                <div class="turn-meta"><span class="you">YOU</span> · 11:42</div>
+                <div class="prose">
+                  Replace the legacy <code>verifyToken()</code> calls in <code>src/auth/middleware.ts</code>
+                  with the new <code>AuthGuard</code> class — keep the public signature compatible.
+                </div>
+              </div>
+
+              <div class="turn">
+                <div class="turn-meta">CLAUDE · 11:42</div>
+                <div class="prose">
+                  I'll refactor the middleware to delegate to <code>AuthGuard</code> while
+                  preserving the existing exports. Reading the file first.
+                </div>
+                <div class="tool-card">
+                  <div class="tool-head">
+                    <span class="glyph">▤</span>
+                    <span>Read</span>
+                    <span style="color: var(--text-3); margin-left: auto;">src/auth/middleware.ts · 142 lines</span>
+                  </div>
+                  <div class="tool-body">
+                    1  import &lbrace; verifyToken &rbrace; from "./jwt";<br>
+                    2  import &lbrace; UnauthorizedError &rbrace; from "../errors";<br>
+                    3<br>
+                    4  export async function authMiddleware(req, res, next) &lbrace;
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="composer">
+              <div class="stub">type a message…</div>
+            </div>
+          </main>
+
+          <!-- ── THE NEW THING ── -->
+          <aside class="workbench">
+            <div class="wb-head">
+              <div class="wb-title">
+                <span class="session-pill"><span class="ledge"></span>auth-refactor</span>
+                <span class="scope">workbench</span>
+              </div>
+              <div class="wb-tabs">
+                <div class="wb-tab active">Files <span class="count">86</span></div>
+                <div class="wb-tab">Search</div>
+                <div class="wb-tab">Refs</div>
+              </div>
+            </div>
+
+            <div class="wb-files">
+              <div class="wb-breadcrumb">
+                <span class="seg">~</span><span class="sep">/</span>
+                <span class="seg">work</span><span class="sep">/</span>
+                <span class="seg">h-ide</span>
+              </div>
+
+              <div class="tree-section-head">project · <span class="branch">refactor/auth-guard</span></div>
+              <div class="tree">
+                <div class="tree-row"><span class="twist">▾</span><span class="ico dir">▣</span><span class="name">src</span></div>
+                <div class="tree-row depth-1"><span class="twist">▾</span><span class="ico dir">▣</span><span class="name">auth</span></div>
+                <div class="tree-row depth-2 active"><span class="twist"></span><span class="ico ts">TS</span><span class="name">middleware.ts</span><span class="git-mark m">M</span></div>
+                <div class="tree-row depth-2"><span class="twist"></span><span class="ico ts">TS</span><span class="name">guard.ts</span><span class="git-mark a">A</span></div>
+                <div class="tree-row depth-2"><span class="twist"></span><span class="ico ts">TS</span><span class="name">jwt.ts</span></div>
+                <div class="tree-row depth-2"><span class="twist"></span><span class="ico ts">TS</span><span class="name">errors.ts</span></div>
+                <div class="tree-row depth-1"><span class="twist">▸</span><span class="ico dir">▣</span><span class="name">components</span></div>
+                <div class="tree-row depth-1"><span class="twist">▸</span><span class="ico dir">▣</span><span class="name">state</span></div>
+                <div class="tree-row depth-1"><span class="twist">▾</span><span class="ico dir">▣</span><span class="name">styles</span></div>
+                <div class="tree-row depth-2"><span class="twist"></span><span class="ico css">CS</span><span class="name">tokens.css</span></div>
+                <div class="tree-row"><span class="twist">▸</span><span class="ico dir">▣</span><span class="name">src-tauri</span></div>
+                <div class="tree-row"><span class="twist">▸</span><span class="ico dir">▣</span><span class="name">docs</span></div>
+                <div class="tree-row"><span class="twist"></span><span class="ico md">MD</span><span class="name">README.md</span></div>
+                <div class="tree-row"><span class="twist"></span><span class="ico json">{}</span><span class="name">package.json</span><span class="git-mark m">M</span></div>
+              </div>
+            </div>
+
+            <div class="wb-split"></div>
+
+            <div class="wb-notes">
+              <div class="wb-notes-head">
+                <h4>Notes</h4>
+                <span class="stamp">SESSION-LOCAL</span>
+                <span class="saved">SAVED · 11:43</span>
+              </div>
+              <div class="wb-notes-body">
+                <div class="h">Plan</div>
+                <div><span class="checkmark">✓</span> read middleware.ts</div>
+                <div><span class="checkmark">✓</span> draft <code>AuthGuard</code> shim</div>
+                <div>○ keep <code>verifyToken</code> export as deprecated alias</div>
+                <div>○ add unit test for the deprecation log</div>
+                <div class="strike">drop the legacy import path</div>
+              </div>
+              <div class="wb-notes-foot">
+                <span><span class="key">⌘</span><span class="key">↩</span> save</span>
+                <span><span class="key">⌘</span><span class="key">/</span> toggle</span>
+              </div>
+            </div>
+          </aside>
+
+          <!-- right activity bar -->
+          <aside class="activity-bar right">
+            <div class="ab-btn active" title="Workbench"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5 C 2 3.9 2.9 3 4 3 H 7 L 9 5 H 14 C 15.1 5 16 5.9 16 7 V 13 C 16 14.1 15.1 15 14 15 H 4 C 2.9 15 2 14.1 2 13 Z"/><line x1="2" y1="9" x2="16" y2="9" opacity="0.5"/></svg></div>
+            <div class="ab-btn" title="Context"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="7"/><line x1="9" y1="5" x2="9" y2="9.5"/></svg></div>
+            <div class="ab-btn" title="Usage"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 14.5 L2.5 9.5 L5.5 9.5 L5.5 14.5 Z"/><path d="M7.5 14.5 L7.5 6.5 L10.5 6.5 L10.5 14.5 Z"/><path d="M12.5 14.5 L12.5 3.5 L15.5 3.5 L15.5 14.5 Z"/></svg></div>
+          </aside>
+        </div>
+
+        <!-- statusbar -->
+        <div class="statusbar">
+          <span class="br">⎇ refactor/auth-guard</span>
+          <span>2 modified · 1 added</span>
+          <span class="rt">workbench · ⌥⌘B to toggle</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── VARIANTS ────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-num">02</span>
+        <h2 class="section-name">Three layout variants to choose between</h2>
+        <span class="section-sub">pick one before implementation</span>
+      </div>
+
+      <div class="variants">
+        <!-- Variant A -->
+        <div class="variant">
+          <div class="variant-head">
+            <h4><span class="num">A</span>Stacked split</h4>
+            <p>Files (top, ~70%) and Notes (bottom, ~30%). Resizable. Notes always visible.</p>
+          </div>
+          <div class="variant-body">
+            <div class="va-rail">
+              <div class="va-tabs">
+                <span class="va-tab on">Files</span>
+                <span class="va-tab">Search</span>
+                <span class="va-tab">Refs</span>
+              </div>
+              <div class="va-files">
+                <div class="dir">▾ src</div>
+                <div style="padding-left: 16px;" class="dir">▾ auth</div>
+                <div style="padding-left: 32px; color: var(--brass-bright);">middleware.ts</div>
+                <div style="padding-left: 32px;">guard.ts</div>
+                <div style="padding-left: 32px;">jwt.ts</div>
+                <div style="padding-left: 16px;" class="dir">▸ components</div>
+                <div style="padding-left: 16px;" class="dir">▸ state</div>
+                <div class="dir">▸ docs</div>
+              </div>
+              <div class="va-split"></div>
+              <div class="va-notes">
+                <div style="color: var(--brass-bright); font-style: italic;">Plan</div>
+                <div>✓ read middleware.ts</div>
+                <div>○ draft AuthGuard shim</div>
+                <div>○ deprecate verifyToken</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant B -->
+        <div class="variant">
+          <div class="variant-head">
+            <h4><span class="num">B</span>Tabbed</h4>
+            <p>Files / Notes / Refs as full-height tabs. One thing at a time. Cleanest, but notes are out of sight by default.</p>
+          </div>
+          <div class="variant-body">
+            <div class="vb-rail">
+              <div class="vb-tabs">
+                <span class="vb-tab on">Files</span>
+                <span class="vb-tab">Notes</span>
+                <span class="vb-tab">Refs</span>
+              </div>
+              <div class="vb-body">
+                <div class="dir">▾ src</div>
+                <div style="padding-left: 14px;" class="dir">▾ auth</div>
+                <div style="padding-left: 28px; color: var(--brass-bright);">middleware.ts</div>
+                <div style="padding-left: 28px;">guard.ts</div>
+                <div style="padding-left: 28px;">jwt.ts</div>
+                <div style="padding-left: 14px;" class="dir">▸ components</div>
+                <div style="padding-left: 14px;" class="dir">▸ state</div>
+                <div class="dir">▸ docs</div>
+                <div>README.md</div>
+                <div style="color: var(--text-3); margin-top: 4px;">— 86 files</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Variant C -->
+        <div class="variant">
+          <div class="variant-head">
+            <h4><span class="num">C</span>Files + notes drawer</h4>
+            <p>Files take the full panel; Notes lives in a collapsible drawer at the bottom. Good if Notes turns out to be used rarely.</p>
+          </div>
+          <div class="variant-body">
+            <div class="vc-rail">
+              <div class="vc-head">Files · auth-refactor</div>
+              <div class="vc-files">
+                <div class="dir">▾ src</div>
+                <div style="padding-left: 14px;" class="dir">▾ auth</div>
+                <div style="padding-left: 28px; color: var(--brass-bright);">middleware.ts</div>
+                <div style="padding-left: 28px;">guard.ts</div>
+                <div style="padding-left: 28px;">jwt.ts</div>
+                <div style="padding-left: 14px;" class="dir">▸ components</div>
+                <div style="padding-left: 14px;" class="dir">▸ state</div>
+                <div class="dir">▸ docs</div>
+                <div>README.md</div>
+              </div>
+              <div class="vc-drawer">
+                <span class="pin">▴</span>
+                <span class="lbl">NOTES</span>
+                <span class="count">12 lines</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="recommendation">
+        <strong>Recommended:</strong> Variant A (stacked split). Notes are most useful when they're <em>visible</em> — a tucked-away tab gets forgotten. The split is resizable, so power users can collapse Notes to a sliver when they don't want it. Variant B is the fallback if usability testing shows the file tree feels cramped.
+      </div>
+    </div>
+
+    <!-- ── STATES ──────────────────────────────────────────── -->
+    <div class="section">
+      <div class="section-label">
+        <span class="section-num">03</span>
+        <h2 class="section-name">Edge states that need a designed answer</h2>
+        <span class="section-sub">empty · loading · no-project</span>
+      </div>
+
+      <div class="states">
+        <div class="state">
+          <div class="state-head"><span class="tag">EMPTY · NOTES</span><h5>Nothing written yet</h5></div>
+          <div class="state-body">
+            <div class="glyph">✎</div>
+            <div class="msg">No notes for this session.</div>
+            <div class="hint">Start typing — saved per session, persists across restarts.</div>
+          </div>
+        </div>
+
+        <div class="state">
+          <div class="state-head"><span class="tag">EMPTY · FILES</span><h5>Session has no project</h5></div>
+          <div class="state-body">
+            <div class="glyph">▣</div>
+            <div class="msg">No working directory attached.</div>
+            <div class="hint"><span class="key">⌘</span><span class="key">,</span> attach a folder, or drag one in</div>
+          </div>
+        </div>
+
+        <div class="state">
+          <div class="state-head"><span class="tag">MULTI-PROJECT</span><h5>Two project roots</h5></div>
+          <div class="state-body">
+            <div class="glyph">⇄</div>
+            <div class="msg">Showing both attached projects.</div>
+            <div class="hint">section per project · branch shown next to each header</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <strong>HERMES IDE</strong> · right-rail workbench mockup · v0.1 · open this file in a browser to review
+    </footer>
+  </div>
+</body>
+</html>

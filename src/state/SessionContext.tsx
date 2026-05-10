@@ -48,6 +48,15 @@ import type {
   SavedWorkspace, SavedSessionInfo, SessionMode,
 } from "../types/session";
 import { SAVED_WORKSPACE_VERSION, validateSavedWorkspace } from "../types/session";
+import {
+  clampWorkbenchRatio,
+  clampFilesNotesSplit,
+  clampNoteContent,
+  loadWorkbenchLayout,
+  serializeWorkbenchLayout,
+  loadNotesMap,
+  serializeNotesMap,
+} from "../utils/workbenchLayout";
 import { spawnAgentSession, closeAgentSession, sendAgentInput, updateHermesState, setAgentPermissionMode } from "../api/agent";
 import { reportAgentSpawnFailure } from "../utils/agentSpawnFailure";
 import { destroyAgentSessionStore } from "../agent/agentSessionStore";
@@ -134,6 +143,8 @@ interface SessionState {
   autoApplyEnabled: boolean;
   injectionLocks: Record<string, boolean>;
   composers: Record<string, { draft: string; height: number; expanded: boolean }>;
+  /** Per-session free-form notes (1.1.14, agent-mode workbench). */
+  notes: Record<string, string>;
   layout: {
     root: LayoutNode | null;
     focusedPaneId: string | null;
@@ -156,6 +167,15 @@ interface SessionState {
     composerOpen: boolean;
     activeLeftTab: "sessions" | "terminal" | "processes" | "git" | "files" | "search";
     filePreview: { projectId: string; filePath: string } | null;
+    /** Right-rail Workbench layout — open/tab/ratio/files-notes split.
+     *  Agent-mode sessions only; ignored otherwise.  Defaults come from
+     *  `DEFAULT_PERSISTED_WORKBENCH` in `utils/workbenchLayout.ts`. */
+    workbench: {
+      open: boolean;
+      tab: "files" | "context";
+      ratio: number;
+      filesNotesSplit: number;
+    };
   };
 }
 
@@ -268,6 +288,12 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       const { [action.id]: _mode, ...restModes } = state.executionModes;
       const { [action.id]: _lock, ...restLocks } = state.injectionLocks;
       const { [action.id]: _composer, ...restComposers } = state.composers;
+      // Drop the closed session's notes — keeps saved_workspace.json
+      // from accumulating dead session-id keys when sessions are removed
+      // (cf. workbenchLayout.serializeNotesMap which also drops empty
+      // strings, but that path only fires when the user clears a note;
+      // SESSION_REMOVED is the canonical "this id no longer exists").
+      const { [action.id]: _note, ...restNotes } = state.notes;
       // Clear autoToast if it references the removed session
       const newAutoToast = state.ui.autoToast?.sessionId === action.id
         ? null
@@ -285,6 +311,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         executionModes: restModes,
         injectionLocks: restLocks,
         composers: restComposers,
+        notes: restNotes,
         pendingCloseSessionId: newPendingClose,
         layout: { root: newRoot, focusedPaneId: newFocused },
         ui: {
@@ -726,6 +753,92 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         layout: { root: action.root as LayoutNode | null, focusedPaneId: action.focusedPaneId },
       };
 
+    // ─── Right-rail Workbench (1.1.14, agent-mode only) ──────────────
+    case "TOGGLE_WORKBENCH": {
+      workspaceDirty = true;
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          workbench: { ...state.ui.workbench, open: !state.ui.workbench.open },
+        },
+      };
+    }
+    case "SET_WORKBENCH_OPEN": {
+      if (state.ui.workbench.open === action.open) return state;
+      workspaceDirty = true;
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          workbench: { ...state.ui.workbench, open: action.open },
+        },
+      };
+    }
+    case "SET_WORKBENCH_TAB": {
+      if (state.ui.workbench.tab === action.tab) return state;
+      workspaceDirty = true;
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          workbench: { ...state.ui.workbench, tab: action.tab },
+        },
+      };
+    }
+    case "SET_WORKBENCH_RATIO": {
+      const ratio = clampWorkbenchRatio(action.ratio);
+      if (state.ui.workbench.ratio === ratio) return state;
+      workspaceDirty = true;
+      return {
+        ...state,
+        ui: { ...state.ui, workbench: { ...state.ui.workbench, ratio } },
+      };
+    }
+    case "SET_WORKBENCH_FILES_NOTES_SPLIT": {
+      const r = clampFilesNotesSplit(action.ratio);
+      if (state.ui.workbench.filesNotesSplit === r) return state;
+      workspaceDirty = true;
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          workbench: { ...state.ui.workbench, filesNotesSplit: r },
+        },
+      };
+    }
+    case "SET_SESSION_NOTE": {
+      const content = clampNoteContent(action.content);
+      // Reference-equal short-circuit: typing the same value twice in
+      // a row (e.g., a debounced flush after no-op input) shouldn't
+      // mark the workspace dirty or trigger downstream re-renders.
+      if (state.notes[action.sessionId] === content) return state;
+      workspaceDirty = true;
+      return {
+        ...state,
+        notes: { ...state.notes, [action.sessionId]: content },
+      };
+    }
+    case "RESTORE_WORKBENCH": {
+      // Replaces the whole workbench slice + notes map.  Used once at
+      // workspace restore.  We do NOT set workspaceDirty here — the
+      // restore is itself loading from disk, and dirtying immediately
+      // would re-write the file with logically-identical content.
+      return {
+        ...state,
+        notes: { ...action.notes },
+        ui: {
+          ...state.ui,
+          workbench: {
+            open: action.layout.open,
+            tab: action.layout.tab,
+            ratio: clampWorkbenchRatio(action.layout.ratio),
+            filesNotesSplit: clampFilesNotesSplit(action.layout.filesNotesSplit),
+          },
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -745,6 +858,7 @@ export const initialState: SessionState = {
   autoApplyEnabled: true,
   injectionLocks: {},
   composers: {},
+  notes: {},
   pendingCloseSessionId: null,
   skipCloseConfirm: false,
   layout: {
@@ -771,6 +885,15 @@ export const initialState: SessionState = {
     composerOpen: false,
     activeLeftTab: "terminal" as const,
     filePreview: null,
+    // Right-rail Workbench (agent-mode only) — defaults to OPEN per
+    // user spec, 50/50 chat/workbench, Files tab active, files take 70%
+    // of the vertical space.  Persisted in saved_workspace.json.
+    workbench: {
+      open: true,
+      tab: "files" as const,
+      ratio: 0.5,
+      filesNotesSplit: 0.7,
+    },
   },
 };
 
@@ -1319,6 +1442,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
           if (oldToNew.size === 0) return;
 
+          // Restore the right-rail Workbench layout + per-session notes
+          // (1.1.14).  Notes are remapped through the same old→new id
+          // map as everything else so a session restored under a fresh
+          // uuid still sees its scratchpad.  Older saves (no
+          // `workbench` / `notes` fields) fall through to defaults.
+          {
+            const layout = loadWorkbenchLayout(workspace.workbench);
+            const rawNotes = loadNotesMap(workspace.notes);
+            const remappedNotes: Record<string, string> = {};
+            for (const [oldId, content] of Object.entries(rawNotes)) {
+              const newId = oldToNew.get(oldId);
+              if (newId) remappedNotes[newId] = content;
+            }
+            dispatch({
+              type: "RESTORE_WORKBENCH",
+              layout,
+              notes: remappedNotes,
+            });
+          }
+
           // Rebuild the layout with remapped session IDs
           if (workspace.layout) {
             const remappedLayout = remapLayoutSessionIds(workspace.layout as LayoutNode, oldToNew);
@@ -1728,6 +1871,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         layout: current.layout.root,
         focused_pane_id: current.layout.focusedPaneId,
         active_session_id: current.activeSessionId,
+        // Right-rail Workbench layout (1.1.14) — persisted as a small
+        // sub-object so older readers that don't recognise it pass it
+        // through untouched.  serializeWorkbenchLayout clamps the
+        // numeric fields, so a hand-edited workspace can't load us into
+        // a wedged state.
+        workbench: serializeWorkbenchLayout(current.ui.workbench),
+        // Per-session notes (1.1.14) — empty strings dropped so the
+        // file doesn't accumulate dead session-id keys.
+        notes: serializeNotesMap(current.notes),
       };
 
       await setSetting("saved_workspace", JSON.stringify(workspace));

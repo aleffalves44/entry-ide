@@ -226,6 +226,14 @@ export const SessionsIcon = (
   </svg>
 );
 
+export const WorkbenchIcon = (
+  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    {/* Folder + horizontal divider — evokes "files + notes drawer" */}
+    <path d="M2 5 C 2 3.9 2.9 3 4 3 H 7 L 9 5 H 14 C 15.1 5 16 5.9 16 7 V 13 C 16 14.1 15.1 15 14 15 H 4 C 2.9 15 2 14.1 2 13 Z" />
+    <line x1="2" y1="11" x2="16" y2="11" opacity="0.5" />
+  </svg>
+);
+
 export const ContextIcon = (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <circle cx="9" cy="9" r="7" />
