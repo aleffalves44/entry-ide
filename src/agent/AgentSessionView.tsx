@@ -11,6 +11,7 @@ import {
   isTextBlock,
   isThinkingBlock,
   isToolUseBlock,
+  isImageBlock,
 } from "./types";
 import { softInterruptAgent } from "../api/agent";
 import { useSession } from "../state/SessionContext";
@@ -21,6 +22,7 @@ import { TextBlock } from "./blocks/TextBlock";
 import { ThinkingBlock } from "./blocks/ThinkingBlock";
 import { ThinkingIndicator } from "./blocks/ThinkingIndicator";
 import { ToolUseBlock } from "./blocks/ToolUseBlock";
+import { ImageBlock } from "./blocks/ImageBlock";
 import { ResultFooter } from "./blocks/ResultFooter";
 import { AskUserQuestionCard } from "../components/AskUserQuestionCard";
 import { ExitPlanModeCard } from "../components/ExitPlanModeCard";
@@ -88,11 +90,34 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
   const { snapshot, store } = useAgentSessionSnapshot(sessionId);
   const { state, stderr, exit: exitInfo } = snapshot;
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  // Sticky-bottom flag: true when the user is already at (or very close
+  // to) the bottom.  We only auto-scroll on new content while sticky;
+  // if the user has scrolled up to read past output, leave them alone.
+  const stickyBottomRef = useRef(true);
 
-  // Auto-scroll on new messages.
+  // Track whether the user is at the bottom.  Updated on every scroll
+  // event with a small tolerance — momentum scroll, sub-pixel rounding,
+  // and cross-platform scrollbar sizes can leave a few pixels of error
+  // even when the user is "at the bottom", so 24px is a safe margin.
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
+    const STICKY_THRESHOLD = 24;
+    const onScroll = () => {
+      const distance = el.scrollHeight - el.scrollTop - el.clientHeight;
+      stickyBottomRef.current = distance <= STICKY_THRESHOLD;
+    };
+    el.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => el.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Auto-scroll on new messages — but only when the user is at the bottom.
+  // If they've scrolled up to re-read history, never yank them back.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (!stickyBottomRef.current) return;
     el.scrollTop = el.scrollHeight;
   }, [state.messages, state.resultEvent, exitInfo]);
 
@@ -890,6 +915,9 @@ function BlockRenderer({
         result={toolResults.get(block.id)}
       />
     );
+  }
+  if (isImageBlock(block)) {
+    return <ImageBlock block={block} />;
   }
   // tool_result blocks normally don't reach here (the store routes them into
   // `toolResults` instead). If one appears in a user message alongside text,

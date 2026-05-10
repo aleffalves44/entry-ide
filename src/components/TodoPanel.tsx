@@ -2,8 +2,14 @@
  * TodoPanel — sticky checklist pinned to the bottom of the conversation
  * column.  Visual: §8.6.
  *
- * Driven by the latest TodoWrite tool_use; renders nothing when the
- * todos list is empty (visibility = list-driven, not toggle-driven).
+ * Driven by the latest TodoWrite tool_use.  Hides itself when:
+ *   - the todos list is empty, OR
+ *   - every item in the list is `completed` (the work is done — pinning
+ *     a fully-checked list at the bottom forever is just clutter; the
+ *     conversation history above already records what was finished).
+ *
+ * Visibility is list-driven, not toggle-driven, so the panel reappears
+ * automatically the moment Claude calls TodoWrite again.
  */
 import "../styles/components/TodoPanel.css";
 import { useState } from "react";
@@ -25,6 +31,10 @@ export function TodoPanel({ todos }: Props) {
   if (todos.length === 0) return null;
 
   const { done, total } = todoCounts(todos);
+  // Auto-dismiss: a fully-completed list is past the user's "what's
+  // happening now" view.  Hide rather than keep it pinned to the bottom.
+  if (total > 0 && done === total) return null;
+
   const inProgress = todos.find((t) => t.status === "in_progress");
 
   return (

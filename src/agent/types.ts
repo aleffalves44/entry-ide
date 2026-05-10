@@ -251,3 +251,7 @@ export function isToolUseBlock(b: ContentBlock): b is ToolUseBlockData {
 export function isToolResultBlock(b: ContentBlock): b is ToolResultBlockData {
   return b.type === "tool_result";
 }
+
+export function isImageBlock(b: ContentBlock): b is ImageBlockData {
+  return b.type === "image";
+}

@@ -24,7 +24,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 48px 40px;
+  /* Top padding bumped to clear the macOS Overlay title bar — Tauri's
+   * `titleBarStyle: "Overlay"` (see src-tauri/tauri.conf.json) draws the
+   * native title strip on top of the webview, so any content rendered
+   * at y=0 gets clipped by the traffic-light strip.  72px is enough for
+   * the standard macOS title bar plus a touch of breathing room. */
+  padding: 72px 40px 48px;
   background:
     radial-gradient(
       ellipse 100% 70% at 30% -10%,
@@ -153,13 +158,26 @@
   margin: 0;
   font-family: "Newsreader", "Lyon Text", "Charter", Georgia, serif;
   font-weight: 500;
-  font-size: clamp(72px, 10vw, 124px);
-  line-height: 0.95;
+  /* Scale aggressively on narrow viewports so "Hermes IDE" never gets
+   * clipped against the frame.  The lower bound used to be 72px which
+   * was too large for compact windows — letter ascenders ran past the
+   * frame and a serif tail clipped at the top edge. */
+  font-size: clamp(40px, 8vw, 124px);
+  /* Slightly looser line-height so the serif ascenders aren't sliced by
+   * any ancestor `overflow: hidden`. */
+  line-height: 1.05;
   letter-spacing: -0.03em;
   color: var(--ink-primary, var(--text-0));
   display: flex;
+  /* Allow the title to wrap when the wordmark is wider than the frame
+   * — "Hermes" on one line, "IDE" on the next is preferable to a clipped
+   * H. */
+  flex-wrap: wrap;
   align-items: baseline;
   gap: 0;
+  /* Tiny breathing-room so the descender of the period doesn't sit on
+   * the rule below it. */
+  padding-bottom: 4px;
 }
 
 .es-title-char {
@@ -168,6 +186,19 @@
   transform: translateY(40px) rotate(-3deg);
   filter: blur(8px);
   animation: es-title-char-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* The space between "Hermes" and "IDE" — render as a normal-width gap
+ * (the inline-block on .es-title-char would otherwise collapse it).  */
+.es-title-char-space {
+  width: 0.32em;
+  white-space: pre;
+  /* The space doesn't need the entrance animation; skip the heavy
+   * filter to avoid a blurry rectangle. */
+  animation: none;
+  opacity: 1;
+  transform: none;
+  filter: none;
 }
 
 .es-title-period {

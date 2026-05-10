@@ -14,6 +14,12 @@
 .whatsnew-backdrop {
   position: fixed;
   inset: 0;
+  /* Top padding clears the macOS Overlay title bar (Tauri's
+   * `titleBarStyle: "Overlay"` makes the native title strip render on
+   * top of the webview, so a centered dialog can have its top sliced
+   * by the traffic-light strip).  44px = title-bar height + breathing. */
+  padding: 44px 24px 24px;
+  box-sizing: border-box;
   background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;

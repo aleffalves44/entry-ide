@@ -31,6 +31,7 @@ import { describe, it, expect, vi } from "vitest";
 import {
   normalizeBridgeAllowDecision,
   createCanUseToolHandler,
+  ruleMatches,
 } from "../../src-tauri/bridge/canUseToolHelpers.mjs";
 
 describe("normalizeBridgeAllowDecision (REGRESSION: SDK ZodError on allow without updatedInput)", () => {
@@ -252,5 +253,201 @@ describe("createCanUseToolHandler — abort signal (REGRESSION: SDK abort hang)"
     permPending.get("perm-1")!.resolve({ behavior: "allow" });
     await promise;
     expect(addSpy).toHaveBeenCalledWith("abort", expect.any(Function), { once: true });
+  });
+});
+
+// ─── ruleMatches — pattern matcher for the in-memory allowlist ─────
+
+describe("ruleMatches", () => {
+  it("returns false on empty / non-string input", () => {
+    expect(ruleMatches("", "Bash", { command: "ls" })).toBe(false);
+    expect(ruleMatches(undefined, "Bash", { command: "ls" })).toBe(false);
+    expect(ruleMatches(null, "Bash", { command: "ls" })).toBe(false);
+  });
+
+  it("returns false when the tool name doesn't match", () => {
+    expect(ruleMatches("Bash(ls:*)", "Read", { command: "ls" })).toBe(false);
+  });
+
+  it("a tool-only rule matches any invocation of unscoped tools", () => {
+    // SomeTool not in the scope-required set → bare rule grants any input.
+    expect(ruleMatches("WebFetch", "WebFetch", { url: "https://x" })).toBe(true);
+    // Bare rule for the destructive trio is REFUSED — defense-in-depth.
+    // The host UI never emits these (it always scopes), but a malformed
+    // disk-loaded rule must never silently widen the grant surface.
+    expect(ruleMatches("Bash", "Bash", { command: "anything" })).toBe(false);
+    expect(ruleMatches("Read", "Read", { file_path: "/etc/hosts" })).toBe(false);
+    expect(ruleMatches("Edit", "Edit", { file_path: "/etc/hosts" })).toBe(false);
+    expect(ruleMatches("Write", "Write", { file_path: "/etc/hosts" })).toBe(false);
+    expect(ruleMatches("Bash", "Read", { file_path: "x" })).toBe(false);
+  });
+
+  it("Bash rules with `<command>:*` prefix-match the command on word boundary", () => {
+    expect(ruleMatches("Bash(git status:*)", "Bash", { command: "git status" })).toBe(true);
+    expect(ruleMatches("Bash(git status:*)", "Bash", { command: "git status --short" })).toBe(true);
+    expect(ruleMatches("Bash(git status:*)", "Bash", { command: "git diff" })).toBe(false);
+    // Word-boundary regression: "ls" must NOT match "lsof".
+    expect(ruleMatches("Bash(ls:*)", "Bash", { command: "ls" })).toBe(true);
+    expect(ruleMatches("Bash(ls:*)", "Bash", { command: "ls -la" })).toBe(true);
+    expect(ruleMatches("Bash(ls:*)", "Bash", { command: "lsof -i" })).toBe(false);
+  });
+
+  it("Bash rules WITHOUT `:*` require exact command match", () => {
+    expect(ruleMatches("Bash(git status)", "Bash", { command: "git status" })).toBe(true);
+    expect(ruleMatches("Bash(git status)", "Bash", { command: "git status --short" })).toBe(false);
+  });
+
+  it("rejects an empty-prefix wildcard (would otherwise allow ANY bash command)", () => {
+    expect(ruleMatches("Bash(:*)", "Bash", { command: "rm -rf /" })).toBe(false);
+  });
+
+  it("Read/Edit/Write rules require an exact file_path match", () => {
+    expect(ruleMatches("Read(/etc/hosts)", "Read", { file_path: "/etc/hosts" })).toBe(true);
+    expect(ruleMatches("Read(/etc/hosts)", "Read", { file_path: "/etc/hosts.bak" })).toBe(false);
+    expect(ruleMatches("Edit(/a.ts)", "Edit", { file_path: "/a.ts" })).toBe(true);
+    expect(ruleMatches("Write(/a.ts)", "Write", { file_path: "/a.ts" })).toBe(true);
+  });
+
+  it("rules with mismatched tool kind are not granted (Bash rule on Read tool)", () => {
+    expect(ruleMatches("Bash(ls:*)", "Read", { command: "ls" })).toBe(false);
+  });
+
+  it("malformed rules fail closed (do not silently grant)", () => {
+    expect(ruleMatches("(no-tool)", "Bash", { command: "ls" })).toBe(false);
+    expect(ruleMatches("Bash(", "Bash", { command: "ls" })).toBe(false);
+  });
+});
+
+// ─── createCanUseToolHandler — bypass + allowlist short-circuits ───
+
+describe("createCanUseToolHandler — bypassPermissions", () => {
+  it("auto-allows without writing to stdout or registering pending", async () => {
+    const writes: string[] = [];
+    const stdout = { write: (chunk: string) => writes.push(chunk) };
+    const permPending: PermPending = new Map();
+    const handler = createCanUseToolHandler({
+      stdout,
+      permPending,
+      idGen: () => "should-not-be-called",
+      permissionMode: "bypassPermissions",
+    });
+    const result = await handler("Bash", { command: "rm -rf /" });
+    expect(result).toEqual({ behavior: "allow", updatedInput: { command: "rm -rf /" } });
+    expect(writes).toHaveLength(0);
+    expect(permPending.size).toBe(0);
+  });
+
+  it("default mode still round-trips through the host", async () => {
+    const writes: string[] = [];
+    const stdout = { write: (chunk: string) => writes.push(chunk) };
+    const permPending: PermPending = new Map();
+    let nextId = 0;
+    const handler = createCanUseToolHandler({
+      stdout,
+      permPending,
+      idGen: () => `perm-${++nextId}`,
+      permissionMode: "default",
+    });
+    const promise = handler("Bash", { command: "ls" });
+    expect(writes).toHaveLength(1);
+    permPending.get("perm-1")!.resolve({ behavior: "allow" });
+    await promise;
+  });
+});
+
+describe("createCanUseToolHandler — session allowlist", () => {
+  function makeAllowListHarness(initialRules: string[] = []) {
+    const writes: string[] = [];
+    const stdout = { write: (chunk: string) => writes.push(chunk) };
+    const permPending: PermPending = new Map();
+    let nextId = 0;
+    const sessionAllowList = new Set<string>(initialRules);
+    const handler = createCanUseToolHandler({
+      stdout,
+      permPending,
+      idGen: () => `perm-${++nextId}`,
+      sessionAllowList,
+    });
+    return { writes, permPending, handler, sessionAllowList };
+  }
+
+  it("auto-allows when an existing rule matches — no host round-trip", async () => {
+    const { writes, handler, permPending } = makeAllowListHarness(["Bash(git status:*)"]);
+    const result = await handler("Bash", { command: "git status --short" });
+    expect(result).toEqual({ behavior: "allow", updatedInput: { command: "git status --short" } });
+    expect(writes).toHaveLength(0);
+    expect(permPending.size).toBe(0);
+  });
+
+  it("forwards to host when no rule matches", async () => {
+    const { writes, permPending, handler } = makeAllowListHarness(["Bash(git status:*)"]);
+    const promise = handler("Bash", { command: "rm -rf /" });
+    expect(writes).toHaveLength(1);
+    permPending.get("perm-1")!.resolve({ behavior: "deny", message: "no" });
+    const result = await promise;
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("caches the host's persist rule for subsequent matching calls", async () => {
+    const { writes, permPending, handler, sessionAllowList } = makeAllowListHarness();
+    // First call: host approves with a persist rule.
+    const p1 = handler("Bash", { command: "ls -la" });
+    permPending.get("perm-1")!.resolve({
+      behavior: "allow",
+      persist: "Bash(ls:*)",
+    });
+    await p1;
+    expect(sessionAllowList.has("Bash(ls:*)")).toBe(true);
+    // Second call: matches the cached rule → no new request to host.
+    const writesBefore = writes.length;
+    const p2 = handler("Bash", { command: "ls /tmp" });
+    expect(writes.length).toBe(writesBefore); // no new envelope
+    expect(await p2).toEqual({
+      behavior: "allow",
+      updatedInput: { command: "ls /tmp" },
+    });
+  });
+
+  it("does not cache rules from deny decisions", async () => {
+    const { permPending, handler, sessionAllowList } = makeAllowListHarness();
+    const p1 = handler("Bash", { command: "rm -rf /" });
+    // A "persist" alongside a deny should be ignored — denies don't grant access.
+    permPending.get("perm-1")!.resolve({
+      behavior: "deny",
+      message: "no",
+      persist: "Bash(rm:*)",
+    });
+    await p1;
+    expect(sessionAllowList.size).toBe(0);
+  });
+
+  it("ignores non-string persist values", async () => {
+    const { permPending, handler, sessionAllowList } = makeAllowListHarness();
+    const p1 = handler("Bash", { command: "ls" });
+    permPending.get("perm-1")!.resolve({
+      behavior: "allow",
+      persist: 42,
+    });
+    await p1;
+    expect(sessionAllowList.size).toBe(0);
+  });
+
+  it("bypass takes precedence over allowlist (still no round-trip)", async () => {
+    const writes: string[] = [];
+    const stdout = { write: (chunk: string) => writes.push(chunk) };
+    const permPending: PermPending = new Map();
+    const sessionAllowList = new Set<string>();
+    const handler = createCanUseToolHandler({
+      stdout,
+      permPending,
+      idGen: () => "x",
+      permissionMode: "bypassPermissions",
+      sessionAllowList,
+    });
+    const result = await handler("Bash", { command: "anything" });
+    expect(result.behavior).toBe("allow");
+    expect(writes).toHaveLength(0);
+    // Bypass shouldn't pollute the allowlist.
+    expect(sessionAllowList.size).toBe(0);
   });
 });

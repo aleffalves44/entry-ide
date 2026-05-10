@@ -8,6 +8,7 @@ import { writeToSession } from "../api/sessions";
 import { save, open } from "@tauri-apps/plugin-dialog";
 import { createBundle, validateBundle, importBundle } from "../lib/promptBundle";
 import { dismissSuggestions, clearGhostText, getInputBufferLength, clearInputBuffer } from "../terminal/TerminalPool";
+import { useSession, useComposer } from "../state/SessionContext";
 import {
   ComposerFields,
   EMPTY_FIELDS,
@@ -75,6 +76,13 @@ function migrateTemplate(tpl: Record<string, unknown>): PromptTemplate {
 }
 
 export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerProps) {
+  // Session mode awareness — agent-mode sessions don't have a PTY, so the
+  // Builder needs to drop its compiled prompt into the chat composer's
+  // draft instead of writing bracketed-paste bytes to a terminal.
+  const { state, dispatch } = useSession();
+  const session = state.sessions[sessionId];
+  const isAgentMode = session?.mode === "agent";
+  const composer = useComposer(sessionId);
   const [fields, setFields] = useState<ComposerFields>({ ...EMPTY_FIELDS });
   const [userTemplates, setUserTemplates] = useState<PromptTemplate[]>([]);
   const [customRoles, setCustomRoles] = useState<RoleDefinition[]>([]);
@@ -249,6 +257,22 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
 
   const sendPrompt = useCallback(async () => {
     if (!compiled.trim()) return;
+
+    // Agent-mode sessions don't have a PTY — the chat surface uses a
+    // structured composer that writes JSON `user` events to the bridge's
+    // stdin.  Append the compiled prompt to the composer draft so the
+    // user can review (and add free-form text) before pressing Send.
+    // We append rather than replace so any existing draft isn't lost.
+    if (isAgentMode) {
+      const existing = composer.draft;
+      const sep = existing.length > 0 && !existing.endsWith("\n") ? "\n\n" : "";
+      const newDraft = existing + sep + compiled;
+      dispatch({ type: "SET_COMPOSER_DRAFT", sessionId, draft: newDraft });
+      onClose();
+      return;
+    }
+
+    // Terminal-mode legacy path: PTY bracketed-paste write.
     // Clear any active terminal intelligence state so it doesn't interfere
     // with the submitted prompt (e.g. ghost text or suggestion overlay executing on focus)
     dismissSuggestions(sessionId);
@@ -274,7 +298,7 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
       console.error("[PromptComposer] Failed to send prompt:", err);
       // Don't close — let user retry or copy their prompt
     }
-  }, [compiled, sessionId, onClose]);
+  }, [compiled, sessionId, onClose, isAgentMode, composer.draft, dispatch]);
 
   const copyPrompt = useCallback(() => {
     if (!compiled.trim()) return;

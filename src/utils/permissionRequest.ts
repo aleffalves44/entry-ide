@@ -23,7 +23,7 @@ export interface PermResponse {
   type: "_hermes_perm_response";
   id: string;
   decision:
-    | { behavior: "allow"; updatedInput?: Record<string, unknown> }
+    | { behavior: "allow"; updatedInput?: Record<string, unknown>; persist?: string }
     | { behavior: "deny"; message: string };
 }
 
@@ -45,12 +45,21 @@ export function isPermRequest(v: unknown): v is PermRequest {
 
 export function buildPermResponse(id: string, decision: PermissionDecision): PermResponse {
   if (decision.kind === "allow") {
+    // Forward both updatedInput and persist when present.  `persist` is
+    // a pattern string (e.g. "Bash(git status:*)") that the bridge
+    // caches in its session allowlist so subsequent matching tool calls
+    // auto-allow without re-prompting the user.  Without forwarding
+    // this field "Allow always" only wrote the rule to disk and never
+    // persisted within the running session.
+    const allow: { behavior: "allow"; updatedInput?: Record<string, unknown>; persist?: string } = {
+      behavior: "allow",
+    };
+    if (decision.updatedInput) allow.updatedInput = decision.updatedInput;
+    if (decision.persist) allow.persist = decision.persist;
     return {
       type: "_hermes_perm_response",
       id,
-      decision: decision.updatedInput
-        ? { behavior: "allow", updatedInput: decision.updatedInput }
-        : { behavior: "allow" },
+      decision: allow,
     };
   }
   return {

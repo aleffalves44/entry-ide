@@ -29,30 +29,61 @@ export function CodeFence({ code, language }: CodeFenceProps) {
   return <HighlightedCode code={code} language={lang} />;
 }
 
+/**
+ * Collapse threshold: code blocks longer than this render in a collapsed
+ * "show first N lines" state with a "show all" button.  Keeping a quiet
+ * preview avoids blowing up the conversation for assistant turns that paste
+ * 200-line files — and dramatically reduces React reconciliation cost
+ * during streaming, which the user experiences as input latency.
+ */
+const CODE_FENCE_COLLAPSE_THRESHOLD = 18;
+const CODE_FENCE_COLLAPSED_LINES = 14;
+
 function HighlightedCode({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
 
+  // Count once.  splitting on "\n" is enough — we only need a length check
+  // and to slice the visible head when collapsed.
+  const lineCount = useMemo(() => {
+    if (!code) return 0;
+    const trimmed = code.replace(/\n+$/, "");
+    return trimmed.split("\n").length;
+  }, [code]);
+
+  const isCollapsible = lineCount > CODE_FENCE_COLLAPSE_THRESHOLD;
+  const [expanded, setExpanded] = useState(false);
+
+  // Pick the displayed text: the full code when expanded or short, else the
+  // first N lines.  Highlight only what we render so the long-block path
+  // doesn't pay the full hljs cost up front.
+  const displayedCode = useMemo(() => {
+    if (!isCollapsible || expanded) return code;
+    const trimmed = code.replace(/\n+$/, "");
+    return trimmed.split("\n").slice(0, CODE_FENCE_COLLAPSED_LINES).join("\n");
+  }, [code, isCollapsible, expanded]);
+
   const html = useMemo(() => {
-    if (!code) return "";
+    if (!displayedCode) return "";
     try {
       if (language && hljs.getLanguage(language)) {
-        return hljs.highlight(code, { language, ignoreIllegals: true }).value;
+        return hljs.highlight(displayedCode, { language, ignoreIllegals: true }).value;
       }
       // No language given (or unrecognized) — render as plain escaped code.
       // hljs's auto-detect aggressively classifies short freeform text as
       // CSS selectors or shell, producing misleading colours.  Plain text is
       // the honest default; the user can always copy the snippet to its
       // proper home for highlighting.
-      return escapeHtml(code);
+      return escapeHtml(displayedCode);
     } catch {
       // Highlighting must never crash the surface; on error return the raw
       // code with HTML escapes so the user still sees their text.
-      return escapeHtml(code);
+      return escapeHtml(displayedCode);
     }
-  }, [code, language]);
+  }, [displayedCode, language]);
 
   const onCopy = async () => {
     try {
+      // Always copy the FULL code, even when only the head is rendered.
       await navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 1400);
@@ -62,20 +93,45 @@ function HighlightedCode({ code, language }: { code: string; language: string })
   };
 
   const displayLang = language || "code";
+  const hiddenLines = lineCount - CODE_FENCE_COLLAPSED_LINES;
 
   return (
-    <figure className="agent-code-fence" data-language={displayLang}>
+    <figure
+      className={`agent-code-fence${isCollapsible && !expanded ? " agent-code-fence-collapsed" : ""}`}
+      data-language={displayLang}
+    >
       <header className="agent-code-fence-header">
-        <span className="agent-code-fence-lang">{displayLang}</span>
-        <button
-          type="button"
-          className="agent-code-fence-copy"
-          onClick={onCopy}
-          aria-label="Copy code"
-          title="Copy"
-        >
-          {copied ? "copied" : "copy"}
-        </button>
+        <span className="agent-code-fence-lang">
+          {displayLang}
+          {isCollapsible && (
+            <span className="agent-code-fence-line-count">
+              {" · "}
+              {lineCount} lines
+            </span>
+          )}
+        </span>
+        <span className="agent-code-fence-actions">
+          {isCollapsible && (
+            <button
+              type="button"
+              className="agent-code-fence-toggle"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              title={expanded ? "Collapse" : `Show all ${lineCount} lines`}
+            >
+              {expanded ? "show less" : `show all (${hiddenLines}+)`}
+            </button>
+          )}
+          <button
+            type="button"
+            className="agent-code-fence-copy"
+            onClick={onCopy}
+            aria-label="Copy code"
+            title="Copy"
+          >
+            {copied ? "copied" : "copy"}
+          </button>
+        </span>
       </header>
       <pre className="agent-code-fence-body">
         <code
@@ -84,6 +140,26 @@ function HighlightedCode({ code, language }: { code: string; language: string })
           // pass through raw user-controlled HTML; only highlight.js output.
           dangerouslySetInnerHTML={{ __html: html }}
         />
+        {isCollapsible && !expanded && (
+          <button
+            type="button"
+            className="agent-code-fence-show-more"
+            onClick={() => setExpanded(true)}
+            aria-label={`Show all ${lineCount} lines`}
+          >
+            ▾ Show {hiddenLines} more lines
+          </button>
+        )}
+        {isCollapsible && expanded && (
+          <button
+            type="button"
+            className="agent-code-fence-show-less"
+            onClick={() => setExpanded(false)}
+            aria-label="Collapse code block"
+          >
+            ▴ Collapse
+          </button>
+        )}
       </pre>
     </figure>
   );

@@ -105,6 +105,14 @@ const abortController = new AbortController();
 const permPending = new Map();
 let permIdSeq = 0;
 
+/** In-memory allowlist for the lifetime of this bridge process.  When
+ *  the host approves a request with `persist: "<rule>"`, we cache the
+ *  rule here so subsequent matching tool calls auto-allow without a
+ *  round-trip.  Without this cache, "Allow always" only persisted to
+ *  ~/.claude/settings.json and the user got re-prompted because the
+ *  bridge never consulted that file before forwarding. */
+const sessionAllowList = new Set();
+
 const rl = createInterface({ input: stdin, crlfDelay: Infinity });
 rl.on("line", (line) => {
   if (!line.trim()) return;
@@ -464,6 +472,13 @@ const sdkOptions = {
     stdout,
     permPending,
     idGen: () => `perm-${++permIdSeq}-${Date.now()}`,
+    // bypassPermissions short-circuits inside the handler so the host
+    // modal never even mounts — see canUseToolHelpers.mjs for why a
+    // round-trip in bypass mode was fragile.
+    permissionMode: flags.permissionMode,
+    // Session allowlist; mutated by the handler when a host response
+    // includes a `persist` rule.
+    sessionAllowList,
   }),
   // Forward bridge stderr-by-line so SDK panics surface to Rust.
   stderr: (data) => stderr.write(data),

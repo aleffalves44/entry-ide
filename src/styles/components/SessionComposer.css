@@ -19,6 +19,14 @@
   isolation: isolate;
 }
 
+/* When the user pastes/drops images, the attachment row eats ~66px of
+ * vertical space.  Lift the wrapper's min-height so the textarea still
+ * gets a couple of legible lines below the thumbnails — this overrides
+ * any user-set inline `height` because `min-height` always wins. */
+.session-composer[data-has-attachments="true"] {
+  min-height: 200px;
+}
+
 /* Top resize handle — sits at the very edge of the wrapper, above the card. */
 .session-composer-resize-handle {
   position: absolute;
@@ -178,9 +186,11 @@
 /* ─── Textarea ────────────────────────────────────────────── */
 
 .session-composer-input {
-  flex: 1;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: 0;
+  /* Always keep at least two lines of breathing room — without this an
+   * attachment row above can squash the textarea down to a single sliver. */
+  min-height: 56px;
   resize: none;
   border: none;
   outline: none;
@@ -222,6 +232,11 @@
   flex-wrap: wrap;
   gap: 6px;
   padding: var(--space-2) var(--space-3) 0 var(--space-3);
+  flex: 0 0 auto;
+  /* Cap so a flurry of pastes can't dominate the composer; scroll the
+   * row instead of pushing the textarea off-screen. */
+  max-height: 130px;
+  overflow-y: auto;
 }
 
 .session-composer-attachment {

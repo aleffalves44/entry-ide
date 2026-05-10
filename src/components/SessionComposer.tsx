@@ -721,6 +721,10 @@ export function SessionComposer() {
       // chrome overflows the fixed-height wrapper and clips the
       // textarea below.
       style={(activeTerminal || pendingCliCommand) ? undefined : { height: effectiveHeight }}
+      // Data flag drives a min-height bump in CSS so a pasted image
+      // can't squash the textarea below readable size — see
+      // .session-composer[data-has-attachments="true"] in SessionComposer.css
+      data-has-attachments={pendingImages.length > 0 ? "true" : undefined}
     >
       <div
         className="session-composer-resize-handle"

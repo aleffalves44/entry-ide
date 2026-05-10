@@ -912,6 +912,108 @@
   font-feature-settings: var(--font-mono-features);
   color: var(--ink-primary);
   white-space: pre;
+  position: relative;
+}
+
+/* Collapse state — long blocks render only the head, with a fade-to-bg
+ * overlay at the bottom and an inline "show more" button.  Limits both
+ * the visual height and the DOM cost while streaming. */
+.agent-code-fence-collapsed .agent-code-fence-body {
+  padding-bottom: 36px;
+}
+
+.agent-code-fence-collapsed .agent-code-fence-body::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 30px;
+  height: 28px;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--bg-1) 0%, transparent),
+    var(--bg-1));
+}
+
+.agent-code-fence-show-more {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  background: var(--bg-2);
+  border: 1px solid var(--rule-strong, var(--rule));
+  color: var(--ink-secondary);
+  font: 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 1;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.agent-code-fence-show-more:hover {
+  background: var(--bg-1);
+  border-color: var(--brass, var(--accent));
+  color: var(--brass, var(--accent));
+}
+
+/* Mirror "show more" with a "collapse" button at the bottom of an
+ * expanded block — discoverable without scrolling back to the header
+ * toggle.  Sits in the body's normal flow (not absolute) so it appears
+ * after the last line of code. */
+.agent-code-fence-show-less {
+  display: block;
+  margin: 12px auto 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--rule-strong, var(--rule));
+  color: var(--ink-secondary);
+  font: 10px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.agent-code-fence-show-less:hover {
+  background: var(--bg-1);
+  border-color: var(--brass, var(--accent));
+  color: var(--brass, var(--accent));
+}
+
+/* Header chrome — line count + collapse toggle.  Toggle is visible at all
+ * times when the block is collapsible, copy stays hover-emphasized to
+ * match the existing pattern. */
+.agent-code-fence-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.agent-code-fence-line-count {
+  color: var(--ink-tertiary);
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 400;
+}
+
+.agent-code-fence-toggle {
+  background: transparent;
+  border: 0;
+  padding: 2px 6px;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+
+.agent-code-fence-toggle:hover {
+  color: var(--brass, var(--accent));
 }
 
 .agent-code-fence-mermaid-actions {
@@ -1388,52 +1490,85 @@
  * gradient bling.  Reads as instrument-panel hardware. */
 
 .agent-thinking-indicator {
-  display: inline-flex;
+  /* Full-row banner so "Claude is working" is unmissable.  Previous
+   * inline-flex variant blended into the conversation; users repeatedly
+   * mistook it for a static glyph.  This version is a thicker, brass-lit
+   * panel with a left rail, breathing background, and a sliding sheen. */
+  display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0 6px 14px;
-  margin: 4px 0;
-  border-left: 2px solid var(--brass, var(--accent-paper));
-  font: 12px/1 var(--font-mono);
+  gap: 14px;
+  padding: 12px 16px 12px 18px;
+  margin: 8px 0;
+  border-left: 3px solid var(--brass, var(--accent-paper));
+  border-radius: 4px;
+  font: 14px/1 var(--font-mono);
   font-feature-settings: var(--font-mono-features);
-  color: var(--ink-secondary);
+  color: var(--ink-primary);
   letter-spacing: 0.04em;
-  background: linear-gradient(
-    to right,
-    var(--brass-dim, color-mix(in srgb, var(--accent-paper) 8%, transparent)) 0%,
-    transparent 60%
-  );
-  /* Edge fade so the wave doesn't read as "stuck at right edge". */
-  box-shadow: inset 0 0 0 0 transparent;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--brass, var(--accent-paper)) 14%, transparent) 50%,
+      transparent 100%
+    ) 0 0 / 200% 100%,
+    linear-gradient(
+      to right,
+      var(--brass-dim, color-mix(in srgb, var(--accent-paper) 18%, transparent)) 0%,
+      color-mix(in srgb, var(--brass-dim, var(--accent-paper)) 6%, transparent) 100%
+    );
+  background-blend-mode: screen, normal;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass, var(--accent-paper)) 22%, transparent),
+              inset 0 0 24px -8px color-mix(in srgb, var(--brass, var(--accent-paper)) 26%, transparent);
+  animation: agent-thinking-sheen 2.4s linear infinite,
+             agent-thinking-breath 1.8s ease-in-out infinite;
+}
+
+@keyframes agent-thinking-sheen {
+  from { background-position: 200% 0, 0 0; }
+  to   { background-position: -200% 0, 0 0; }
+}
+
+@keyframes agent-thinking-breath {
+  0%, 100% { box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass, var(--accent-paper)) 22%, transparent),
+                         inset 0 0 24px -8px color-mix(in srgb, var(--brass, var(--accent-paper)) 26%, transparent); }
+  50%       { box-shadow: 0 0 0 1px color-mix(in srgb, var(--brass, var(--accent-paper)) 36%, transparent),
+                         inset 0 0 32px -6px color-mix(in srgb, var(--brass, var(--accent-paper)) 42%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-thinking-indicator {
+    animation: none;
+  }
 }
 
 .agent-thinking-spinner {
   display: inline-block;
   font-family: var(--font-mono);
+  font-size: 18px;
   color: var(--brass, var(--accent-paper));
-  text-shadow: 0 0 6px var(--brass-dim, color-mix(in srgb, var(--accent-paper) 20%, transparent));
-  /* Fixed width so the spinner doesn't shift the row as frames change.
-   * Braille glyphs are all the same em-width but belt-and-suspenders. */
-  min-width: 1ch;
+  text-shadow: 0 0 10px var(--brass, color-mix(in srgb, var(--accent-paper) 50%, transparent));
+  min-width: 1.2ch;
   text-align: center;
 }
 
 .agent-thinking-wave {
   display: inline-block;
   font-family: var(--font-mono);
-  /* Each frame is 13 chars; pin the width so the wave doesn't stutter. */
+  font-size: 14px;
   min-width: 13ch;
   letter-spacing: 0;
   white-space: pre;
   color: var(--brass, var(--accent-paper));
-  /* The hairline dashes (`─`) inherit this color but the bright head
-   * chars (▆▇█) carry the brightness via the brass tone above. */
+  text-shadow: 0 0 6px color-mix(in srgb, var(--brass, var(--accent-paper)) 32%, transparent);
 }
 
 .agent-thinking-label {
   text-transform: lowercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-secondary);
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--brass, var(--ink-primary));
+  font-size: 13px;
 }
 
 .agent-thinking-indicator[data-variant="running"] .agent-thinking-label {
@@ -2328,6 +2463,43 @@
   color: var(--text-2);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* User-uploaded image attachment.  Constrained thumbnail; click to open
+ * the full resolution in a new tab via the system viewer. */
+.agent-image-block {
+  display: inline-block;
+  margin: 4px 0;
+  border: 1px solid var(--rule, var(--border));
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-1);
+  text-decoration: none;
+  transition: border-color 120ms ease;
+  max-width: 100%;
+}
+
+.agent-image-block:hover {
+  border-color: var(--brass, var(--accent));
+}
+
+.agent-image-block img {
+  display: block;
+  max-width: 360px;
+  max-height: 280px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.agent-image-block-placeholder {
+  display: inline-block;
+  padding: 4px 8px;
+  background: var(--bg-1);
+  border: 1px dashed var(--rule, var(--border));
+  border-radius: 4px;
+  color: var(--ink-tertiary);
+  font: 11px/1.4 var(--font-mono);
 }
 
 /* ════════════════════════════════════════════════════════════════════

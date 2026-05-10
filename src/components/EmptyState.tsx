@@ -54,7 +54,7 @@ function projectName(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
-const TITLE_CHARS = "Hermes".split("");
+const TITLE_CHARS = "Hermes IDE".split("");
 
 export function EmptyState({ recentSessions, onNew, onRestore }: EmptyStateProps) {
   return (
@@ -76,14 +76,14 @@ export function EmptyState({ recentSessions, onNew, onRestore }: EmptyStateProps
             <span className="es-eyebrow-sep" aria-hidden="true">·</span> v1.1
           </div>
 
-          <h1 className="es-title" aria-label="Hermes">
+          <h1 className="es-title" aria-label="Hermes IDE">
             {TITLE_CHARS.map((c, i) => (
               <span
                 key={i}
-                className="es-title-char"
+                className={`es-title-char${c === " " ? " es-title-char-space" : ""}`}
                 style={{ animationDelay: `${120 + i * 60}ms` }}
               >
-                {c}
+                {c === " " ? " " : c}
               </span>
             ))}
             <span className="es-title-period" aria-hidden="true">.</span>

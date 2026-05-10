@@ -92,6 +92,36 @@ describe("buildPermResponse (pm-4, pm-5)", () => {
       updatedInput: { questions: [], answers: { "q?": "yes" } },
     });
   });
+
+  it("forwards `persist` rule alongside allow so the bridge can cache it (allow-always persistence)", () => {
+    // Without this, "Allow always" wrote the rule to ~/.claude/settings.json
+    // but the bridge never consulted disk before re-prompting on the next
+    // matching tool call.  The bridge now caches `persist` rules in a
+    // session allowlist; the response builder must include them.
+    expect(
+      buildPermResponse("req_4", {
+        kind: "allow",
+        persist: "Bash(git status:*)",
+      }),
+    ).toEqual({
+      type: "_hermes_perm_response",
+      id: "req_4",
+      decision: { behavior: "allow", persist: "Bash(git status:*)" },
+    });
+  });
+
+  it("forwards both updatedInput and persist when both are supplied", () => {
+    const out = buildPermResponse("req_5", {
+      kind: "allow",
+      updatedInput: { command: "git status --short" },
+      persist: "Bash(git status:*)",
+    });
+    expect(out.decision).toEqual({
+      behavior: "allow",
+      updatedInput: { command: "git status --short" },
+      persist: "Bash(git status:*)",
+    });
+  });
 });
 
 describe("buildApproveAllAllowRule (pm-8)", () => {

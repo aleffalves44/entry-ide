@@ -1,3 +1,71 @@
+# Hermes IDE 1.1.6
+
+A polish release focused on a smoother conversation surface, a more
+trustworthy permission model, and a handful of long-standing layout
+papercuts. If 1.1.5 felt sluggish to type into during long agent turns,
+this release should fix it.
+
+## Conversation feels lighter and faster
+
+- **Long code blocks fold themselves.** The first ~14 lines render with
+  syntax highlighting and the rest hide behind a *show more* button.
+  Previously every fence painted in full, and a single 200-line file
+  could make typing in the input lag for several seconds. *Show less*
+  brings it back. Copy still copies the whole thing.
+- **Auto-scroll respects you.** While Claude streams, the conversation
+  pins to the bottom only if you were already at the bottom. Scroll up
+  to re-read past output and you stay there until you choose to come
+  back.
+- **The "thinking" indicator is unmissable.** It now reads as a brass
+  banner with a live sweep across the bar, instead of a small inline
+  glyph that was easy to miss. Reduced-motion users see a static
+  version.
+- **Completed TODO lists tidy themselves up.** When every item in a
+  TODO list is checked off, the panel fades out instead of hanging at
+  the bottom of the conversation forever. It returns the moment Claude
+  starts a new list.
+- **Diagrams + tables in the expanded view got smarter.** The mermaid
+  viewer auto-fits the diagram to the window on open, adds 4 directional
+  pan buttons, − / + zoom controls, a percent readout, and a *reset to
+  fit* button. Arrow keys pan, +/− zoom, `0` resets, Esc closes.
+
+## Permissions you can trust
+
+- **"Allow always" actually persists for the rest of the session.** If
+  you approve a specific command (say `git status`) with allow-always,
+  Claude won't ask again for matching commands. Previously the rule
+  was saved to disk but not consulted within the running session.
+- **Bypass permissions truly bypasses.** Setting permission mode to
+  *bypass* now skips the approval modal entirely — no flash, no
+  round-trip — instead of relying on the modal to auto-dismiss itself.
+- **Hardened approval matching.** Approval rules use a word-boundary
+  check (so `ls` no longer covers `lsof`), demand exact scoping for
+  destructive tools, and reject malformed wildcard rules.
+
+## Layout fixes you'd notice
+
+- **Pasted images don't break the composer.** Drop or paste an image
+  and the input box grows to fit the thumbnail rather than collapsing
+  the typing area to a single line.
+- **Sent images render as images, not as a wall of base64.** Previously
+  attaching an image and sending showed a huge string of characters in
+  the chat. Now the image appears in the conversation; click to open
+  full-size.
+- **The Builder *send* works in chat sessions.** Pressing send in the
+  prompt builder appends your composed prompt into the chat input
+  (instead of doing nothing), so you can review or add to it before
+  sending.
+- **The welcome screen no longer clips behind the title bar** on macOS,
+  scales properly on small windows, and reads "Hermes IDE" instead of
+  just "Hermes."  The *what's new* dialog also clears the title bar.
+
+## Code blocks: collapse and re-collapse
+
+Once you've expanded a long code block, a *collapse* button appears at
+the bottom of it so you don't have to scroll up to find the toggle.
+
+---
+
 # Hermes IDE 1.1.5
 
 A hotfix for v1.1.4 — Agent mode crashed every conversation in the installed app with a *Cannot find package* error in the activity panel. v1.1.5 ships the missing helper so Agent mode works again.
