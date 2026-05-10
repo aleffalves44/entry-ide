@@ -6,7 +6,7 @@ import { useActiveSession, useSessionList, useTotalCost, useTotalTokens, useExec
 import { PLATFORM, OS_VERSION } from "../utils/platform";
 import { useContextMenu, menuItem } from "../hooks/useContextMenu";
 import { fmt } from "../utils/platform";
-import { DARK_THEMES, LIGHT_THEMES, applyTheme } from "../utils/themeManager";
+import { DARK_THEMES, LIGHT_THEMES, applyTheme, normalizeThemeId } from "../utils/themeManager";
 
 function formatTokens(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -223,37 +223,21 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
 
 /* ─── Theme Picker (status bar) ────────────────────────────── */
 
+// Swatch accent colour per theme — keyed by id from DARK_THEMES / LIGHT_THEMES.
+// Values come from the canonical `--accent` token in `themes.css`; keep in sync
+// when a theme's accent changes.  Unknown keys fall back to "#888" at the
+// callsite, so adding a future theme here is purely cosmetic.
 const THEME_COLORS: Record<string, string> = {
-  dark: "#7b93db",
-  hacker: "#33ff99",
-  designer: "#e07850",
-  data: "#22d3ee",
-  corporate: "#4a90d9",
-  nightowl: "#a78bfa",
-  tron: "#00dffc",
-  duel: "#ee4444",
-  rainbow: "#d6a0ff",
-  "80s": "#ffb000",
-  light: "#2563eb",
-  rose: "#c75580",
-  lavender: "#7c4dff",
-  mint: "#0d9668",
-  sand: "#c06a30",
-  "frosted-light": "#007aff",
+  // Dark
   "frosted-dark": "#0a84ff",
-  solarized: "#268bd2",
-  midnight: "#1a6caa",
-  "neon-sunset": "#f92672",
-  polar: "#88c0d0",
-  reactor: "#61afef",
-  amber: "#fe8019",
-  macchiato: "#cba6f7",
-  shibuya: "#7aa2f7",
-  "solarized-dark": "#268bd2",
-  evergreen: "#a7c080",
-  cobalt: "#ffc600",
-  "minimal-dark": "#58a6ff",
-  transilvania: "#bd93f9",
+  atelier:        "#e07850",
+  observatory:    "#d4a86a",
+  phosphor:       "#b0f0a8",
+  // Light
+  "frosted-light": "#0a84ff",
+  linen:           "#c45a32",
+  newsprint:       "#0a0a0a",
+  atrium:          "#4a6a8c",
 };
 
 function ThemePicker() {
@@ -264,12 +248,15 @@ function ThemePicker() {
   const popRef = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
 
-  // Load current theme on mount
+  // Load current theme on mount.  Stored value may be a legacy id from a
+  // pre-1.1.15 install — normalise so the picker highlights the migrated
+  // theme rather than showing nothing as "active".
   useEffect(() => {
     getSetting("theme").then((v) => {
       if (v) {
-        setCurrent(v);
-        savedThemeRef.current = v;
+        const normalized = normalizeThemeId(v);
+        setCurrent(normalized);
+        savedThemeRef.current = normalized;
       }
     }).catch(() => {});
   }, []);

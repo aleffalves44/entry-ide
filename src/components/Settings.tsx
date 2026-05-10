@@ -889,7 +889,7 @@ export function Settings({ onClose, initialTab, pluginRuntime, onConfirmPluginUp
                   const newSettings = await importSettings(path);
                   setSettings(newSettings);
                   // Apply theme + UI scale
-                  applyTheme(newSettings.theme || "dark", newSettings);
+                  applyTheme(newSettings.theme || "frosted-dark", newSettings);
                   // Sync analytics state
                   setAnalyticsEnabled(newSettings.telemetry_enabled === "true");
                   // Sync autonomous settings to live state

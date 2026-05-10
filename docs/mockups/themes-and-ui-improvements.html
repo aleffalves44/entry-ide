@@ -1,0 +1,2197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hermes IDE — Themes & UI Improvements (v1.2 proposal)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Newsreader:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600&family=Space+Grotesk:wght@400;500;700&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+/* ════════════════════════════════════════════════════════════════════
+ * SHARED PAGE CHROME — typography, layout, section rhythm
+ * ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --page-bg: #0e1116;
+  --page-fg: #e2e8f0;
+  --page-muted: #7f8c9b;
+  --page-rule: #1a2230;
+  --page-accent: #d4a86a;
+  --font-mono: "JetBrains Mono", "SF Mono", Menlo, monospace;
+  --font-ui: "Inter Tight", system-ui, sans-serif;
+  --font-serif: "Newsreader", Georgia, serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--page-bg);
+  color: var(--page-fg);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+.page {
+  max-width: 1520px;
+  margin: 0 auto;
+  padding: 56px 32px 120px;
+}
+
+/* Editorial header rhythm */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--page-accent);
+  margin: 0 0 16px;
+}
+.eyebrow::before { content: "◊ "; color: #e8c485; }
+
+h1 {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 60px;
+  line-height: 1.0;
+  letter-spacing: -0.012em;
+  margin: 0 0 22px;
+}
+h1 em { color: var(--page-accent); }
+
+.lede {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  line-height: 1.55;
+  color: #c8d6e5;
+  margin: 0 0 14px;
+  max-width: 780px;
+}
+.lede strong { color: #e8c485; font-weight: 600; }
+
+.dek {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #7f8c9b;
+  letter-spacing: 0.04em;
+  max-width: 720px;
+}
+
+.page-head {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 56px;
+  align-items: end;
+  padding-bottom: 36px;
+  border-bottom: 1px solid var(--page-rule);
+  margin-bottom: 56px;
+}
+
+.page-head .right {
+  display: flex; flex-direction: column; gap: 12px;
+}
+
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--page-rule);
+  border: 1px solid var(--page-rule);
+  margin-bottom: 80px;
+}
+.meta-cell { background: #131922; padding: 16px 18px; }
+.meta-cell .k {
+  font-family: var(--font-mono);
+  font-size: 9px; text-transform: uppercase;
+  letter-spacing: 0.16em; color: #4a5568;
+  margin-bottom: 8px;
+}
+.meta-cell .v {
+  font-family: var(--font-mono); font-size: 12px; color: #e2e8f0;
+}
+.meta-cell .v .brass { color: #e8c485; }
+
+.section { margin-bottom: 96px; }
+.section-label {
+  display: flex; align-items: baseline; gap: 14px;
+  margin-bottom: 32px;
+}
+.section-num {
+  font-family: var(--font-mono); font-size: 10px;
+  color: var(--page-accent);
+  border: 1px solid #4a3a25;
+  padding: 4px 8px;
+  letter-spacing: 0.1em;
+}
+.section-name {
+  font-family: var(--font-serif); font-size: 32px;
+  font-style: italic; font-weight: 400;
+  margin: 0; color: var(--page-fg);
+}
+.section-sub {
+  font-family: var(--font-mono); font-size: 11px;
+  color: #7f8c9b; margin-left: auto;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+ * THEME TOKENS — 8 archetypes, one identity
+ *
+ * Every theme defines the same variable surface; only values change.
+ * The IDE preview uses these via [data-theme=…] selectors so a single
+ * mockup re-paints into each theme.
+ * ════════════════════════════════════════════════════════════════════ */
+
+[data-theme] {
+  /* Hermes IDE 1.2 token contract */
+  --bg-0: #0B0F14;
+  --bg-1: #111820;
+  --bg-2: #1a222d;
+  --bg-3: #1f2937;
+  --bg-active: #2a3444;
+  --text-0: #e2e8f0;
+  --text-1: #c8d6e5;
+  --text-2: #7f8c9b;
+  --text-3: #4a5568;
+  --accent: #d4a86a;
+  --accent-bright: #e8c485;
+  --accent-dim: rgba(212, 168, 106, 0.18);
+  --green: #34d399;
+  --red: #ff4444;
+  --yellow: #ffb000;
+  --violet: #a78bfa;
+  --rule: #1a2230;
+  --rule-strong: #243040;
+  --paper: var(--bg-0); /* default: panels share bg-0 */
+  --rail-grad: linear-gradient(180deg, transparent 0%, var(--accent-dim) 8%, var(--accent) 30%, var(--accent) 70%, var(--accent-dim) 92%, transparent 100%);
+
+  --font-display: var(--font-serif);
+  --font-body: var(--font-ui);
+  --font-mono-local: var(--font-mono);
+
+  --turn-bg: var(--bg-0);
+  --turn-tint: transparent;
+  --notes-rule: rgba(123, 147, 219, 0.04);
+  --shadow-card: 0 8px 24px -12px rgba(0,0,0,.5);
+  --tone: 0; /* 0 = dark, 1 = light — used by some inverted UI */
+
+  background: var(--bg-0);
+  color: var(--text-0);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THEME 1 · Frosted Dark  (KEEP)
+ *   Apple-y modernist · vibrant blue accent · the everyday neutral
+ * ──────────────────────────────────────────────────────────────────── */
+[data-theme="frosted-dark"] {
+  --bg-0: #1c1c1e;
+  --bg-1: #232325;
+  --bg-2: #2d2d2f;
+  --bg-3: #3a3a3c;
+  --bg-active: #48484a;
+  --text-0: #f5f5f7;
+  --text-1: #d6d6d9;
+  --text-2: #8e8e93;
+  --text-3: #5c5c61;
+  --accent: #0a84ff;
+  --accent-bright: #5ea7ff;
+  --accent-dim: rgba(10, 132, 255, 0.18);
+  --green: #30d158;
+  --red: #ff453a;
+  --yellow: #ffd60a;
+  --violet: #bf5af2;
+  --rule: #2d2d2f;
+  --rule-strong: #3a3a3c;
+  --shadow-card: 0 12px 28px -10px rgba(0,0,0,.55), 0 2px 6px rgba(0,0,0,.35);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THEME 2 · Atelier  (KEEP, was "designer")
+ *   Warm cocoa · terracotta · serif-forward · writer's desk
+ * ──────────────────────────────────────────────────────────────────── */
+[data-theme="atelier"] {
+  --bg-0: #1a1714;
+  --bg-1: #221e1a;
+  --bg-2: #2a2520;
+  --bg-3: #332e28;
+  --bg-active: #3d3630;
+  --text-0: #e8e0d4;
+  --text-1: #c8bfb0;
+  --text-2: #8a7f72;
+  --text-3: #6b6258;
+  --accent: #e07850;
+  --accent-bright: #f0966c;
+  --accent-dim: rgba(224, 120, 80, 0.20);
+  --green: #8fbc6a;
+  --red: #d95555;
+  --yellow: #d4a845;
+  --violet: #b58bdb;
+  --rule: #2a2520;
+  --rule-strong: #3a3430;
+  --notes-rule: rgba(224, 120, 80, 0.06);
+  --turn-tint: rgba(224, 120, 80, 0.025);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THEME 3 · Observatory  (NEW · the strongest Hermes identity)
+ *   Deep navy + true brass · vintage instrument · logbook grammar
+ * ──────────────────────────────────────────────────────────────────── */
+[data-theme="observatory"] {
+  --bg-0: #0a1018;
+  --bg-1: #0f1622;
+  --bg-2: #141c2c;
+  --bg-3: #1c2538;
+  --bg-active: #25304a;
+  --text-0: #e8d8b8;
+  --text-1: #c8b896;
+  --text-2: #8a7a5c;
+  --text-3: #5c5240;
+  --accent: #d4a86a;
+  --accent-bright: #f4d18a;
+  --accent-dim: rgba(212, 168, 106, 0.22);
+  --green: #6fa86f;
+  --red: #c8624c;
+  --yellow: #e8b04e;
+  --violet: #9d7fc4;
+  --rule: #1a2538;
+  --rule-strong: #2a3550;
+  --turn-tint: rgba(212, 168, 106, 0.03);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THEME 4 · Phosphor  (NEW · CRT poetry)
+ *   Mono only · green-on-black · scanlines · for the terminal soul
+ * ──────────────────────────────────────────────────────────────────── */
+[data-theme="phosphor"] {
+  --bg-0: #050805;
+  --bg-1: #0a100a;
+  --bg-2: #101810;
+  --bg-3: #182218;
+  --bg-active: #1f2c1f;
+  --text-0: #b0f0a8;
+  --text-1: #80d878;
+  --text-2: #5a9a52;
+  --text-3: #366028;
+  --accent: #b0f0a8;
+  --accent-bright: #d4ffcc;
+  --accent-dim: rgba(176, 240, 168, 0.16);
+  --green: #b0f0a8;
+  --red: #ff7a6a;
+  --yellow: #f0e088;
+  --violet: #b08adb;
+  --rule: #1a2818;
+  --rule-strong: #2a3a28;
+  /* Phosphor goes mono everywhere — even where other themes use serif */
+  --font-display: var(--font-mono);
+  --font-body: var(--font-mono);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THEME 5 · Frosted Light  (KEEP, pair to Frosted Dark)
+ *   Clean Apple-y light · sharp blue · everyday neutral
+ * ──────────────────────────────────────────────────────────────────── */
+[data-theme="frosted-light"] {
+  --bg-0: #f5f5f7;
+  --bg-1: #ffffff;
+  --bg-2: #ebebed;
+  --bg-3: #d6d6d9;
+  --bg-active: #c8c8ca;
+  --text-0: #1c1c1e;
+  --text-1: #3a3a3c;
+  --text-2: #6c6c70;
+  --text-3: #9c9ca0;
+  --accent: #0a84ff;
+  --accent-bright: #0066cc;
+  --accent-dim: rgba(10, 132, 255, 0.14);
+  --green: #28a745;
+  --red: #d63a31;
+  --yellow: #c89500;
+  --violet: #9132d4;
+  --rule: #d6d6d9;
+  --rule-strong: #b0b0b3;
+  --paper: #ffffff;
+  --tone: 1;
+  --shadow-card: 0 12px 28px -14px rgba(0,0,0,.18), 0 2px 6px rgba(0,0,0,.06);
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THEME 6 · Linen  (NEW · Atelier light counterpart)
+ *   Warm cream paper · sepia ink · terracotta accent
+ * ──────────────────────────────────────────────────────────────────── */
+[data-theme="linen"] {
+  --bg-0: #f4ede0;
+  --bg-1: #ffffff;
+  --bg-2: #ebe2d2;
+  --bg-3: #d8cdb8;
+  --bg-active: #c8b896;
+  --text-0: #2a221a;
+  --text-1: #4a3e30;
+  --text-2: #7a6b58;
+  --text-3: #a89a82;
+  --accent: #c45a32;
+  --accent-bright: #a04020;
+  --accent-dim: rgba(196, 90, 50, 0.14);
+  --green: #5e8a40;
+  --red: #b03228;
+  --yellow: #b88e1e;
+  --violet: #7a4ea8;
+  --rule: #d8cdb8;
+  --rule-strong: #b8a888;
+  --paper: #ffffff;
+  --turn-tint: rgba(196, 90, 50, 0.025);
+  --tone: 1;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THEME 7 · Newsprint  (NEW · high-contrast editorial)
+ *   Off-white broadsheet · true black ink · classic broadside feel
+ * ──────────────────────────────────────────────────────────────────── */
+[data-theme="newsprint"] {
+  --bg-0: #f7f4ec;
+  --bg-1: #ffffff;
+  --bg-2: #ede9dd;
+  --bg-3: #d8d2c2;
+  --bg-active: #b8b0a0;
+  --text-0: #0a0a0a;
+  --text-1: #2a2a2a;
+  --text-2: #5a5a5a;
+  --text-3: #8a8a8a;
+  --accent: #0a0a0a;
+  --accent-bright: #d4a86a;
+  --accent-dim: rgba(10, 10, 10, 0.08);
+  --green: #2a6a2a;
+  --red: #a82828;
+  --yellow: #8a6818;
+  --violet: #4a2a8a;
+  --rule: #c8c0b0;
+  --rule-strong: #8a8278;
+  --paper: #ffffff;
+  --tone: 1;
+}
+
+/* ────────────────────────────────────────────────────────────────────
+ * THEME 8 · Atrium  (NEW · soft daylight)
+ *   Blue-gray light · slate accent · low contrast · long sessions
+ * ──────────────────────────────────────────────────────────────────── */
+[data-theme="atrium"] {
+  --bg-0: #eef2f6;
+  --bg-1: #ffffff;
+  --bg-2: #e4e9ee;
+  --bg-3: #d2d8e0;
+  --bg-active: #b8c0cc;
+  --text-0: #2a3548;
+  --text-1: #4a5566;
+  --text-2: #7a8090;
+  --text-3: #a8b0bc;
+  --accent: #4a6a8c;
+  --accent-bright: #2a4a6c;
+  --accent-dim: rgba(74, 106, 140, 0.14);
+  --green: #4a8a6a;
+  --red: #b04a4a;
+  --yellow: #aa8a2a;
+  --violet: #6a4a8a;
+  --rule: #d2d8e0;
+  --rule-strong: #a8b0bc;
+  --paper: #ffffff;
+  --tone: 1;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+ * THEME GRID — show all 8 at once with token swatches
+ * ════════════════════════════════════════════════════════════════════ */
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+}
+
+.swatch {
+  background: var(--bg-0);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  transition: transform .2s;
+}
+.swatch:hover { transform: translateY(-2px); }
+
+.swatch::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--rail-grad, linear-gradient(180deg, transparent, var(--accent), transparent));
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.swatch-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.swatch-head .num {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.swatch-head h3 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  margin: 4px 0 4px;
+  color: var(--text-0);
+}
+[data-theme="phosphor"] .swatch-head h3 { font-style: normal; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.swatch-head .vibe {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+}
+
+.swatch-body {
+  padding: 12px 16px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.swatch-row {
+  display: grid;
+  grid-template-columns: 36px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+}
+.swatch-chip {
+  width: 36px; height: 18px;
+  border-radius: 2px;
+  border: 1px solid var(--rule-strong);
+}
+.swatch-row code {
+  color: var(--text-1);
+}
+.swatch-row .hex {
+  color: var(--text-3);
+  font-size: 9px;
+}
+
+.swatch-typo {
+  display: grid;
+  gap: 6px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--rule);
+}
+.swatch-typo .display {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--text-0);
+}
+[data-theme="phosphor"] .swatch-typo .display { font-style: normal; text-transform: uppercase; }
+.swatch-typo .body {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-1);
+}
+.swatch-typo .code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+ * IDE PREVIEW — full chrome, theme-switchable
+ * ════════════════════════════════════════════════════════════════════ */
+
+.theme-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 16px;
+  background: #131922;
+  border: 1px solid var(--page-rule);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.theme-picker .pick {
+  padding: 6px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7f8c9b;
+  background: transparent;
+  border: 1px solid #243040;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.theme-picker .pick:hover { color: #c8d6e5; border-color: #4a5568; }
+.theme-picker .pick.is-active {
+  color: var(--page-accent);
+  border-color: var(--page-accent);
+  background: rgba(212, 168, 106, 0.08);
+}
+
+/* Dark / light separator chip in the theme picker */
+.picker-divider {
+  width: 1px;
+  background: #243040;
+  margin: 0 4px;
+}
+.picker-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: #4a5568;
+  letter-spacing: 0.16em;
+  align-self: center;
+  padding: 0 6px;
+}
+
+.ide-frame {
+  background: var(--bg-0);
+  border: 1px solid #243040;
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,0.7);
+  transition: background .25s;
+}
+
+.ide-frame [data-theme] {
+  background: var(--bg-0);
+}
+
+/* — Topbar — */
+.ide-topbar {
+  height: 40px;
+  border-bottom: 1px solid var(--rule);
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  padding: 0 16px;
+  gap: 14px;
+}
+.ide-topbar .lights { display: flex; gap: 8px; }
+.ide-topbar .lights span {
+  width: 11px; height: 11px; border-radius: 50%;
+  background: var(--bg-3);
+}
+.ide-topbar .lights span:nth-child(1) { background: #ff5f57; }
+.ide-topbar .lights span:nth-child(2) { background: #febc2e; }
+.ide-topbar .lights span:nth-child(3) { background: #28c840; }
+
+.ide-breadcrumb {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 8px;
+  justify-self: center;
+}
+.ide-breadcrumb .led {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+.ide-breadcrumb strong { color: var(--text-0); font-weight: 500; }
+.ide-breadcrumb .sep { color: var(--text-3); }
+.ide-breadcrumb .branch { color: var(--accent-bright); }
+
+.ide-topbar-meta {
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+}
+.ide-topbar-meta .cost {
+  display: inline-flex;
+  align-items: center; gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+  font-size: 10px;
+  color: var(--text-1);
+}
+.ide-topbar-meta .cost .label {
+  font-size: 8px;
+  color: var(--text-3);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.ide-topbar-meta .palette-hint {
+  display: inline-flex; align-items: center; gap: 4px;
+  color: var(--text-3); font-size: 10px;
+}
+.ide-topbar-meta .palette-hint .key {
+  border: 1px solid var(--rule-strong);
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--bg-1);
+  color: var(--text-2);
+  font-size: 9px;
+}
+
+/* — Body grid — */
+.ide-body {
+  display: grid;
+  grid-template-columns: 36px 220px 1fr 380px 36px;
+  height: 620px;
+  background: var(--bg-0);
+}
+
+/* Activity bars */
+.ide-ab {
+  background: var(--bg-0);
+  border-right: 1px solid var(--rule);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 4px;
+  position: relative;
+}
+.ide-ab.right {
+  border-right: none;
+  border-left: 1px solid var(--rule);
+}
+.ab-btn {
+  width: 28px; height: 28px;
+  display: grid; place-items: center;
+  color: var(--text-3);
+  border-radius: 4px;
+  cursor: pointer;
+  position: relative;
+}
+.ab-btn:hover { color: var(--text-1); background: var(--bg-1); }
+.ab-btn.active { color: var(--accent-bright); }
+.ab-btn.active::before {
+  content: "";
+  position: absolute;
+  left: -8px; top: 4px; bottom: 4px;
+  width: 2px;
+  background: var(--accent);
+}
+.ide-ab.right .ab-btn.active::before { left: auto; right: -8px; }
+.ab-btn svg { width: 16px; height: 16px; }
+.ab-sep {
+  width: 18px; height: 1px; background: var(--rule);
+  margin: 6px 0;
+}
+.ab-spacer { flex: 1; }
+
+/* Sessions sidebar */
+.ide-sidebar {
+  background: var(--bg-0);
+  border-right: 1px solid var(--rule);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.sidebar-head {
+  padding: 12px 14px 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: var(--text-3);
+  text-transform: uppercase;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.sidebar-list { padding: 0 6px; display: flex; flex-direction: column; gap: 2px; }
+.session-row {
+  padding: 9px 10px;
+  border-radius: 3px;
+  display: grid;
+  grid-template-columns: 8px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  cursor: pointer;
+  border-left: 2px solid transparent;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-1);
+}
+.session-row:hover { background: var(--bg-1); }
+.session-row.active {
+  background: var(--bg-1);
+  border-left-color: var(--accent);
+  color: var(--text-0);
+}
+.session-row .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--text-2);
+}
+.session-row.active .dot {
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+.session-row .label {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.session-row .meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+}
+.session-row .branch-line {
+  grid-column: 2 / 4;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.02em;
+  margin-top: 2px;
+}
+.session-row .branch-line .b { color: var(--accent); }
+
+/* Center pane (agent surface) */
+.ide-center {
+  background: var(--bg-0);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.pane-head {
+  border-bottom: 1px solid var(--rule);
+  padding: 10px 16px;
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+}
+.pane-head .label { color: var(--text-0); }
+.pane-head .phase {
+  color: var(--green);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  padding: 2px 6px;
+  border: 1px solid;
+  border-color: color-mix(in srgb, var(--green) 40%, transparent);
+  background: color-mix(in srgb, var(--green) 14%, transparent);
+  border-radius: 2px;
+}
+.pane-head .right { margin-left: auto; color: var(--text-3); }
+
+.agent-stream {
+  flex: 1;
+  padding: 24px 28px;
+  overflow: hidden;
+  background:
+    radial-gradient(900px 320px at 30% -10%, var(--accent-dim), transparent 60%),
+    var(--bg-0);
+}
+[data-theme="phosphor"] .agent-stream {
+  background:
+    repeating-linear-gradient(0deg, transparent 0, transparent 2px, rgba(176,240,168,.04) 2px, rgba(176,240,168,.04) 3px),
+    var(--bg-0);
+}
+
+.turn { margin-bottom: 22px; }
+.turn-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.turn-meta .you { color: var(--accent-bright); }
+.prose {
+  font-family: var(--font-display);
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--text-1);
+}
+[data-theme="phosphor"] .prose {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  background: var(--bg-1);
+  padding: 1px 5px;
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--text-0);
+}
+
+.tool-card {
+  margin-top: 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  background: var(--bg-1);
+  overflow: hidden;
+}
+.tool-head {
+  padding: 8px 12px;
+  border-bottom: 1px dashed var(--rule);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-1);
+  display: flex; align-items: center; gap: 8px;
+}
+.tool-head .glyph { color: var(--violet); }
+.tool-head .meta { color: var(--text-3); margin-left: auto; }
+.tool-body {
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+/* Composer (with chip rail) */
+.composer {
+  border-top: 1px solid var(--rule);
+  padding: 10px 16px 12px;
+  background: var(--bg-0);
+}
+.composer-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px;
+  background: var(--bg-1);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+}
+.composer-row::before { content: "›"; color: var(--accent); margin-right: 4px; }
+.composer-chips {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+  cursor: pointer;
+  background: transparent;
+}
+.chip:hover { color: var(--text-1); background: var(--bg-1); }
+.chip[data-on="true"] {
+  color: var(--accent-bright);
+  border-color: var(--accent-dim);
+  background: var(--accent-dim);
+}
+.chip .v { color: var(--text-1); }
+.chip[data-on="true"] .v { color: var(--accent-bright); }
+.chip-spacer { flex: 1; }
+.chip-send {
+  padding: 5px 12px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--bg-0);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  cursor: pointer;
+}
+
+/* Workbench (right rail) */
+.ide-workbench {
+  background: var(--bg-0);
+  border-left: 1px solid var(--rule-strong);
+  display: grid;
+  grid-template-rows: auto 1fr 6px minmax(140px, 32%);
+  overflow: hidden;
+  position: relative;
+}
+.ide-workbench::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--rail-grad, linear-gradient(180deg, transparent, var(--accent), transparent));
+  opacity: 0.55;
+  pointer-events: none;
+}
+.wb-head {
+  padding: 12px 14px 0;
+  border-bottom: 1px solid var(--rule);
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+}
+.wb-title {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.wb-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 8px;
+  border: 1px solid var(--accent-dim);
+  background: var(--accent-dim);
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent-bright);
+}
+.wb-pill .led {
+  width: 6px; height: 6px; background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent-dim);
+}
+.wb-scope {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.wb-tabs {
+  display: flex;
+  margin: 0 -14px -1px;
+  padding: 0 14px;
+}
+.wb-tab {
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-3);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+.wb-tab.active {
+  color: var(--accent-bright);
+  border-bottom-color: var(--accent);
+}
+
+.wb-files { overflow: hidden; padding: 10px 0 14px; }
+.wb-section-head {
+  padding: 8px 14px 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.wb-section-head .branch { color: var(--accent-bright); text-transform: none; letter-spacing: 0; font-size: 10px; }
+.tree-row {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.tree-row:hover { background: var(--bg-1); }
+.tree-row.active { background: var(--accent-dim); color: var(--text-0); }
+.tree-row .ico {
+  width: 18px; height: 14px;
+  display: grid; place-items: center;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  border-radius: 2px;
+}
+.tree-row .ico.dir { color: var(--accent); }
+.tree-row .ico.ts { background: #3178c6; color: #fff; }
+.tree-row .ico.css { background: #6b88d0; color: #fff; }
+.tree-row .ico.md { background: var(--bg-2); color: var(--text-1); }
+.tree-row .ico.json { background: var(--accent); color: var(--bg-0); }
+.tree-row .name { flex: 1; }
+.tree-row .gm { font-size: 10px; }
+.tree-row .gm.m { color: var(--yellow); }
+.tree-row .gm.a { color: var(--green); }
+.tree-row.depth-1 { padding-left: 30px; }
+.tree-row.depth-2 { padding-left: 46px; }
+
+.wb-split {
+  background: var(--bg-0);
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  cursor: ns-resize;
+  position: relative;
+}
+.wb-split::after {
+  content: ""; position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  width: 24px; height: 1px;
+  background: var(--accent);
+  opacity: 0.6;
+}
+
+.wb-notes {
+  display: flex; flex-direction: column;
+  background: repeating-linear-gradient(180deg, transparent 0, transparent 21px, var(--notes-rule) 21px, var(--notes-rule) 22px), var(--bg-0);
+  overflow: hidden;
+}
+.wb-notes-head {
+  padding: 10px 14px 6px;
+  display: flex; align-items: baseline; gap: 8px;
+  flex: none;
+}
+.wb-notes-head h4 {
+  font-family: var(--font-display);
+  font-style: italic; font-weight: 400;
+  font-size: 13px; margin: 0;
+  color: var(--text-1);
+}
+[data-theme="phosphor"] .wb-notes-head h4 { font-style: normal; text-transform: uppercase; }
+.wb-notes-head .stamp {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.wb-notes-head .saved {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--green);
+  letter-spacing: 0.1em;
+}
+.wb-notes-body {
+  padding: 0 14px 12px;
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  line-height: 22px;
+  color: var(--text-1);
+  overflow: hidden;
+}
+[data-theme="phosphor"] .wb-notes-body { font-family: var(--font-mono); font-size: 12px; }
+.wb-notes-body .h {
+  font-weight: 600; font-style: italic;
+  color: var(--accent-bright);
+}
+[data-theme="phosphor"] .wb-notes-body .h { font-style: normal; text-transform: uppercase; }
+.wb-notes-body .ck { color: var(--green); font-weight: 700; }
+.wb-notes-body .strk { color: var(--text-3); text-decoration: line-through; }
+
+/* Status bar (now with breadcrumb) */
+.ide-statusbar {
+  height: 28px;
+  border-top: 1px solid var(--rule);
+  background: var(--bg-1);
+  display: flex; align-items: center;
+  padding: 0 14px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+  gap: 14px;
+}
+.ide-statusbar .br { color: var(--accent); }
+.ide-statusbar .sep { color: var(--text-3); }
+.ide-statusbar .change { color: var(--yellow); }
+.ide-statusbar .right { margin-left: auto; }
+.ide-statusbar .meter {
+  display: inline-flex;
+  align-items: center; gap: 4px;
+}
+.ide-statusbar .meter .bar {
+  display: inline-block;
+  width: 60px; height: 4px;
+  background: var(--bg-3);
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.ide-statusbar .meter .bar::after {
+  content: "";
+  position: absolute;
+  inset: 0 60% 0 0;
+  background: var(--accent);
+}
+
+/* ════════════════════════════════════════════════════════════════════
+ * UI IMPROVEMENTS — detail studies
+ *   Each card shows a redesigned area in 1-2 themes for context
+ * ════════════════════════════════════════════════════════════════════ */
+
+.studies {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.study {
+  border: 1px solid var(--page-rule);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #131922;
+}
+.study-head {
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid var(--page-rule);
+}
+.study-head h4 {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  margin: 0 0 4px;
+  color: var(--page-fg);
+}
+.study-head h4 .num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-style: normal;
+  letter-spacing: 0.14em;
+  color: var(--page-accent);
+  margin-right: 8px;
+  vertical-align: 2px;
+}
+.study-head p {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #7f8c9b;
+  margin: 0;
+  line-height: 1.55;
+  letter-spacing: 0.02em;
+}
+.study-body {
+  background: var(--bg-0);
+  min-height: 220px;
+  padding: 18px;
+  position: relative;
+}
+.study-body[data-theme] { background: var(--bg-0); }
+
+/* Empty state demo */
+.empty-state {
+  display: flex; flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 28px 24px;
+}
+.empty-state .led-stack {
+  display: flex; align-items: center; gap: 4px;
+  margin-bottom: 14px;
+}
+.empty-state .led-stack span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+.empty-state .led-stack span:nth-child(2) { animation-delay: .3s; }
+.empty-state .led-stack span:nth-child(3) { animation-delay: .6s; }
+@keyframes pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+.empty-state h5 {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.empty-state .quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--text-1);
+  margin: 6px 0 14px;
+  max-width: 320px;
+  line-height: 1.4;
+}
+[data-theme="phosphor"] .empty-state .quote { font-style: normal; }
+.empty-state .hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-2);
+  letter-spacing: 0.04em;
+}
+.empty-state .hint .key {
+  border: 1px solid var(--rule-strong);
+  padding: 1px 5px;
+  border-radius: 2px;
+  background: var(--bg-1);
+  color: var(--text-1);
+  margin: 0 1px;
+}
+
+/* Status-bar variants */
+.statusbar-stack {
+  display: grid;
+  gap: 12px;
+}
+.statusbar-stack .sb {
+  height: 28px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  background: var(--bg-1);
+  display: flex; align-items: center;
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+  gap: 12px;
+}
+.statusbar-stack .sb .br { color: var(--accent); }
+.statusbar-stack .sb .sep { color: var(--text-3); }
+.statusbar-stack .sb .ch { color: var(--yellow); }
+.statusbar-stack .sb .turn { color: var(--text-1); }
+.statusbar-stack .sb .right { margin-left: auto; }
+
+/* Settings drawer redesign — 3-tab focus */
+.settings-mock {
+  background: var(--bg-1);
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.settings-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--rule);
+}
+.settings-tab {
+  padding: 10px 16px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border-right: 1px solid var(--rule);
+  flex: 1; text-align: center;
+}
+.settings-tab.active { color: var(--accent-bright); background: var(--bg-0); position: relative; }
+.settings-tab.active::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 2px;
+  background: var(--accent);
+}
+.settings-content { padding: 16px; }
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-1);
+}
+.settings-row .desc {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-3);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
+}
+.settings-row .ctl {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-1);
+}
+.settings-row .pill {
+  display: inline-flex;
+  padding: 2px 8px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 10px;
+}
+.settings-row .pill.on { background: var(--accent); color: var(--bg-0); border-color: var(--accent); }
+
+/* Onboarding card */
+.onboarding {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  background: var(--bg-1);
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  overflow: hidden;
+  min-height: 240px;
+}
+.onb-side {
+  padding: 24px 18px;
+  background: linear-gradient(160deg, var(--accent-dim) 0%, transparent 70%), var(--bg-0);
+  display: flex; flex-direction: column; justify-content: space-between;
+}
+.onb-side .step {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.onb-side h6 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  color: var(--text-0);
+  margin: 8px 0 0;
+  line-height: 1.15;
+}
+.onb-side .lede {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--text-1);
+  margin: 12px 0 0;
+}
+.onb-side .progress {
+  display: flex; gap: 4px;
+  margin-top: 16px;
+}
+.onb-side .progress span {
+  flex: 1; height: 2px;
+  background: var(--rule);
+}
+.onb-side .progress span.on { background: var(--accent); }
+
+.onb-main {
+  padding: 24px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  align-content: start;
+}
+.onb-theme {
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 10px 12px;
+  background: var(--bg-0);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.onb-theme.selected {
+  border-color: var(--accent);
+  outline: 1px solid var(--accent);
+}
+.onb-theme .swatch-row {
+  display: flex; gap: 2px; margin-bottom: 8px;
+}
+.onb-theme .swatch-row span {
+  flex: 1; height: 14px;
+}
+.onb-theme h5 {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 13px;
+  margin: 0;
+  color: var(--text-0);
+}
+[data-theme="phosphor"] .onb-theme h5 { font-style: normal; }
+.onb-theme .vibe {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+
+/* Notification toast */
+.toast {
+  display: inline-flex;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--rule-strong);
+  border-left: 2px solid var(--accent);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-1);
+  align-items: flex-start;
+}
+.toast .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  margin-top: 4px;
+  flex: none;
+  box-shadow: 0 0 8px var(--accent-dim);
+}
+.toast strong { color: var(--text-0); font-weight: 500; display: block; margin-bottom: 4px; }
+.toast .body { color: var(--text-2); font-family: var(--font-display); font-size: 13px; line-height: 1.4; }
+[data-theme="phosphor"] .toast .body { font-family: var(--font-mono); font-size: 11px; }
+.toast .actions {
+  display: flex; gap: 8px; margin-top: 6px;
+  font-family: var(--font-mono); font-size: 10px;
+}
+.toast .actions a { color: var(--accent-bright); cursor: pointer; }
+
+/* Loading / thinking indicator */
+.thinking {
+  display: inline-flex; align-items: center; gap: 10px;
+  padding: 8px 14px;
+  background: var(--bg-1);
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+}
+.thinking .led {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.thinking .ticker { color: var(--text-1); }
+.thinking .since { color: var(--text-3); margin-left: 4px; }
+
+.recommendation {
+  margin-top: 28px;
+  padding: 18px 22px;
+  background: rgba(212, 168, 106, 0.06);
+  border: 1px solid rgba(212, 168, 106, 0.18);
+  border-left: 3px solid var(--page-accent);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: #c8d6e5;
+  line-height: 1.6;
+}
+.recommendation strong {
+  color: #e8c485;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+footer {
+  margin-top: 96px;
+  padding-top: 28px;
+  border-top: 1px solid var(--page-rule);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #4a5568;
+  letter-spacing: 0.12em;
+  text-align: center;
+}
+footer strong { color: var(--page-accent); }
+</style>
+</head>
+
+<body>
+<div class="page">
+
+<!-- ════════════════════════════════════════════════════════════════════
+   HEAD
+═════════════════════════════════════════════════════════════════════ -->
+
+<div class="page-head">
+  <div>
+    <p class="eyebrow">Style System · v1.2 proposal · Hermes IDE</p>
+    <h1>Eight themes,<br/><em>one identity</em>.</h1>
+  </div>
+  <div class="right">
+    <p class="lede">
+      Today's Hermes ships <strong>30 themes</strong>, fragmenting the
+      identity. This proposal cuts the catalog to <strong>eight</strong>:
+      four dark, four light. Every theme inherits the same triple-font
+      system, the same brass-rail accent, the same editorial layout
+      grammar — they vary in <em>mood</em>, not in vocabulary. Plus a
+      pass on the surfaces around them: status bar, empty states,
+      onboarding, settings, notifications.
+    </p>
+    <p class="dek">Open this file in a browser. The IDE preview is theme-switchable.</p>
+  </div>
+</div>
+
+<div class="meta-grid">
+  <div class="meta-cell"><div class="k">From</div><div class="v">30 themes</div></div>
+  <div class="meta-cell"><div class="k">To</div><div class="v"><span class="brass">8 themes</span> · 4 dark · 4 light</div></div>
+  <div class="meta-cell"><div class="k">Keep</div><div class="v">Frosted Dark · Atelier · Frosted Light</div></div>
+  <div class="meta-cell"><div class="k">Beyond theming</div><div class="v">7 surfaces refined</div></div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+   01 · THE EIGHT
+═════════════════════════════════════════════════════════════════════ -->
+
+<div class="section">
+  <div class="section-label">
+    <span class="section-num">01</span>
+    <h2 class="section-name">The eight, at a glance</h2>
+    <span class="section-sub">tokens · typography · vibe</span>
+  </div>
+
+  <div class="theme-grid">
+
+    <!-- Frosted Dark -->
+    <div class="swatch" data-theme="frosted-dark">
+      <div class="swatch-head">
+        <div class="num">D · 01 · KEEP</div>
+        <h3>Frosted Dark</h3>
+        <div class="vibe">apple-y modernist · vibrant blue · everyday neutral</div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-row"><span class="swatch-chip" style="background:#1c1c1e"></span><code>--bg-0</code><span class="hex">#1c1c1e</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#0a84ff"></span><code>--accent</code><span class="hex">#0a84ff</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#f5f5f7"></span><code>--text-0</code><span class="hex">#f5f5f7</span></div>
+      </div>
+      <div class="swatch-typo">
+        <div class="display">A workbench, per session.</div>
+        <div class="body">The everyday neutral.</div>
+        <div class="code">claude --resume sess-9</div>
+      </div>
+    </div>
+
+    <!-- Atelier -->
+    <div class="swatch" data-theme="atelier">
+      <div class="swatch-head">
+        <div class="num">D · 02 · KEEP</div>
+        <h3>Atelier</h3>
+        <div class="vibe">cocoa · terracotta · serif-forward · writer's desk</div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-row"><span class="swatch-chip" style="background:#1a1714"></span><code>--bg-0</code><span class="hex">#1a1714</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#e07850"></span><code>--accent</code><span class="hex">#e07850</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#e8e0d4"></span><code>--text-0</code><span class="hex">#e8e0d4</span></div>
+      </div>
+      <div class="swatch-typo">
+        <div class="display">A workbench, per session.</div>
+        <div class="body">The writer's desk.</div>
+        <div class="code">claude --resume sess-9</div>
+      </div>
+    </div>
+
+    <!-- Observatory -->
+    <div class="swatch" data-theme="observatory">
+      <div class="swatch-head">
+        <div class="num">D · 03 · NEW</div>
+        <h3>Observatory</h3>
+        <div class="vibe">deep navy · true brass · vintage instrument</div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-row"><span class="swatch-chip" style="background:#0a1018"></span><code>--bg-0</code><span class="hex">#0a1018</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#d4a86a"></span><code>--accent</code><span class="hex">#d4a86a</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#e8d8b8"></span><code>--text-0</code><span class="hex">#e8d8b8</span></div>
+      </div>
+      <div class="swatch-typo">
+        <div class="display">A workbench, per session.</div>
+        <div class="body">The logbook.</div>
+        <div class="code">claude --resume sess-9</div>
+      </div>
+    </div>
+
+    <!-- Phosphor -->
+    <div class="swatch" data-theme="phosphor">
+      <div class="swatch-head">
+        <div class="num">D · 04 · NEW</div>
+        <h3>Phosphor</h3>
+        <div class="vibe">crt green · scanlines · for the terminal soul</div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-row"><span class="swatch-chip" style="background:#050805"></span><code>--bg-0</code><span class="hex">#050805</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#b0f0a8"></span><code>--accent</code><span class="hex">#b0f0a8</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#80d878"></span><code>--text-0</code><span class="hex">#b0f0a8</span></div>
+      </div>
+      <div class="swatch-typo">
+        <div class="display">A WORKBENCH, PER SESSION.</div>
+        <div class="body">HACKER POETRY.</div>
+        <div class="code">claude --resume sess-9</div>
+      </div>
+    </div>
+
+    <!-- Frosted Light -->
+    <div class="swatch" data-theme="frosted-light">
+      <div class="swatch-head">
+        <div class="num">L · 01 · KEEP</div>
+        <h3>Frosted Light</h3>
+        <div class="vibe">apple-y light · sharp blue · everyday neutral</div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-row"><span class="swatch-chip" style="background:#f5f5f7"></span><code>--bg-0</code><span class="hex">#f5f5f7</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#0a84ff"></span><code>--accent</code><span class="hex">#0a84ff</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#1c1c1e"></span><code>--text-0</code><span class="hex">#1c1c1e</span></div>
+      </div>
+      <div class="swatch-typo">
+        <div class="display">A workbench, per session.</div>
+        <div class="body">The everyday neutral.</div>
+        <div class="code">claude --resume sess-9</div>
+      </div>
+    </div>
+
+    <!-- Linen -->
+    <div class="swatch" data-theme="linen">
+      <div class="swatch-head">
+        <div class="num">L · 02 · NEW</div>
+        <h3>Linen</h3>
+        <div class="vibe">cream paper · sepia ink · atelier inverted</div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-row"><span class="swatch-chip" style="background:#f4ede0"></span><code>--bg-0</code><span class="hex">#f4ede0</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#c45a32"></span><code>--accent</code><span class="hex">#c45a32</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#2a221a"></span><code>--text-0</code><span class="hex">#2a221a</span></div>
+      </div>
+      <div class="swatch-typo">
+        <div class="display">A workbench, per session.</div>
+        <div class="body">The reading room.</div>
+        <div class="code">claude --resume sess-9</div>
+      </div>
+    </div>
+
+    <!-- Newsprint -->
+    <div class="swatch" data-theme="newsprint">
+      <div class="swatch-head">
+        <div class="num">L · 03 · NEW</div>
+        <h3>Newsprint</h3>
+        <div class="vibe">broadsheet · true black · classic editorial</div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-row"><span class="swatch-chip" style="background:#f7f4ec"></span><code>--bg-0</code><span class="hex">#f7f4ec</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#0a0a0a"></span><code>--accent</code><span class="hex">#0a0a0a</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#0a0a0a"></span><code>--text-0</code><span class="hex">#0a0a0a</span></div>
+      </div>
+      <div class="swatch-typo">
+        <div class="display">A workbench, per session.</div>
+        <div class="body">The broadside.</div>
+        <div class="code">claude --resume sess-9</div>
+      </div>
+    </div>
+
+    <!-- Atrium -->
+    <div class="swatch" data-theme="atrium">
+      <div class="swatch-head">
+        <div class="num">L · 04 · NEW</div>
+        <h3>Atrium</h3>
+        <div class="vibe">soft daylight · slate · long-session calm</div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-row"><span class="swatch-chip" style="background:#eef2f6"></span><code>--bg-0</code><span class="hex">#eef2f6</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#4a6a8c"></span><code>--accent</code><span class="hex">#4a6a8c</span></div>
+        <div class="swatch-row"><span class="swatch-chip" style="background:#2a3548"></span><code>--text-0</code><span class="hex">#2a3548</span></div>
+      </div>
+      <div class="swatch-typo">
+        <div class="display">A workbench, per session.</div>
+        <div class="body">The skylight.</div>
+        <div class="code">claude --resume sess-9</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+   02 · LIVE IDE PREVIEW
+═════════════════════════════════════════════════════════════════════ -->
+
+<div class="section">
+  <div class="section-label">
+    <span class="section-num">02</span>
+    <h2 class="section-name">Live preview · the IDE in each theme</h2>
+    <span class="section-sub">click to switch</span>
+  </div>
+
+  <div class="theme-picker">
+    <span class="picker-label">DARK</span>
+    <button class="pick is-active" data-pick="frosted-dark">Frosted Dark</button>
+    <button class="pick" data-pick="atelier">Atelier</button>
+    <button class="pick" data-pick="observatory">Observatory</button>
+    <button class="pick" data-pick="phosphor">Phosphor</button>
+    <span class="picker-divider"></span>
+    <span class="picker-label">LIGHT</span>
+    <button class="pick" data-pick="frosted-light">Frosted Light</button>
+    <button class="pick" data-pick="linen">Linen</button>
+    <button class="pick" data-pick="newsprint">Newsprint</button>
+    <button class="pick" data-pick="atrium">Atrium</button>
+  </div>
+
+  <div class="ide-frame" id="ide-preview" data-theme="frosted-dark">
+
+    <!-- Topbar -->
+    <div class="ide-topbar">
+      <div class="lights"><span></span><span></span><span></span></div>
+      <div class="ide-breadcrumb">
+        <span class="led"></span>
+        <strong>auth-refactor</strong>
+        <span class="sep">/</span>
+        <span>~/work/h-ide</span>
+        <span class="sep">·</span>
+        <span class="branch">refactor/auth-guard</span>
+        <span class="sep">·</span>
+        <span>2M 1A</span>
+      </div>
+      <div class="ide-topbar-meta">
+        <span class="cost"><span class="label">cost</span> $0.064</span>
+        <span class="palette-hint"><span class="key">⌘</span><span class="key">K</span> palette</span>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="ide-body">
+
+      <!-- Left activity bar -->
+      <aside class="ide-ab">
+        <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="8" y1="3" x2="8" y2="13"/><line x1="3" y1="8" x2="13" y2="8"/></svg></div>
+        <div class="ab-sep"></div>
+        <div class="ab-btn active"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="14" height="11" rx="1.5"/><line x1="2" y1="6.5" x2="16" y2="6.5"/></svg></div>
+        <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7.5" cy="7.5" r="5"/><line x1="11" y1="11" x2="15.5" y2="15.5"/></svg></div>
+        <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="2"/><circle cx="13" cy="5" r="2"/><circle cx="9" cy="14" r="2"/><line x1="5" y1="7" x2="5" y2="10"/><line x1="13" y1="7" x2="13" y2="10"/></svg></div>
+        <div class="ab-spacer"></div>
+        <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="9" r="3"/><path d="M14 9 a 5 5 0 0 0 -0.5 -2"/></svg></div>
+      </aside>
+
+      <!-- Sessions sidebar -->
+      <aside class="ide-sidebar">
+        <div class="sidebar-head"><span>SESSIONS · 4</span><span>+</span></div>
+        <div class="sidebar-list">
+          <div class="session-row">
+            <div class="dot" style="background:#34d399"></div>
+            <div class="label">api-typings</div>
+            <div class="meta">2m</div>
+            <div class="branch-line"><span class="b">⎇ feat/strict-types</span></div>
+          </div>
+          <div class="session-row active">
+            <div class="dot"></div>
+            <div class="label">auth-refactor</div>
+            <div class="meta">now</div>
+            <div class="branch-line"><span class="b">⎇ refactor/auth-guard</span> · 2 changes</div>
+          </div>
+          <div class="session-row">
+            <div class="dot" style="background:#a78bfa"></div>
+            <div class="label">migration-script</div>
+            <div class="meta">14m</div>
+            <div class="branch-line"><span class="b">⎇ main</span></div>
+          </div>
+          <div class="session-row">
+            <div class="dot" style="background:#7f8c9b"></div>
+            <div class="label">design-tokens</div>
+            <div class="meta">1h</div>
+            <div class="branch-line"><span class="b">⎇ chore/tokens-v2</span></div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center pane -->
+      <main class="ide-center">
+        <div class="pane-head">
+          <span class="label">auth-refactor</span>
+          <span class="phase">streaming</span>
+          <span class="right">claude · sonnet 4.7</span>
+        </div>
+
+        <div class="agent-stream">
+
+          <div class="turn">
+            <div class="turn-meta"><span class="you">YOU</span> · 11:42 · TURN 03</div>
+            <div class="prose">
+              Replace the legacy <code>verifyToken()</code> calls in
+              <code>src/auth/middleware.ts</code> with the new
+              <code>AuthGuard</code> class — keep the public signature
+              compatible.
+            </div>
+          </div>
+
+          <div class="turn">
+            <div class="turn-meta">CLAUDE · 11:42 · TURN 03</div>
+            <div class="prose">
+              I'll refactor the middleware to delegate to <code>AuthGuard</code>
+              while preserving the existing exports. Reading the file first.
+            </div>
+            <div class="tool-card">
+              <div class="tool-head">
+                <span class="glyph">▤</span>
+                <span>Read</span>
+                <span class="meta">src/auth/middleware.ts · 142 lines</span>
+              </div>
+              <div class="tool-body">
+                1  import &lbrace; verifyToken &rbrace; from "./jwt";<br/>
+                2  import &lbrace; UnauthorizedError &rbrace; from "../errors";<br/>
+                3<br/>
+                4  export async function authMiddleware(req, res, next) &lbrace;
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- New unified composer with chip rail -->
+        <div class="composer">
+          <div class="composer-row">type a message…</div>
+          <div class="composer-chips">
+            <button class="chip" data-on="true">Model <span class="v">opus 4.7[1m]</span></button>
+            <button class="chip">Effort <span class="v">high</span></button>
+            <button class="chip">Bypass</button>
+            <button class="chip">+ image</button>
+            <span class="chip-spacer"></span>
+            <button class="chip-send">SEND ⌘↩</button>
+          </div>
+        </div>
+      </main>
+
+      <!-- Workbench (right) -->
+      <aside class="ide-workbench">
+        <div class="wb-head">
+          <div class="wb-title">
+            <span class="wb-pill"><span class="led"></span>auth-refactor</span>
+            <span class="wb-scope">workbench</span>
+          </div>
+          <div class="wb-tabs">
+            <div class="wb-tab active">Files</div>
+            <div class="wb-tab">Context</div>
+          </div>
+        </div>
+        <div class="wb-files">
+          <div class="wb-section-head">project · <span class="branch">refactor/auth-guard</span></div>
+          <div class="tree-row"><span class="ico dir">▾</span><span class="name">src</span></div>
+          <div class="tree-row depth-1"><span class="ico dir">▾</span><span class="name">auth</span></div>
+          <div class="tree-row depth-2 active"><span class="ico ts">TS</span><span class="name">middleware.ts</span><span class="gm m">M</span></div>
+          <div class="tree-row depth-2"><span class="ico ts">TS</span><span class="name">guard.ts</span><span class="gm a">A</span></div>
+          <div class="tree-row depth-2"><span class="ico ts">TS</span><span class="name">jwt.ts</span></div>
+          <div class="tree-row depth-1"><span class="ico dir">▸</span><span class="name">components</span></div>
+          <div class="tree-row depth-1"><span class="ico dir">▸</span><span class="name">state</span></div>
+          <div class="tree-row"><span class="ico dir">▸</span><span class="name">docs</span></div>
+          <div class="tree-row"><span class="ico md">MD</span><span class="name">README.md</span></div>
+          <div class="tree-row"><span class="ico json">{}</span><span class="name">package.json</span><span class="gm m">M</span></div>
+        </div>
+        <div class="wb-split"></div>
+        <div class="wb-notes">
+          <div class="wb-notes-head">
+            <h4>Notes</h4>
+            <span class="stamp">SESSION-LOCAL</span>
+            <span class="saved">SAVED · 11:43</span>
+          </div>
+          <div class="wb-notes-body">
+            <div class="h">Plan</div>
+            <div><span class="ck">✓</span> read middleware.ts</div>
+            <div><span class="ck">✓</span> draft AuthGuard shim</div>
+            <div>○ keep verifyToken as deprecated alias</div>
+            <div class="strk">drop legacy import path</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right activity bar -->
+      <aside class="ide-ab right">
+        <div class="ab-btn active"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 5 C 2 3.9 2.9 3 4 3 H 7 L 9 5 H 14 C 15.1 5 16 5.9 16 7 V 13 C 16 14.1 15.1 15 14 15 H 4 C 2.9 15 2 14.1 2 13 Z"/><line x1="2" y1="11" x2="16" y2="11" opacity="0.5"/></svg></div>
+        <div class="ab-btn"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 14.5 L2.5 9.5 L5.5 9.5 L5.5 14.5 Z"/><path d="M7.5 14.5 L7.5 6.5 L10.5 6.5 L10.5 14.5 Z"/><path d="M12.5 14.5 L12.5 3.5 L15.5 3.5 L15.5 14.5 Z"/></svg></div>
+      </aside>
+
+    </div>
+
+    <!-- Status bar (NEW: rich breadcrumb + token meter) -->
+    <div class="ide-statusbar">
+      <span class="br">⎇ refactor/auth-guard</span>
+      <span class="sep">·</span>
+      <span class="change">2 modified · 1 added</span>
+      <span class="sep">·</span>
+      <span>turn 03</span>
+      <span class="right meter">
+        <span>tokens</span>
+        <span class="bar"></span>
+        <span>1.6k / 200k</span>
+      </span>
+    </div>
+  </div>
+
+  <div class="recommendation">
+    <strong>Switch themes ↑</strong> — every surface re-paints. Notice
+    the brass-rail keeps its position regardless of theme; only the
+    color and luminance shift. That's the identity holding while the
+    mood changes.
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+   03 · UI IMPROVEMENTS BEYOND THEMING
+═════════════════════════════════════════════════════════════════════ -->
+
+<div class="section">
+  <div class="section-label">
+    <span class="section-num">03</span>
+    <h2 class="section-name">Refined surfaces beyond color</h2>
+    <span class="section-sub">7 studies</span>
+  </div>
+
+  <div class="studies">
+
+    <!-- 1. Empty state -->
+    <div class="study">
+      <div class="study-head">
+        <h4><span class="num">A</span>Empty agent session</h4>
+        <p>Brass LED triplet pulses. Editorial italic prompt. Three keystroke hints — no further chrome. Replaces the bare <code>[ AWAITING FIRST SIGNAL ]</code>.</p>
+      </div>
+      <div class="study-body" data-theme="observatory">
+        <div class="empty-state">
+          <div class="led-stack"><span></span><span></span><span></span></div>
+          <h5>Awaiting first signal</h5>
+          <p class="quote">Type below to start. Drop a file to attach. Or press <span class="hint"><span class="key">⌘</span><span class="key">K</span></span> for the palette.</p>
+          <div class="hint">type · drop · <span class="key">⌘</span><span class="key">K</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Status bar variants -->
+    <div class="study">
+      <div class="study-head">
+        <h4><span class="num">B</span>Status bar · richer breadcrumb</h4>
+        <p>Branch · changes · turn · token meter. Brass dividers. Theme-aware accent for the in-flight state. One row, scannable left-to-right.</p>
+      </div>
+      <div class="study-body" data-theme="frosted-dark">
+        <div class="statusbar-stack">
+          <div class="sb">
+            <span class="br">⎇ refactor/auth-guard</span>
+            <span class="sep">·</span>
+            <span class="ch">2 modified · 1 added</span>
+            <span class="sep">·</span>
+            <span class="turn">turn 03</span>
+            <span class="right">tokens 1.6k / 200k</span>
+          </div>
+          <div class="sb">
+            <span class="br" style="color:var(--green)">● ready</span>
+            <span class="sep">·</span>
+            <span>~/work/h-ide</span>
+            <span class="right">v1.1.14 · ⌥⌘B workbench</span>
+          </div>
+          <div class="sb">
+            <span class="br" style="color:var(--yellow)">⚠ rate limit · 73%</span>
+            <span class="sep">·</span>
+            <span>14 turns left this hour</span>
+            <span class="right">resets 12:34</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Settings drawer redesign -->
+    <div class="study">
+      <div class="study-head">
+        <h4><span class="num">C</span>Settings · 3-tab focus drawer</h4>
+        <p>Replaces the flat dropdown chaos. Three tabs: Appearance, Keymap, Behavior. Each row is one decision, with a one-line rationale below.</p>
+      </div>
+      <div class="study-body" data-theme="atelier">
+        <div class="settings-mock">
+          <div class="settings-tabs">
+            <div class="settings-tab active">Appearance</div>
+            <div class="settings-tab">Keymap</div>
+            <div class="settings-tab">Behavior</div>
+          </div>
+          <div class="settings-content">
+            <div class="settings-row">
+              <div>
+                Theme
+                <div class="desc">8 themes · 4 dark · 4 light</div>
+              </div>
+              <div class="ctl"><span class="pill on">Atelier ▾</span></div>
+            </div>
+            <div class="settings-row">
+              <div>
+                UI scale
+                <div class="desc">type and chrome size</div>
+              </div>
+              <div class="ctl"><span class="pill">Default · 100% ▾</span></div>
+            </div>
+            <div class="settings-row">
+              <div>
+                Workbench default
+                <div class="desc">opens with new agent sessions</div>
+              </div>
+              <div class="ctl"><span class="pill on">On</span></div>
+            </div>
+            <div class="settings-row" style="border-bottom:none">
+              <div>
+                Reduce motion
+                <div class="desc">disables thinking-indicator pulse + scroll glide</div>
+              </div>
+              <div class="ctl"><span class="pill">Off</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Onboarding wizard -->
+    <div class="study">
+      <div class="study-head">
+        <h4><span class="num">D</span>Onboarding · theme-first</h4>
+        <p>Single card, two columns. Pick a theme to learn the visual identity. The chosen one fills the right pane in real time. No "next, next, next" — pick one and you're in.</p>
+      </div>
+      <div class="study-body" data-theme="newsprint">
+        <div class="onboarding">
+          <div class="onb-side">
+            <div>
+              <div class="step">Step 02 of 03</div>
+              <h6>Pick your <em>workspace mood</em>.</h6>
+              <p class="lede">Eight themes, eight moods. Pick what feels right today — you can always change it later.</p>
+            </div>
+            <div class="progress"><span class="on"></span><span class="on"></span><span></span></div>
+          </div>
+          <div class="onb-main">
+            <div class="onb-theme" data-theme="frosted-dark">
+              <div class="swatch-row"><span style="background:#1c1c1e"></span><span style="background:#0a84ff"></span><span style="background:#f5f5f7"></span></div>
+              <h5>Frosted Dark</h5>
+              <div class="vibe">apple-y modernist</div>
+            </div>
+            <div class="onb-theme selected" data-theme="atelier">
+              <div class="swatch-row"><span style="background:#1a1714"></span><span style="background:#e07850"></span><span style="background:#e8e0d4"></span></div>
+              <h5>Atelier</h5>
+              <div class="vibe">writer's desk</div>
+            </div>
+            <div class="onb-theme" data-theme="observatory">
+              <div class="swatch-row"><span style="background:#0a1018"></span><span style="background:#d4a86a"></span><span style="background:#e8d8b8"></span></div>
+              <h5>Observatory</h5>
+              <div class="vibe">vintage instrument</div>
+            </div>
+            <div class="onb-theme" data-theme="phosphor">
+              <div class="swatch-row"><span style="background:#050805"></span><span style="background:#b0f0a8"></span><span style="background:#80d878"></span></div>
+              <h5>Phosphor</h5>
+              <div class="vibe">crt poetry</div>
+            </div>
+            <div class="onb-theme" data-theme="frosted-light">
+              <div class="swatch-row"><span style="background:#f5f5f7"></span><span style="background:#0a84ff"></span><span style="background:#1c1c1e"></span></div>
+              <h5>Frosted Light</h5>
+              <div class="vibe">apple-y light</div>
+            </div>
+            <div class="onb-theme" data-theme="linen">
+              <div class="swatch-row"><span style="background:#f4ede0"></span><span style="background:#c45a32"></span><span style="background:#2a221a"></span></div>
+              <h5>Linen</h5>
+              <div class="vibe">reading room</div>
+            </div>
+            <div class="onb-theme" data-theme="newsprint">
+              <div class="swatch-row"><span style="background:#f7f4ec"></span><span style="background:#0a0a0a"></span><span style="background:#0a0a0a"></span></div>
+              <h5>Newsprint</h5>
+              <div class="vibe">broadside</div>
+            </div>
+            <div class="onb-theme" data-theme="atrium">
+              <div class="swatch-row"><span style="background:#eef2f6"></span><span style="background:#4a6a8c"></span><span style="background:#2a3548"></span></div>
+              <h5>Atrium</h5>
+              <div class="vibe">skylight</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Notification toast -->
+    <div class="study">
+      <div class="study-head">
+        <h4><span class="num">E</span>Notification · pinned to status bar</h4>
+        <p>Slide-up from the status bar, brass left-rail, mono header + serif body, inline action links. Stacks instead of replacing. Auto-dismiss on focus return.</p>
+      </div>
+      <div class="study-body" data-theme="phosphor">
+        <div class="toast">
+          <div class="dot"></div>
+          <div>
+            <strong>RATE LIMIT WARNING · 73%</strong>
+            <div class="body">14 turns left this hour. Resets at 12:34.</div>
+            <div class="actions">
+              <a>SEE QUOTA</a><a>DISMISS</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Thinking indicator -->
+    <div class="study">
+      <div class="study-head">
+        <h4><span class="num">F</span>Thinking indicator · per-archetype</h4>
+        <p>The vintage CRT pulse stays uniform across themes (LED on the brass rail), but each archetype paints it in its own accent. Cadence at 100ms for the first ten seconds, integer seconds after.</p>
+      </div>
+      <div class="study-body" data-theme="linen">
+        <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+          <div class="thinking">
+            <span class="led"></span>
+            <span class="ticker">Thinking</span>
+            <span class="since">· 2.3s</span>
+          </div>
+          <div class="thinking" data-theme="atelier" style="background:var(--bg-1);color:var(--text-2);border-color:var(--rule-strong)">
+            <span class="led"></span>
+            <span class="ticker">Running Bash</span>
+            <span class="since">· 12s</span>
+          </div>
+          <div class="thinking" data-theme="observatory" style="background:var(--bg-1);color:var(--text-2);border-color:var(--rule-strong)">
+            <span class="led"></span>
+            <span class="ticker">Awaiting Claude</span>
+            <span class="since">· 48s</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════════════════
+   04 · WHAT GETS DROPPED
+═════════════════════════════════════════════════════════════════════ -->
+
+<div class="section">
+  <div class="section-label">
+    <span class="section-num">04</span>
+    <h2 class="section-name">What gets dropped</h2>
+    <span class="section-sub">22 themes removed</span>
+  </div>
+
+  <p class="lede" style="margin-bottom:24px">
+    The catalog falls from 30 to 8. The dropped themes either
+    duplicated another's mood (multiple "neutral darks"), demanded
+    custom CSS that fragmented the surface (rainbow, tron, duel), or
+    landed near a better-considered new addition (sand → linen,
+    solarized → newsprint, midnight → observatory).
+  </p>
+
+  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:24px;font-family:var(--font-mono);font-size:11px;line-height:1.8;color:#c8d6e5">
+    <div>
+      <div style="color:#e8c485;letter-spacing:0.14em;text-transform:uppercase;font-size:10px;margin-bottom:8px">DARK · DROPPED</div>
+      <div>· dark, hacker, nightowl</div>
+      <div>· tron, duel, 80s, midnight</div>
+      <div>· neon-sunset, polar, reactor</div>
+      <div>· amber, macchiato, shibuya</div>
+      <div>· solarized-dark, evergreen</div>
+      <div>· cobalt, minimal-dark, transilvania</div>
+      <div>· rainbow, data, corporate</div>
+    </div>
+    <div>
+      <div style="color:#e8c485;letter-spacing:0.14em;text-transform:uppercase;font-size:10px;margin-bottom:8px">LIGHT · DROPPED</div>
+      <div>· light, solarized, rose</div>
+      <div>· lavender, mint, sand</div>
+      <div style="margin-top:12px;color:#7f8c9b">replaced by: linen, newsprint, atrium</div>
+    </div>
+  </div>
+</div>
+
+
+<footer>
+  <strong>HERMES IDE</strong> · themes &amp; ui-improvements proposal · v0.1
+</footer>
+
+</div>
+
+<script>
+  // Theme picker — switches the IDE preview's [data-theme]
+  const ide = document.getElementById("ide-preview");
+  document.querySelectorAll(".theme-picker .pick").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const theme = btn.getAttribute("data-pick");
+      ide.setAttribute("data-theme", theme);
+      document.querySelectorAll(".theme-picker .pick").forEach((b) => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+    });
+  });
+</script>
+
+</body>
+</html>

@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react";
 import { open } from "@tauri-apps/plugin-shell";
 import { getSetting, setSetting, getSettings } from "../api/settings";
 import { checkAiProviders } from "../api/sessions";
-import { applyTheme, applyUiScale, DARK_THEMES, LIGHT_THEMES, UI_SCALE_OPTIONS } from "../utils/themeManager";
+import { applyTheme, applyUiScale, DARK_THEMES, LIGHT_THEMES, UI_SCALE_OPTIONS, normalizeThemeId, DEFAULT_THEME_ID } from "../utils/themeManager";
 import { setAnalyticsEnabled } from "../utils/analytics";
 import { AI_PROVIDERS } from "../utils/aiProviders";
 
@@ -11,40 +11,22 @@ type Step = "welcome" | "theme" | "ai_setup" | "privacy";
 
 const STEPS: Step[] = ["welcome", "theme", "ai_setup", "privacy"];
 
-// Mini terminal preview colors per theme (bg, text, accent, green)
+// Mini terminal preview colors per theme (bg, text, accent, green).  Values
+// mirror the canonical `--bg-0`, `--text-1`, `--accent`, and `--green` tokens
+// in `themes.css` for each of the eight v1.1.15 themes.  Keep in sync if a
+// theme's tokens shift; the wizard renders a fixed `$ ~ ok` strip per card so
+// only these four values matter for the swatch.
 const THEME_PREVIEW: Record<string, { bg: string; text: string; accent: string; green: string }> = {
   // Dark themes
-  dark:             { bg: "#0B0F14", text: "#c8d6e5", accent: "#7b93db", green: "#34d399" },
-  "frosted-dark":   { bg: "#1e1e1e", text: "#e5e5ea", accent: "#0a84ff", green: "#30d158" },
-  hacker:           { bg: "#0a0a0a", text: "#33ff99", accent: "#33ff99", green: "#33ff99" },
-  nightowl:         { bg: "#010104", text: "#d6d6f0", accent: "#a78bfa", green: "#66e0a3" },
-  tron:             { bg: "#030810", text: "#d0f0ff", accent: "#00dffc", green: "#00ffaa" },
-  duel:             { bg: "#0a0a0a", text: "#e0e0e0", accent: "#ff4444", green: "#33ff77" },
-  "80s":            { bg: "#1a0a1a", text: "#ffcc00", accent: "#ff6600", green: "#33ff99" },
-  midnight:         { bg: "#000080", text: "#d0d8e8", accent: "#1a6caa", green: "#33cc33" },
-  "neon-sunset":    { bg: "#1e1f1c", text: "#cfcfc2", accent: "#66d9ef", green: "#a6e22e" },
-  polar:            { bg: "#242933", text: "#d8dee9", accent: "#88c0d0", green: "#a3be8c" },
-  reactor:          { bg: "#1e2127", text: "#9da5b4", accent: "#61afef", green: "#98c379" },
-  amber:            { bg: "#1d2021", text: "#d5c4a1", accent: "#fe8019", green: "#b8bb26" },
-  macchiato:        { bg: "#1e1e2e", text: "#bac2de", accent: "#cba6f7", green: "#a6e3a1" },
-  shibuya:          { bg: "#16161e", text: "#a9b1d6", accent: "#7aa2f7", green: "#9ece6a" },
-  "solarized-dark": { bg: "#001e26", text: "#839496", accent: "#268bd2", green: "#859900" },
-  evergreen:        { bg: "#272e33", text: "#bfb49a", accent: "#a7c080", green: "#a7c080" },
-  cobalt:           { bg: "#122738", text: "#bbcee8", accent: "#ffc600", green: "#3ad900" },
-  "minimal-dark":   { bg: "#0d1117", text: "#c9d1d9", accent: "#58a6ff", green: "#3fb950" },
-  transilvania:     { bg: "#1e1f29", text: "#ccccd6", accent: "#bd93f9", green: "#50fa7b" },
-  rainbow:          { bg: "#0f0a14", text: "#e0d6f0", accent: "#ff6b9d", green: "#34d399" },
-  data:             { bg: "#0a0e1a", text: "#c8d8f0", accent: "#22d3ee", green: "#34d399" },
-  corporate:        { bg: "#111418", text: "#d4d8e0", accent: "#4a90d9", green: "#48c78e" },
-  designer:         { bg: "#1a1714", text: "#e8e0d4", accent: "#e07850", green: "#8fbc6a" },
+  "frosted-dark": { bg: "#1c1c1e", text: "#d6d6d9", accent: "#0a84ff", green: "#30d158" },
+  atelier:        { bg: "#1a1714", text: "#c8bfb0", accent: "#e07850", green: "#8fbc6a" },
+  observatory:    { bg: "#0a1018", text: "#c8b896", accent: "#d4a86a", green: "#6fa86f" },
+  phosphor:       { bg: "#050805", text: "#80d878", accent: "#b0f0a8", green: "#b0f0a8" },
   // Light themes
-  light:            { bg: "#ffffff", text: "#1a1a2e", accent: "#2563eb", green: "#16a34a" },
-  "frosted-light":  { bg: "#ffffff", text: "#333336", accent: "#007aff", green: "#28cd41" },
-  solarized:        { bg: "#fdf6e3", text: "#586e75", accent: "#268bd2", green: "#859900" },
-  rose:             { bg: "#fdf8f8", text: "#2c2024", accent: "#c75580", green: "#5a9e6f" },
-  lavender:         { bg: "#f9f7fd", text: "#1e1a2e", accent: "#7c4dff", green: "#4caf6a" },
-  mint:             { bg: "#f6fcfa", text: "#1a2c26", accent: "#0d9668", green: "#12a35c" },
-  sand:             { bg: "#faf8f4", text: "#2a2520", accent: "#c06a30", green: "#5a9952" },
+  "frosted-light": { bg: "#f5f5f7", text: "#3a3a3c", accent: "#0a84ff", green: "#28a745" },
+  linen:           { bg: "#f4ede0", text: "#4a3e30", accent: "#c45a32", green: "#5e8a40" },
+  newsprint:       { bg: "#f7f4ec", text: "#2a2a2a", accent: "#0a0a0a", green: "#2a6a2a" },
+  atrium:          { bg: "#eef2f6", text: "#4a5566", accent: "#4a6a8c", green: "#4a8a6a" },
 };
 
 const SETTING_KEY = "onboarding_completed";
@@ -54,7 +36,7 @@ export function OnboardingWizard() {
   const [step, setStep] = useState<Step>("welcome");
 
   // Theme step
-  const [selectedTheme, setSelectedTheme] = useState("frosted-dark");
+  const [selectedTheme, setSelectedTheme] = useState<string>(DEFAULT_THEME_ID);
   const [selectedScale, setSelectedScale] = useState("default");
 
   // AI setup step
@@ -79,7 +61,7 @@ export function OnboardingWizard() {
         // Load current theme if already set
         try {
           const settings = await getSettings();
-          if (settings.theme) setSelectedTheme(settings.theme);
+          if (settings.theme) setSelectedTheme(normalizeThemeId(settings.theme));
           if (settings.ui_scale) setSelectedScale(settings.ui_scale);
         } catch {
           // ignore
