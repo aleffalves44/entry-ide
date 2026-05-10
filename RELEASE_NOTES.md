@@ -1,3 +1,24 @@
+# Hermes IDE 1.1.9
+
+A hotfix release. If you opened a fresh Agent session in 1.1.7 or
+1.1.8 and tried to send your first message, the chat could blank
+out with an error instead of starting the conversation. That is
+fixed here.
+
+## Sending the first message in a new Agent session no longer crashes the view
+
+On 1.1.7 and 1.1.8 the very first message in a fresh Agent session
+could trigger a render error, leaving you with an empty pane and
+no obvious way forward. The transition from the empty welcome
+state to the first turn now goes through cleanly — your message
+echoes, the thinking indicator appears, and the conversation
+proceeds as expected.
+
+If you saw the error before, no action is needed; the next launch
+of Hermes after updating runs the fixed view.
+
+---
+
 # Hermes IDE 1.1.8
 
 A small fix-up release. Four polish items that smooth over rough
