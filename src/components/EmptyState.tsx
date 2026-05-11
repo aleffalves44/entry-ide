@@ -162,28 +162,54 @@ export function EmptyState({ recentSessions, onNew, onRestore }: EmptyStateProps
             </div>
 
             <ol className="es-recent-list">
-              {recentSessions.slice(0, 5).map((entry, i) => (
-                <li key={entry.id} className="es-recent-item-wrap">
-                  <button
-                    className="es-recent-item"
-                    onClick={() => onRestore(entry, true)}
-                    type="button"
-                  >
-                    <span className="es-recent-num">{`№ ${String(i + 1).padStart(2, "0")}`}</span>
-                    <span
-                      className="es-recent-dot"
-                      style={{ background: entry.color }}
-                      aria-hidden="true"
-                    />
-                    <span className="es-recent-label">{entry.label}</span>
-                    <span className="es-recent-path">{projectName(entry.working_directory)}</span>
-                    {entry.closed_at && (
-                      <span className="es-recent-time">{timeAgo(entry.closed_at)}</span>
-                    )}
-                    <span className="es-recent-arrow" aria-hidden="true">⤍</span>
-                  </button>
-                </li>
-              ))}
+              {recentSessions.slice(0, 5).map((entry, i) => {
+                const snippet = entry.scrollback_preview
+                  ? entry.scrollback_preview.split("\n").find((l) => l.trim()) || ""
+                  : "";
+                return (
+                  <li key={entry.id} className="es-recent-item-wrap">
+                    <button
+                      className="es-recent-item"
+                      onClick={() => onRestore(entry, true)}
+                      type="button"
+                    >
+                      <span className="es-recent-edge" aria-hidden="true" />
+                      <span className="es-recent-num">{`№ ${String(i + 1).padStart(2, "0")}`}</span>
+                      <span
+                        className="es-recent-dot"
+                        style={{ background: entry.color }}
+                        aria-hidden="true"
+                      />
+                      <div className="es-recent-body">
+                        <div className="es-recent-head">
+                          <span className="es-recent-label">{entry.label}</span>
+                          <span className="es-recent-path">{projectName(entry.working_directory)}</span>
+                          {entry.closed_at && (
+                            <span className="es-recent-time">{timeAgo(entry.closed_at)}</span>
+                          )}
+                        </div>
+                        {(snippet || entry.shell) && (
+                          <div className="es-recent-tail">
+                            {snippet && (
+                              <span className="es-recent-snippet" title={snippet}>
+                                ›&nbsp;{snippet.length > 90 ? snippet.slice(0, 90) + "…" : snippet}
+                              </span>
+                            )}
+                            <span className="es-recent-chips">
+                              {entry.shell && (
+                                <span className="es-recent-chip">
+                                  {entry.shell.split("/").pop() || entry.shell}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <span className="es-recent-arrow" aria-hidden="true">⤍</span>
+                    </button>
+                  </li>
+                );
+              })}
             </ol>
           </section>
         )}

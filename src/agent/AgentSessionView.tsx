@@ -906,9 +906,11 @@ export function MessageRow({
 }
 
 /** Speaker-chip icons.  Drawn inline with `currentColor` so each
- *  theme's accent (via the brass-remap landed in #254) paints the
- *  glyph — green-phosphor on hacker, cyan on tron, terracotta on
- *  designer, etc.  Sized to fit the 24px avatar chip. */
+ *  theme's voice-color paints the glyph: --brass (warm operator
+ *  voice) on user chips, --accent (cool agent voice) on assistant
+ *  chips.  Per design-system v2 every theme declares both voices
+ *  explicitly — see docs/design-system/02-color.md.  Sized to fit
+ *  the 24px avatar chip. */
 function BotIcon() {
   return (
     <svg

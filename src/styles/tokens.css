@@ -1,9 +1,9 @@
 /* ─── Self-hosted font faces (v1.0.0 redesign) ──────────────
  * JetBrains Mono — Apache 2.0 — body / code / tool blocks
  * Inter Tight (via Inter variable) — OFL — chrome / display
- * Newsreader — OFL — WebFetch / WebSearch excerpts ONLY
+ * Newsreader — OFL — editorial mastheads, blockquotes, WebFetch
  * Files live in /public/fonts/ and are served at /fonts/* by Vite.
- * See docs/internal/v1-redesign-playbook.md §3 for usage rules.
+ * See docs/design-system/01-typography.md for usage rules.
  * ──────────────────────────────────────────────────────── */
 
 @font-face {
@@ -48,75 +48,236 @@
   font-display: swap;
 }
 
-/* ─── Design Tokens ─────────────────────────────────────────
- * Backgrounds:  --bg-0 (darkest) → --bg-active (lightest)
- * Text:         --text-0 (brightest) → --text-3 (dimmest)
- * Semantic:     --accent, --green, --red, --yellow, --violet, --error
- * Radius:       --radius (3px), --radius-sm (3px), --radius-lg (6px), --radius-pill (10px)
- * Spacing:      --space-1 (4px) → --space-6 (32px)
- * Font sizes:   --text-xs (9px) → --text-2xl (18px)
- * Fonts:        --font-mono, --font-ui
- * Layout:       --topbar-h, --statusbar-h, --sidebar-w, --context-w
- * ──────────────────────────────────────────────────────────── */
+/* ════════════════════════════════════════════════════════════════════
+ * DESIGN TOKENS — canonical source of truth
+ *
+ * Full documentation: docs/design-system/
+ *   00-principles, 01-typography, 02-color, 03-spacing-density,
+ *   04-elevation, 05-motion, 06-components, 07-accessibility,
+ *   08-tokens-reference, 09-migration
+ *
+ * :root mirrors the Frosted Dark theme so an unset state matches
+ * the default theme exactly. Each [data-theme=…] block in themes.css
+ * overrides the surface/ink/voice/shadow-tint tokens — never the
+ * structural ones below.
+ * ════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* :root mirrors the v1.1.15 default theme (Frosted Dark) so an
-   * unset/loading state is visually identical to the default.  Each
-   * [data-theme=…] block in themes.css overrides these.  Adding a
-   * new color token here means adding it to every theme block. */
-  --bg-0: #1c1c1e;
-  --bg-1: #232325;
-  --bg-2: #2d2d2f;
-  --bg-3: #3a3a3c;
-  --bg-hover: #2d2d2f;
-  --bg-active: #48484a;
-  --text-0: #f5f5f7;
-  --text-1: #d6d6d9;
-  --text-2: #8e8e93;
-  --text-3: #5c5c61;
-  --accent: #0a84ff;
+  /* ─────────────────────────────────────────────────────────
+   * TYPOGRAPHY
+   * Modular scale at ratio 1.125 rooted at 13px.
+   * ───────────────────────────────────────────────────────── */
+
+  /* Font families */
+  --font-ui:        "Inter Tight", "Inter", system-ui, -apple-system, sans-serif;
+  --font-display:   var(--font-ui);
+  --font-serif:     "Newsreader", "Lyon Text", "Charter", Georgia, serif;
+  --font-display-editorial: var(--font-ui);  /* editorial themes override to serif */
+  --font-code:      "JetBrains Mono", ui-monospace, "SF Mono", "Fira Code", Menlo, monospace;
+  --font-numeric:   var(--font-ui);          /* paired with font-variant-numeric */
+  --font-mono:      var(--font-code);        /* legacy alias */
+  --font-sans:      var(--font-ui);          /* legacy alias */
+
+  /* Font features */
+  --font-code-features: "calt", "liga", "ss01", "tnum", "zero";
+  --font-mono-features: var(--font-code-features);  /* legacy alias */
+  --font-numeric-features: "tnum", "zero";
+
+  /* Sizes */
+  --text-2xs:     10px;
+  --text-xs:      11px;
+  --text-sm:      12px;
+  --text-base:    13px;
+  --text-md:      14px;
+  --text-lg:      16px;
+  --text-xl:      18px;
+  --text-2xl:     22px;
+  --text-3xl:     28px;
+  --text-display: 36px;
+
+  /* Leading */
+  --leading-none:     1;
+  --leading-tight:    1.2;
+  --leading-snug:     1.35;
+  --leading-normal:   1.5;
+  --leading-relaxed:  1.65;
+  --leading-loose:    1.8;
+
+  /* Weight (variable axis) */
+  --weight-light:     350;
+  --weight-regular:   420;
+  --weight-medium:    520;
+  --weight-semibold:  620;
+  --weight-bold:      720;
+
+  /* Tracking */
+  --tracking-tight:   -0.02em;
+  --tracking-snug:    -0.01em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.02em;
+  --tracking-wider:   0.05em;
+  --tracking-widest:  0.08em;
+
+  /* ─────────────────────────────────────────────────────────
+   * COLOR — defaults match Frosted Dark
+   * ───────────────────────────────────────────────────────── */
+
+  /* Surfaces — 2-3% blue chroma so the frost has something to refract */
+  --bg-0: #1a1c20;
+  --bg-1: #20232a;
+  --bg-2: #292d35;
+  --bg-3: #353a44;
+  --bg-hover:    var(--bg-2);
+  --bg-active:   #48484a;
+  --bg-elevated: #2c2c2e;
+
+  /* Ink */
+  --text-0: #f5f5f7;   /* ≥ 12:1 contrast vs bg-1 */
+  --text-1: #d6d6d9;   /* ≥  7:1 */
+  --text-2: #8e8e93;   /* ≥ 4.5:1 */
+  --text-3: #5c5c61;   /* ≥ 4.5:1 (or 3:1 large) */
+
+  /* Voice */
+  --voice-user:  #ffb340;
+  --voice-agent: #0a84ff;
+
+  /* Legacy color aliases — kept for back-compat (see 09-migration.md) */
+  --accent:        var(--voice-agent);
   --accent-bright: #5ea7ff;
-  --accent-dim: rgba(10, 132, 255, 0.18);
-  --green: #30d158;
-  --green-dim: rgba(48, 209, 88, 0.18);
-  --red: #ff453a;
-  --red-dim: rgba(255, 69, 58, 0.18);
-  --yellow: #ffd60a;
-  --yellow-dim: rgba(255, 214, 10, 0.18);
-  --error: #ff453a;
-  --violet: #bf5af2;
+  --accent-dim:    rgba(10, 132, 255, 0.18);
+  --brass:         var(--voice-user);
+  --brass-bright:  #ffc870;
+  --brass-dim:     rgba(255, 179, 64, 0.18);
+
+  /* Semantic ramps */
+  --success:        #30d158;
+  --success-bright: #5cdf7c;
+  --success-dim:    rgba(48, 209, 88, 0.18);
+
+  --warning:        #ffb340;
+  --warning-bright: #ffc870;
+  --warning-dim:    rgba(255, 179, 64, 0.18);
+
+  --danger:         #ff453a;
+  --danger-bright:  #ff6f66;
+  --danger-dim:     rgba(255, 69, 58, 0.18);
+
+  --info:           #64d2ff;
+  --info-bright:    #8ee0ff;
+  --info-dim:       rgba(100, 210, 255, 0.18);
+
+  /* Legacy semantic aliases */
+  --green:      var(--success);
+  --green-dim:  var(--success-dim);
+  --red:        var(--danger);
+  --red-dim:    var(--danger-dim);
+  --yellow:     var(--warning);
+  --yellow-dim: var(--warning-dim);
+  --error:      var(--danger);
+  --violet:     #bf5af2;
   --violet-dim: rgba(191, 90, 242, 0.18);
-  --border: #2d2d2f;
-  --border-light: #3a3a3c;
+
+  /* Rules */
+  --border:        #2d2d2f;
+  --border-light:  #3a3a3c;
+  --rule-card:     var(--border);
+  --rule-zone:     var(--border-light);
+  --rule-hair:     rgba(45, 45, 47, 0.5);
+  --rule:          var(--rule-card);          /* legacy */
+  --rule-strong:   var(--rule-zone);          /* legacy */
+
+  /* Tool family */
+  --tool-file:   var(--violet);
+  --tool-exec:   var(--success);
+  --tool-search: var(--warning);
+  --tool-web:    var(--info);
+  --tool-error:  var(--danger);
+
+  /* Shadow tint (per theme) */
+  --shadow-tint: #000;
   --scanline-opacity: 0;
   --accent-glow: none;
-  --radius: 6px;
-  --radius-sm: 4px;
-  --radius-lg: 10px;
-  --radius-pill: 14px;
-  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", Menlo, monospace;
-  --font-ui: "Inter Tight", "Inter", system-ui, sans-serif;
-  --font-sans: var(--font-ui);
-  --topbar-h: 40px;
-  --statusbar-h: 28px;
-  --sidebar-w: 240px;
-  --context-w: 300px;
-  --activity-bar-w: 36px;
+
+  /* ─────────────────────────────────────────────────────────
+   * ELEVATION
+   * ───────────────────────────────────────────────────────── */
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.28);
+  --shadow-3: 0 8px 24px rgba(0, 0, 0, 0.36);
+  --shadow-4: 0 16px 48px rgba(0, 0, 0, 0.5);
+
+  /* ─────────────────────────────────────────────────────────
+   * FOCUS RING
+   * ───────────────────────────────────────────────────────── */
+
+  --focus-ring:        var(--voice-user);
+  --focus-ring-shadow: 0 0 0 3px rgba(255, 179, 64, 0.35);
+
+  /* ─────────────────────────────────────────────────────────
+   * SPACING & DENSITY
+   * ───────────────────────────────────────────────────────── */
+
+  /* Density multiplier — user-overridable via Settings.
+   * 0.85 compact · 1.0 cozy · 1.15 spacious */
+  --density-y: 1;
+
+  /* Spacing ladder (4px baseline) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
-  --text-xs: 9px;
-  --text-sm: 10px;
-  --text-base: 11px;
-  --text-md: 12px;
-  --text-lg: 13px;
-  --text-xl: 15px;
-  --text-2xl: 18px;
-  --icon-size: 18px;
-  --btn-size: 28px;
+  --space-7: 48px;
+  --space-8: 72px;
+
+  /* Density-aware computed values */
+  --row-pad-y:   calc(var(--space-2) * var(--density-y));
+  --row-pad-x:   var(--space-3);
+  --topbar-h:    calc(40px * var(--density-y));
+  --statusbar-h: calc(28px * var(--density-y));
+  --btn-size:    calc(28px * var(--density-y));
+
+  /* Radius */
+  --radius:      6px;
+  --radius-sm:   4px;
+  --radius-lg:   10px;
+  --radius-pill: 14px;
+
+  /* Icons. The activity-bar inline SVGs have viewBox="0 0 18 18", so
+   * --icon-size stays at 18 to render at native crispness. The -sm and
+   * -lg variants are for ad-hoc usage where the SVG isn't pinned. */
+  --icon-size:    18px;
+  --icon-size-sm: 14px;
+  --icon-size-lg: 22px;
+
+  /* Layout widths (24px snap grid).
+   * Activity bar stays at 36px to match the existing inline-SVG icon
+   * layout (icons hardcode viewBox 0 0 18 18; tabs are 28px buttons
+   * with 4px outer margin = 32px effective; +4px breathing = 36px). */
+  --sidebar-w:      240px;
+  --context-w:      288px;
+  --activity-bar-w: 36px;
+
+  /* ─────────────────────────────────────────────────────────
+   * MOTION
+   * ───────────────────────────────────────────────────────── */
+
+  --ease-out-expo: cubic-bezier(0.16, 1.00, 0.30, 1.00);
+  --ease-out-soft: cubic-bezier(0.22, 0.61, 0.36, 1.00);
+  --ease-spring:   cubic-bezier(0.34, 1.56, 0.64, 1.00);
+  --ease-standard: cubic-bezier(0.20, 0.00, 0.00, 1.00);
+
+  --dur-tap:    80ms;
+  --dur-quick: 140ms;
+  --dur-base:  220ms;
+  --dur-slow:  360ms;
+
+  /* ─────────────────────────────────────────────────────────
+   * BRAND BADGE COLORS (unchanged)
+   * ───────────────────────────────────────────────────────── */
+
   --badge-git: #f78166;
   --badge-npm: #cb3837;
   --badge-yarn: #2c8ebb;
@@ -137,84 +298,43 @@
   --badge-prisma: #2d3748;
 }
 
-/* ─── Agent-mode redesign tokens (v1.0.0) ──────────────────
- * These are SEPARATE from the legacy --text-*, --bg-* tokens used
- * by terminal-mode UI. Agent-UI components reference only these.
- * Don't mix the two within a single component file.
- * See docs/internal/v1-redesign-playbook.md §2 for usage rules.
+/* ────────────────────────────────────────────────────────────
+ * Agent-mode redesign legacy aliases (v1.0.0)
+ *
+ * The agent surface CSS (~600 usages) reads `--bg-paper`,
+ * `--ink-primary`, `--rule`, `--brass`, etc — a separate token
+ * vocabulary that pre-dates the consolidated theme system.
+ * We alias them here so the agent surface re-paints when you
+ * switch from Frosted Dark to Newsprint without any agent-CSS
+ * changes.
  * ──────────────────────────────────────────────────────── */
-
 :root {
-  /* ─── Legacy "paper / ink / brass" aliases (1.1.15) ──────────
-   * The agent surface CSS (~600 usages) reads `--bg-paper`,
-   * `--ink-primary`, `--rule`, `--brass`, etc — a separate token
-   * vocabulary that pre-dates the consolidated theme system.
-   *
-   * Rather than rename ~600 references, we alias the legacy names
-   * to the new theme-controlled tokens here.  Then `[data-theme=…]`
-   * in themes.css overrides only the new names (`--bg-0`, `--text-0`,
-   * `--accent`, etc) and the legacy names follow automatically via
-   * CSS variable resolution.
-   *
-   * That's how the agent surface re-paints when you switch from
-   * Frosted Dark to Newsprint without any agent-CSS changes. */
-
-  /* Page surface (where the conversation lives) */
+  /* Page surface */
   --bg-paper: var(--bg-0);
 
   /* Hairlines */
-  --rule: var(--border);
-  --rule-strong: var(--border-light);
+  --rule: var(--rule-card);
+  --rule-strong: var(--rule-zone);
 
-  /* Ink (text colors, refined for reading copy) */
+  /* Ink (text colors for reading copy) */
   --ink-primary: var(--text-0);
   --ink-secondary: var(--text-2);
   --ink-tertiary: var(--text-3);
+  --ink-emphasis: var(--text-0);
 
-  /* Reading-optimized accent — alias to the theme's primary accent.
-   * Pre-1.1.15 this was a separate slate-blue used for structural
-   * roles; the new themes don't carry a separate "cool structural"
-   * accent, so we use the primary. */
-  --accent-paper: var(--accent);
-
-  /* "Workshop" palette — alias to the theme's accent.  In Observatory
-   * this resolves back to true brass (#d4a86a); in Atelier it's
-   * terracotta; in Newsprint it's black.  Each theme reinterprets
-   * "warm/active/yours-here" through its own accent. */
-  --brass: var(--accent);
-  --brass-bright: var(--accent-bright);
-  --brass-dim: var(--accent-dim);
-
-  /* Tool family accents (semantic) */
-  --tool-file: var(--violet);
-  --tool-exec: var(--green);
-  --tool-search: var(--yellow);
-  --tool-web: var(--accent);
-  --tool-error: var(--red);
-
-  /* Font family aliases for the agent UI */
-  --font-display: "Inter Tight", "Inter", system-ui, sans-serif;
-  --font-serif: "Newsreader", "Lyon Text", "Charter", Georgia, serif;
-
-  /* Font features for mono — ligatures + tabular numerics */
-  --font-mono-features: "calt", "liga", "ss01", "tnum";
+  /* Reading-optimized accent — alias to the theme's agent voice */
+  --accent-paper: var(--voice-agent);
 
   /* ─── Archetype paint tokens ──────────────────────────────────
    * The agent timeline reads these to render its tool cards, turn
-   * separators, and surface texture.  Each theme picks an
-   * archetype by overriding these tokens — see themes.css.
+   * separators, and surface texture. Each theme picks an archetype
+   * by overriding these tokens — see themes.css.
    *
    * Six rendering archetypes, each expressed entirely in tokens:
-   *   - paper-cards     solid card with optional shadow (default).
-   *   - glass-cards     translucent card + backdrop-blur.
-   *   - hairline-rules  no card; just thin separators.
-   *   - crt-blocks      sharp box with phosphor glow / scanlines.
-   *   - ribbon-rails    no card; left-side accent rail per turn.
-   *   - editorial-margin  paper card, generous white space, low
-   *                       chrome (warm light themes).
+   *   paper-cards · glass-cards · hairline-rules · crt-blocks ·
+   *   ribbon-rails · editorial-margin
    *
-   * Defaults below are paper-cards on the dark `:root` theme.  The
-   * agent CSS does NOT branch on theme — it just reads the tokens.
+   * Defaults below are paper-cards on the dark :root theme.
    * ──────────────────────────────────────────────────────────── */
 
   /* Tool / turn card chrome */
@@ -223,17 +343,16 @@
   --tool-card-radius: var(--radius);
   --tool-card-shadow: none;
   --tool-card-backdrop: none;
-  --tool-card-pad: 0; /* extra inner padding above the per-block padding */
+  --tool-card-pad: 0;
 
   /* Conversation surface effects (per theme) */
   --surface-scanlines-opacity: 0;
   --surface-grain-opacity: 0;
   --surface-vignette: none;
 
-  /* Turn separator — the rule between turns.  Themes can replace
-   * with a thicker, bevelled, or color-shifted line. */
+  /* Turn separator */
   --turn-separator: 1px solid var(--rule);
 
-  /* Composer / footer chrome (used by the result footer + exit notice) */
+  /* Composer / footer chrome */
   --result-footer-border: 1px dashed var(--rule);
 }

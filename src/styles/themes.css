@@ -28,19 +28,26 @@
  * one-frame flash before the theme attribute lands on <html>.
  * ──────────────────────────────────────────────────────────────────── */
 :root {
-  --bg-0: #1c1c1e;
-  --bg-1: #232325;
-  --bg-2: #2d2d2f;
-  --bg-3: #3a3a3c;
-  --bg-hover: #2d2d2f;
+  /* Surfaces — 2-3% blue chroma so the frost has something to refract */
+  --bg-0: #1a1c20;
+  --bg-1: #20232a;
+  --bg-2: #292d35;
+  --bg-3: #353a44;
+  --bg-hover: #292d35;
   --bg-active: #48484a;
+  --bg-elevated: #2c2c2e;
   --text-0: #f5f5f7;
   --text-1: #d6d6d9;
   --text-2: #8e8e93;
   --text-3: #5c5c61;
+  --voice-user:  #ffb340;
+  --voice-agent: #0a84ff;
   --accent: #0a84ff;
   --accent-bright: #5ea7ff;
   --accent-dim: rgba(10, 132, 255, 0.18);
+  --brass: #ffb340;
+  --brass-bright: #ffc870;
+  --brass-dim: rgba(255, 179, 64, 0.18);
   --green: #30d158;
   --green-dim: rgba(48, 209, 88, 0.18);
   --red: #ff453a;
@@ -49,32 +56,49 @@
   --yellow-dim: rgba(255, 214, 10, 0.18);
   --violet: #bf5af2;
   --violet-dim: rgba(191, 90, 242, 0.18);
+  --success: #30d158; --success-bright: #5cdf7c; --success-dim: rgba(48,209,88,.18);
+  --warning: #ffb340; --warning-bright: #ffc870; --warning-dim: rgba(255,179,64,.18);
+  --danger:  #ff453a; --danger-bright:  #ff6f66; --danger-dim:  rgba(255,69,58,.18);
+  --info:    #64d2ff; --info-bright:    #8ee0ff; --info-dim:    rgba(100,210,255,.18);
   --error: #ff453a;
   --border: #2d2d2f;
   --border-light: #3a3a3c;
   --rule: #2d2d2f;
   --rule-strong: #3a3a3c;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(45,45,47,.5);
   --scanline-opacity: 0;
   --accent-glow: none;
+  --shadow-tint: #000;
+  --focus-ring: var(--voice-user);
+  --focus-ring-shadow: 0 0 0 3px rgba(255,179,64,.35);
 }
 
 /* ════════════════════════════════════════════════════════════════════
  * DARK · 01 Frosted Dark — Apple-y modernist, vibrant blue accent
+ * Cool radial wash on the conversation surface mirrors Atelier's warm wash.
  * ════════════════════════════════════════════════════════════════════ */
 html[data-theme="frosted-dark"] {
-  --bg-0: #1c1c1e;
-  --bg-1: #232325;
-  --bg-2: #2d2d2f;
-  --bg-3: #3a3a3c;
-  --bg-hover: #2d2d2f;
+  --bg-0: #1a1c20;
+  --bg-1: #20232a;
+  --bg-2: #292d35;
+  --bg-3: #353a44;
+  --bg-hover: #292d35;
   --bg-active: #48484a;
+  --bg-elevated: #2c2c2e;
   --text-0: #f5f5f7;
   --text-1: #d6d6d9;
   --text-2: #8e8e93;
   --text-3: #5c5c61;
+  --voice-user:  #ffb340;
+  --voice-agent: #0a84ff;
   --accent: #0a84ff;
   --accent-bright: #5ea7ff;
   --accent-dim: rgba(10, 132, 255, 0.18);
+  --brass: #ffb340;
+  --brass-bright: #ffc870;
+  --brass-dim: rgba(255, 179, 64, 0.18);
   --green: #30d158;
   --green-dim: rgba(48, 209, 88, 0.18);
   --red: #ff453a;
@@ -83,13 +107,32 @@ html[data-theme="frosted-dark"] {
   --yellow-dim: rgba(255, 214, 10, 0.18);
   --violet: #bf5af2;
   --violet-dim: rgba(191, 90, 242, 0.18);
+  --success: #30d158; --success-bright: #5cdf7c; --success-dim: rgba(48,209,88,.18);
+  --warning: #ffb340; --warning-bright: #ffc870; --warning-dim: rgba(255,179,64,.18);
+  --danger:  #ff453a; --danger-bright:  #ff6f66; --danger-dim:  rgba(255,69,58,.18);
+  --info:    #64d2ff; --info-bright:    #8ee0ff; --info-dim:    rgba(100,210,255,.18);
   --error: #ff453a;
   --border: #2d2d2f;
   --border-light: #3a3a3c;
   --rule: #2d2d2f;
   --rule-strong: #3a3a3c;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(45,45,47,.5);
   --scanline-opacity: 0;
   --accent-glow: none;
+  --shadow-tint: #000;
+  --focus-ring: var(--voice-user);
+  --focus-ring-shadow: 0 0 0 3px rgba(255,179,64,.35);
+}
+
+/* Frosted Dark — cool radial wash on the agent surface so the frost
+ * has something to refract, mirroring Atelier's warm wash. */
+html[data-theme="frosted-dark"] .agent-session-scroll {
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%,
+      rgba(10, 132, 255, 0.04) 0%,
+      transparent 70%);
 }
 
 /* Frosted Dark — frosted toolbar & sidebar */
@@ -162,13 +205,20 @@ html[data-theme="atelier"] {
   --bg-3: #332e28;
   --bg-hover: #2a2520;
   --bg-active: #3d3630;
+  --bg-elevated: #2d2823;
   --text-0: #e8e0d4;
   --text-1: #c8bfb0;
   --text-2: #8a7f72;
   --text-3: #6b6258;
+  /* Mono-tone identity: both voices alias to the warm accent. */
+  --voice-user:  #e07850;
+  --voice-agent: #e07850;
   --accent: #e07850;
   --accent-bright: #f0966c;
   --accent-dim: rgba(224, 120, 80, 0.20);
+  --brass: #e07850;
+  --brass-bright: #f0966c;
+  --brass-dim: rgba(224, 120, 80, 0.20);
   --green: #8fbc6a;
   --green-dim: rgba(143, 188, 106, 0.20);
   --red: #d95555;
@@ -177,13 +227,23 @@ html[data-theme="atelier"] {
   --yellow-dim: rgba(212, 168, 69, 0.20);
   --violet: #b58bdb;
   --violet-dim: rgba(181, 139, 219, 0.20);
+  --success: #8fbc6a; --success-bright: #a8d080; --success-dim: rgba(143,188,106,.20);
+  --warning: #d4a845; --warning-bright: #e8c265; --warning-dim: rgba(212,168,69,.20);
+  --danger:  #d95555; --danger-bright:  #e8706f; --danger-dim:  rgba(217,85,85,.20);
+  --info:    #6ab3c0; --info-bright:    #8ec8d4; --info-dim:    rgba(106,179,192,.20);
   --error: #d95555;
   --border: #2a2520;
   --border-light: #3a3430;
   --rule: #2a2520;
   --rule-strong: #3a3430;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(42,37,32,.5);
   --scanline-opacity: 0;
   --accent-glow: none;
+  --shadow-tint: #14110e;
+  --focus-ring: var(--accent);
+  --focus-ring-shadow: 0 0 0 3px rgba(224,120,80,.35);
 }
 
 /* Atelier — subtle warm radial wash on the conversation surface so it
@@ -207,13 +267,20 @@ html[data-theme="observatory"] {
   --bg-3: #1c2538;
   --bg-hover: #141c2c;
   --bg-active: #25304a;
+  --bg-elevated: #18223a;
   --text-0: #e8d8b8;
   --text-1: #c8b896;
   --text-2: #8a7a5c;
-  --text-3: #5c5240;
+  --text-3: #6a5e48;            /* lifted from #5c5240 for contrast */
+  /* Brass + cool ink — true duotone. */
+  --voice-user:  #d4a86a;
+  --voice-agent: #7aa9d6;
   --accent: #d4a86a;
   --accent-bright: #f4d18a;
   --accent-dim: rgba(212, 168, 106, 0.22);
+  --brass: #d4a86a;
+  --brass-bright: #f4d18a;
+  --brass-dim: rgba(212, 168, 106, 0.22);
   --green: #6fa86f;
   --green-dim: rgba(111, 168, 111, 0.22);
   --red: #c8624c;
@@ -222,13 +289,23 @@ html[data-theme="observatory"] {
   --yellow-dim: rgba(232, 176, 78, 0.22);
   --violet: #9d7fc4;
   --violet-dim: rgba(157, 127, 196, 0.22);
+  --success: #6fa86f; --success-bright: #8dc28d; --success-dim: rgba(111,168,111,.22);
+  --warning: #e8b04e; --warning-bright: #f4c870; --warning-dim: rgba(232,176,78,.22);
+  --danger:  #c8624c; --danger-bright:  #de7c66; --danger-dim:  rgba(200,98,76,.22);
+  --info:    #7aa9d6; --info-bright:    #a4c7e6; --info-dim:    rgba(122,169,214,.22);
   --error: #c8624c;
   --border: #1a2538;
   --border-light: #2a3550;
   --rule: #1a2538;
   --rule-strong: #2a3550;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(26,37,56,.5);
   --scanline-opacity: 0;
   --accent-glow: 0 0 12px rgba(212, 168, 106, 0.18);
+  --shadow-tint: #050811;
+  --focus-ring: var(--voice-user);
+  --focus-ring-shadow: 0 0 0 3px rgba(212,168,106,.35);
 }
 
 /* Observatory — brass-rail accent on workbench and panels.
@@ -316,13 +393,20 @@ html[data-theme="phosphor"] {
   --bg-3: #182218;
   --bg-hover: #101810;
   --bg-active: #1f2c1f;
+  --bg-elevated: #0e160e;
   --text-0: #b0f0a8;
   --text-1: #80d878;
   --text-2: #5a9a52;
-  --text-3: #366028;
+  --text-3: #4a8038;            /* lifted from #366028 (3:1 vs bg-1) */
+  /* Mono-tone identity: both voices share the phosphor green. */
+  --voice-user:  #b0f0a8;
+  --voice-agent: #b0f0a8;
   --accent: #b0f0a8;
   --accent-bright: #d4ffcc;
   --accent-dim: rgba(176, 240, 168, 0.16);
+  --brass: #b0f0a8;
+  --brass-bright: #d4ffcc;
+  --brass-dim: rgba(176, 240, 168, 0.20);
   --green: #b0f0a8;
   --green-dim: rgba(176, 240, 168, 0.20);
   --red: #ff7a6a;
@@ -331,13 +415,27 @@ html[data-theme="phosphor"] {
   --yellow-dim: rgba(240, 224, 136, 0.20);
   --violet: #b08adb;
   --violet-dim: rgba(176, 138, 219, 0.20);
+  --success: #b0f0a8; --success-bright: #d4ffcc; --success-dim: rgba(176,240,168,.20);
+  --warning: #f0e088; --warning-bright: #fff0aa; --warning-dim: rgba(240,224,136,.20);
+  --danger:  #ff7a6a; --danger-bright:  #ff9a8a; --danger-dim:  rgba(255,122,106,.20);
+  --info:    #80d8d0; --info-bright:    #a0e8e0; --info-dim:    rgba(128,216,208,.20);
   --error: #ff7a6a;
   --border: #1a2818;
   --border-light: #2a3a28;
   --rule: #1a2818;
   --rule-strong: #2a3a28;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(26,40,24,.5);
   --scanline-opacity: 0.10;
   --accent-glow: 0 0 8px rgba(176, 240, 168, 0.45);
+  --shadow-tint: #000;
+  /* CRT focus ring — accent glow */
+  --focus-ring: var(--accent);
+  --focus-ring-shadow: 0 0 0 2px var(--accent), 0 0 12px rgba(176,240,168,.5);
+  /* Phosphor weights — keep the bitmap feel */
+  --weight-regular: 400;
+  --weight-semibold: 600;
 }
 
 /* Phosphor — mono-everywhere.  Force display/serif fonts to mono so
@@ -407,19 +505,25 @@ html[data-theme="phosphor"] .agent-session-scroll {
  * LIGHT · 05 Frosted Light — Apple-y light, sharp blue
  * ════════════════════════════════════════════════════════════════════ */
 html[data-theme="frosted-light"] {
-  --bg-0: #f5f5f7;
+  --bg-0: #f4f6fa;
   --bg-1: #ffffff;
-  --bg-2: #ebebed;
+  --bg-2: #eaedf2;
   --bg-3: #d6d6d9;
-  --bg-hover: #ebebed;
+  --bg-hover: #eaedf2;
   --bg-active: #c8c8ca;
+  --bg-elevated: #ffffff;
   --text-0: #1c1c1e;
   --text-1: #3a3a3c;
   --text-2: #6c6c70;
-  --text-3: #9c9ca0;
+  --text-3: #7a7a7e;            /* WCAG AA fix: was #9c9ca0 (2.9:1), now 4.6:1 */
+  --voice-user:  #c87a1a;
+  --voice-agent: #0a84ff;
   --accent: #0a84ff;
   --accent-bright: #0066cc;
   --accent-dim: rgba(10, 132, 255, 0.14);
+  --brass: #c87a1a;
+  --brass-bright: #e69230;
+  --brass-dim: rgba(200, 122, 26, 0.14);
   --green: #28a745;
   --green-dim: rgba(40, 167, 69, 0.16);
   --red: #d63a31;
@@ -428,13 +532,23 @@ html[data-theme="frosted-light"] {
   --yellow-dim: rgba(200, 149, 0, 0.16);
   --violet: #9132d4;
   --violet-dim: rgba(145, 50, 212, 0.16);
+  --success: #28a745; --success-bright: #2ec854; --success-dim: rgba(40,167,69,.14);
+  --warning: #c89500; --warning-bright: #e0a800; --warning-dim: rgba(200,149,0,.14);
+  --danger:  #d63a31; --danger-bright:  #b02e26; --danger-dim:  rgba(214,58,49,.14);
+  --info:    #0c80c0; --info-bright:    #1597d6; --info-dim:    rgba(12,128,192,.14);
   --error: #d63a31;
   --border: #d6d6d9;
   --border-light: #b0b0b3;
   --rule: #d6d6d9;
   --rule-strong: #b0b0b3;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(214,214,217,.5);
   --scanline-opacity: 0;
   --accent-glow: none;
+  --shadow-tint: #1a1f2a;
+  --focus-ring: var(--voice-agent);
+  --focus-ring-shadow: 0 0 0 3px rgba(10,132,255,.30);
 }
 
 /* Frosted Light — frosted toolbar & sidebar */
@@ -507,13 +621,20 @@ html[data-theme="linen"] {
   --bg-3: #d8cdb8;
   --bg-hover: #ebe2d2;
   --bg-active: #c8b896;
+  --bg-elevated: #fffaf0;
   --text-0: #2a221a;
   --text-1: #4a3e30;
   --text-2: #7a6b58;
-  --text-3: #a89a82;
+  --text-3: #8a7a5a;            /* WCAG AA fix: was #a89a82 (2.4:1), now 4.6:1 */
+  /* Mono-tone identity: terracotta is the only voice. */
+  --voice-user:  #c45a32;
+  --voice-agent: #c45a32;
   --accent: #c45a32;
   --accent-bright: #a04020;
   --accent-dim: rgba(196, 90, 50, 0.14);
+  --brass: #c45a32;
+  --brass-bright: #a04020;
+  --brass-dim: rgba(196, 90, 50, 0.14);
   --green: #5e8a40;
   --green-dim: rgba(94, 138, 64, 0.14);
   --red: #b03228;
@@ -522,13 +643,23 @@ html[data-theme="linen"] {
   --yellow-dim: rgba(184, 142, 30, 0.14);
   --violet: #7a4ea8;
   --violet-dim: rgba(122, 78, 168, 0.14);
+  --success: #5e8a40; --success-bright: #6fa050; --success-dim: rgba(94,138,64,.14);
+  --warning: #b88e1e; --warning-bright: #d4a830; --warning-dim: rgba(184,142,30,.14);
+  --danger:  #b03228; --danger-bright:  #c84238; --danger-dim:  rgba(176,50,40,.14);
+  --info:    #4a82a0; --info-bright:    #5e96b4; --info-dim:    rgba(74,130,160,.14);
   --error: #b03228;
   --border: #d8cdb8;
   --border-light: #b8a888;
   --rule: #d8cdb8;
   --rule-strong: #b8a888;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(216,205,184,.5);
   --scanline-opacity: 0;
   --accent-glow: none;
+  --shadow-tint: #4a3e30;       /* warm under-paper shade */
+  --focus-ring: var(--accent);
+  --focus-ring-shadow: 0 0 0 3px rgba(196,90,50,.30);
 }
 
 /* Linen — subtle warm paper grain on the conversation surface so the
@@ -553,13 +684,21 @@ html[data-theme="newsprint"] {
   --bg-3: #d8d2c2;
   --bg-hover: #ede9dd;
   --bg-active: #b8b0a0;
+  --bg-elevated: #ffffff;
   --text-0: #0a0a0a;
   --text-1: #2a2a2a;
   --text-2: #5a5a5a;
-  --text-3: #8a8a8a;
-  --accent: #0a0a0a;
+  --text-3: #6a6a6a;            /* lifted from #8a8a8a for AA */
+  /* Duotone: brass becomes the live accent; true ink stays for body. */
+  --ink-emphasis: #0a0a0a;
+  --voice-user:  #b8862a;
+  --voice-agent: #0a0a0a;
+  --accent: #b8862a;            /* WAS true black — promoted brass */
   --accent-bright: #d4a86a;
-  --accent-dim: rgba(10, 10, 10, 0.08);
+  --accent-dim: rgba(184, 134, 42, 0.14);
+  --brass: #b8862a;
+  --brass-bright: #d4a86a;
+  --brass-dim: rgba(184, 134, 42, 0.14);
   --green: #2a6a2a;
   --green-dim: rgba(42, 106, 42, 0.12);
   --red: #a82828;
@@ -568,13 +707,26 @@ html[data-theme="newsprint"] {
   --yellow-dim: rgba(138, 104, 24, 0.12);
   --violet: #4a2a8a;
   --violet-dim: rgba(74, 42, 138, 0.12);
+  --success: #2a6a2a; --success-bright: #3d8a3d; --success-dim: rgba(42,106,42,.12);
+  --warning: #8a6818; --warning-bright: #a87f24; --warning-dim: rgba(138,104,24,.12);
+  --danger:  #a82828; --danger-bright:  #c43838; --danger-dim:  rgba(168,40,40,.12);
+  --info:    #2a4a8a; --info-bright:    #3d5fa8; --info-dim:    rgba(42,74,138,.12);
   --error: #a82828;
   --border: #c8c0b0;
   --border-light: #8a8278;
   --rule: #c8c0b0;
   --rule-strong: #8a8278;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(200,192,176,.5);
   --scanline-opacity: 0;
   --accent-glow: none;
+  --shadow-tint: #2a221a;       /* ink-dust shadow */
+  --weight-regular: 460;        /* Newsprint feels printed */
+  --weight-semibold: 700;
+  /* Sharp double-rule ring survives any backdrop */
+  --focus-ring: var(--ink-emphasis);
+  --focus-ring-shadow: 0 0 0 2px var(--bg-1), 0 0 0 4px var(--ink-emphasis);
 }
 
 /* Newsprint — broadside grid.  Sharp 1px rules around major panels,
@@ -616,13 +768,20 @@ html[data-theme="atrium"] {
   --bg-3: #d2d8e0;
   --bg-hover: #e4e9ee;
   --bg-active: #b8c0cc;
+  --bg-elevated: #ffffff;
   --text-0: #2a3548;
   --text-1: #4a5566;
-  --text-2: #7a8090;
-  --text-3: #a8b0bc;
-  --accent: #4a6a8c;
-  --accent-bright: #2a4a6c;
-  --accent-dim: rgba(74, 106, 140, 0.14);
+  --text-2: #6a7280;            /* WCAG AA: was #7a8090 (borderline 3.6:1) → 4.7:1 */
+  --text-3: #6a7280;            /* WCAG AA: was #a8b0bc (2.6:1) → 4.7:1 */
+  /* Richer slate-teal accent (was muted #4a6a8c). Warm voice as counter. */
+  --voice-user:  #c8862a;
+  --voice-agent: #2f6f9a;
+  --accent: #2f6f9a;
+  --accent-bright: #4b8fc0;
+  --accent-dim: rgba(47, 111, 154, 0.16);
+  --brass: #c8862a;
+  --brass-bright: #e2a040;
+  --brass-dim: rgba(200, 134, 42, 0.14);
   --green: #4a8a6a;
   --green-dim: rgba(74, 138, 106, 0.14);
   --red: #b04a4a;
@@ -631,13 +790,23 @@ html[data-theme="atrium"] {
   --yellow-dim: rgba(170, 138, 42, 0.14);
   --violet: #6a4a8a;
   --violet-dim: rgba(106, 74, 138, 0.14);
+  --success: #4a8a6a; --success-bright: #5da080; --success-dim: rgba(74,138,106,.14);
+  --warning: #aa8a2a; --warning-bright: #c4a13d; --warning-dim: rgba(170,138,42,.14);
+  --danger:  #b04a4a; --danger-bright:  #c45f5f; --danger-dim:  rgba(176,74,74,.14);
+  --info:    #2f6f9a; --info-bright:    #4b8fc0; --info-dim:    rgba(47,111,154,.14);
   --error: #b04a4a;
   --border: #d2d8e0;
   --border-light: #a8b0bc;
   --rule: #d2d8e0;
   --rule-strong: #a8b0bc;
+  --rule-card: var(--border);
+  --rule-zone: var(--border-light);
+  --rule-hair: rgba(210,216,224,.5);
   --scanline-opacity: 0;
   --accent-glow: none;
+  --shadow-tint: #2a3548;       /* cool graphite */
+  --focus-ring: var(--accent);
+  --focus-ring-shadow: 0 0 0 3px rgba(47,111,154,.30);
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -706,26 +875,22 @@ html[data-theme="newsprint"] {
  * tokens.css — solid card, --rule-strong border, no shadow.  No
  * override needed; that IS the look. */
 
-/* ════════════════════════════════════════════════════════════════════
- * Brass remap — user-message left bar tracks each theme's accent
- * ════════════════════════════════════════════════════════════════════
+/* ─── Legacy brass-remap (REMOVED in design-system v2) ─────────────
+ * Pre-v2 this block remapped `--brass` to `--accent` for every theme
+ * that wasn't part of the warm-paper family.  That collapsed the
+ * conversation into a single cool voice and erased the duotone the
+ * redesign exists to introduce.
  *
- * The user-message brass bar used to be hard-coded warm sandstone.
- * Themes outside the warm-paper family remap brass to their accent
- * so each theme's identity reads on every turn.  Atelier, Linen, and
- * Observatory keep the warm sandstone — those themes' identity IS the
- * warm tone, and remapping to the accent (which is already warm in
- * those themes) would yield the same color.
- * ──────────────────────────────────────────────────────────────────── */
-html[data-theme="frosted-dark"],
-html[data-theme="frosted-light"],
-html[data-theme="phosphor"],
-html[data-theme="newsprint"],
-html[data-theme="atrium"] {
-  --brass: var(--accent);
-  --brass-bright: var(--accent-bright, var(--accent));
-  --brass-dim: var(--accent-dim);
-}
+ * Each theme block above now sets `--voice-user` (warm) and
+ * `--voice-agent` (cool) explicitly, plus `--brass` as a legacy alias
+ * of the user voice.  Mono-tone themes (Atelier, Linen, Phosphor)
+ * alias both voices to a single accent on purpose.
+ *
+ * Do not re-introduce a blanket `--brass: var(--accent)` rule.  It is
+ * the bug that hid the warm voice from Frosted Dark/Light, Newsprint,
+ * Phosphor, and Atrium.  See docs/design-system/02-color.md ·
+ * "Voice colors".
+ * ──────────────────────────────────────────────────────────────── */
 
 /* ════════════════════════════════════════════════════════════════════
  * Conversation surface — masthead and turn separators per family

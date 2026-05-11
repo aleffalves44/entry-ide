@@ -1,4 +1,5 @@
 import "../styles/components/SessionPaneTabs.css";
+import { useEffect, useRef } from "react";
 
 export type SessionPaneTab = "terminal" | "git";
 
@@ -34,12 +35,31 @@ export function SessionPaneTabs({
   gitBranch,
 }: SessionPaneTabsProps) {
   // If there's no git repo, don't show the tab bar at all — just terminal
+  const tabsRef = useRef<HTMLDivElement | null>(null);
+
+  // Sliding underline — measure the active button and write its x/width
+  // into CSS variables on the tabs container. See docs/design-system/05-motion.md.
+  useEffect(() => {
+    if (!hasGitRepo) return;
+    const el = tabsRef.current;
+    if (!el) return;
+    const active = el.querySelector<HTMLButtonElement>(
+      `[data-tab="${activeTab}"]`,
+    );
+    if (!active) return;
+    const tabsRect = el.getBoundingClientRect();
+    const r = active.getBoundingClientRect();
+    el.style.setProperty("--tab-x", `${r.left - tabsRect.left}px`);
+    el.style.setProperty("--tab-w", `${r.width}px`);
+  }, [activeTab, hasGitRepo, gitChangeCount, gitBranch]);
+
   if (!hasGitRepo) return null;
 
   return (
-    <div className="session-pane-tabs" role="tablist">
+    <div className="session-pane-tabs" role="tablist" ref={tabsRef}>
       <button
         role="tab"
+        data-tab="terminal"
         aria-selected={activeTab === "terminal"}
         className={`session-pane-tab${activeTab === "terminal" ? " session-pane-tab-active" : ""}`}
         onClick={() => onTabChange("terminal")}
@@ -49,6 +69,7 @@ export function SessionPaneTabs({
       </button>
       <button
         role="tab"
+        data-tab="git"
         aria-selected={activeTab === "git"}
         className={`session-pane-tab${activeTab === "git" ? " session-pane-tab-active" : ""}`}
         onClick={() => onTabChange("git")}

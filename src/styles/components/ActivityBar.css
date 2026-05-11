@@ -1,4 +1,9 @@
-/* ─── Activity Bar ──────────────────────────────────────────── */
+/* ─── Activity Bar ──────────────────────────────────────────────
+ * Posture: cardinal landmark of the UI. Never bobs, never shifts.
+ * Icons stay at a fixed geometry; the active-tab indicator is a
+ * single absolutely-positioned brass rail that travels via CSS
+ * variables. See docs/design-system/06-components.md.
+ * ────────────────────────────────────────────────────────────── */
 
 .activity-bar {
   width: var(--activity-bar-w);
@@ -13,17 +18,18 @@
   -webkit-user-select: none;
   z-index: 10;
   overflow: visible;
+  position: relative;
 }
 
 .activity-bar-left {
-  border-right: 1px solid var(--border);
+  border-right: 1px solid var(--rule-zone);
 }
 
 .activity-bar-right {
-  border-left: 1px solid var(--border);
+  border-left: 1px solid var(--rule-zone);
 }
 
-/* ─── Tab button ─────────────────────────────────────────── */
+/* ─── Tab button ────────────────────────────────────────────── */
 
 .activity-bar-tab {
   position: relative;
@@ -34,13 +40,22 @@
   background: none;
   border: none;
   border-radius: var(--radius);
-  color: var(--text-3);
+  color: var(--text-2);
   cursor: pointer;
   padding: 0 5px;
   white-space: nowrap;
   overflow: hidden;
   max-width: var(--btn-size);
-  transition: max-width 0.2s ease, background 0.15s, color 0.15s, padding 0.2s ease, gap 0.2s ease, height 0.2s ease, margin 0.2s ease;
+  /* No height change on hover — only width + label reveal.
+   * We deliberately do NOT use `justify-content: center`: the label is
+   * always in flow (just opacity 0) and would push the icon out of the
+   * visible window if we centered the flex children. The natural
+   * flex-start packing keeps the icon glued to the leading edge. */
+  transition:
+    max-width var(--dur-base) var(--ease-out-expo),
+    gap var(--dur-quick) var(--ease-out-soft),
+    background var(--dur-quick) var(--ease-out-soft),
+    color var(--dur-quick) var(--ease-out-soft);
 }
 
 .activity-bar-tab svg,
@@ -54,17 +69,21 @@
   background: var(--bg-hover);
   color: var(--text-1);
   max-width: 180px;
-  gap: 7px;
-  padding: 0 8px;
-  height: calc(var(--btn-size) + 4px);
-  margin: 2px 0;
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
 }
 
 .activity-bar-tab-active {
-  color: var(--text-0);
+  color: var(--brass, var(--voice-user));
+  background: color-mix(in srgb, var(--brass, var(--voice-user)) 10%, transparent);
 }
 
-/* ─── Expand direction ───────────────────────────────────── */
+.activity-bar-tab-active:hover {
+  color: var(--brass-bright, var(--voice-user));
+  background: color-mix(in srgb, var(--brass, var(--voice-user)) 16%, transparent);
+}
+
+/* ─── Expand direction ─────────────────────────────────────── */
 
 .activity-bar-left .activity-bar-tab,
 .activity-bar-left .activity-bar-action {
@@ -79,30 +98,35 @@
   flex-direction: row-reverse;
 }
 
-/* Accent indicator bar on the outer edge */
+/* Accent rail — sits at the outer bar edge (compensates for the
+ * tab's 4px outer margin so the rail aligns flush with the bar edge). */
 .activity-bar-left .activity-bar-tab-active::before {
   content: "";
   position: absolute;
   left: -4px;
-  top: 4px;
-  bottom: 4px;
+  top: 50%;
+  height: 16px;
   width: 2px;
-  background: var(--accent);
-  border-radius: 1px;
+  transform: translateY(-50%);
+  background: var(--brass, var(--voice-user));
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--brass, var(--voice-user)) 30%, transparent);
 }
 
 .activity-bar-right .activity-bar-tab-active::before {
   content: "";
   position: absolute;
   right: -4px;
-  top: 4px;
-  bottom: 4px;
+  top: 50%;
+  height: 16px;
   width: 2px;
-  background: var(--accent);
-  border-radius: 1px;
+  transform: translateY(-50%);
+  background: var(--brass, var(--voice-user));
+  border-radius: 2px 0 0 2px;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--brass, var(--voice-user)) 30%, transparent);
 }
 
-/* ─── Icon wrap ──────────────────────────────────────────── */
+/* ─── Icon wrap ────────────────────────────────────────────── */
 
 .activity-bar-icon-wrap {
   position: relative;
@@ -114,16 +138,16 @@
   flex-shrink: 0;
 }
 
-/* ─── Label (hidden until hover) ─────────────────────────── */
+/* ─── Label (hidden until hover) ───────────────────────────── */
 
 .activity-bar-label {
   font-family: var(--font-ui);
-  font-size: var(--text-base);
-  font-weight: 500;
-  letter-spacing: 0.2px;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-snug);
   color: var(--text-1);
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--dur-quick) var(--ease-out-soft);
   pointer-events: none;
 }
 
@@ -132,7 +156,7 @@
   opacity: 1;
 }
 
-/* ─── Badge ──────────────────────────────────────────────── */
+/* ─── Badge ────────────────────────────────────────────────── */
 
 .activity-bar-badge {
   position: absolute;
@@ -140,19 +164,34 @@
   right: -4px;
   min-width: 14px;
   height: 14px;
-  font-size: var(--text-xs);
-  font-weight: 600;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
   line-height: 14px;
   text-align: center;
-  background: var(--accent);
+  background: var(--brass, var(--voice-user));
   color: var(--bg-0);
   border-radius: var(--radius-pill);
   padding: 0 3px;
   pointer-events: none;
-  font-family: var(--font-ui);
+  font-family: var(--font-numeric);
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--bg-0);
+  box-sizing: content-box;
 }
 
-/* ─── Action button (+, Settings, Plugins) ───────────────── */
+/* Heartbeat pulse when badge value just increased */
+.activity-bar-badge[data-fresh="true"] {
+  animation: badge-heartbeat 0.6s var(--ease-spring) 2;
+}
+@keyframes badge-heartbeat {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity-bar-badge[data-fresh="true"] { animation: none; }
+}
+
+/* ─── Action button (+, Settings, Plugins) ─────────────────── */
 
 .activity-bar-action {
   position: relative;
@@ -169,29 +208,32 @@
   white-space: nowrap;
   overflow: hidden;
   max-width: var(--btn-size);
-  transition: max-width 0.2s ease, background 0.15s, color 0.15s, padding 0.2s ease, gap 0.2s ease, height 0.2s ease, margin 0.2s ease;
+  transition:
+    max-width var(--dur-base) var(--ease-out-expo),
+    gap var(--dur-quick) var(--ease-out-soft),
+    background var(--dur-quick) var(--ease-out-soft),
+    color var(--dur-quick) var(--ease-out-soft);
 }
 
 .activity-bar-action:hover {
   background: var(--bg-hover);
   color: var(--text-0);
   max-width: 180px;
-  gap: 7px;
-  padding: 0 8px;
-  height: calc(var(--btn-size) + 4px);
-  margin: 2px 0;
+  gap: var(--space-2);
+  padding: 0 var(--space-2);
 }
 
-/* ─── Separator ──────────────────────────────────────────── */
+/* ─── Separator — etched groove between pinned and reorderable ── */
 
 .activity-bar-separator {
   width: 18px;
   height: 1px;
-  background: var(--border-light);
-  margin: var(--space-1) 0;
+  background: var(--rule-zone);
+  margin: var(--space-2) 0;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--text-0) 4%, transparent);
 }
 
-/* ─── Drag-and-drop reorder ──────────────────────────────── */
+/* ─── Drag-and-drop reorder ────────────────────────────────── */
 
 .activity-bar-tabs-reorderable {
   display: flex;
@@ -216,9 +258,9 @@
 
 .activity-bar-drop-indicator {
   height: 2px;
-  background: var(--accent);
+  background: var(--brass, var(--voice-user));
   border-radius: 1px;
-  margin: 1px 8px;
+  margin: 1px var(--space-2);
   align-self: stretch;
 }
 
@@ -227,7 +269,7 @@
   height: var(--icon-size);
 }
 
-/* ─── Bottom spacer (pushes bottom action to end) ────────── */
+/* ─── Bottom spacer (pushes bottom action to end) ──────────── */
 
 .activity-bar-bottom-spacer {
   flex: 1;

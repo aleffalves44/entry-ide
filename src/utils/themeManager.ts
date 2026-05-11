@@ -126,31 +126,45 @@ export const UI_SCALE_OPTIONS = [
   { id: "x-large", label: "Extra Large (150%)" },
 ] as const;
 
-// Base token values (must match tokens.css :root defaults)
+// Base token values (must match tokens.css :root defaults).
+// Updated for design-system v2 (modular 1.125 scale rooted at 13px).
+// See docs/design-system/01-typography.md and 08-tokens-reference.md.
 const BASE_TOKENS = {
-  "--text-xs": 9,
-  "--text-sm": 10,
-  "--text-base": 11,
-  "--text-md": 12,
-  "--text-lg": 13,
-  "--text-xl": 15,
-  "--text-2xl": 18,
+  // Type scale — 1.125 modular ladder
+  "--text-2xs": 10,
+  "--text-xs": 11,
+  "--text-sm": 12,
+  "--text-base": 13,
+  "--text-md": 14,
+  "--text-lg": 16,
+  "--text-xl": 18,
+  "--text-2xl": 22,
+  "--text-3xl": 28,
+  "--text-display": 36,
+  // Spacing
   "--space-1": 4,
   "--space-2": 8,
   "--space-3": 12,
   "--space-4": 16,
   "--space-5": 24,
   "--space-6": 32,
+  "--space-7": 48,
+  "--space-8": 72,
+  // Layout heights / widths
   "--topbar-h": 40,
   "--statusbar-h": 28,
   "--sidebar-w": 240,
-  "--context-w": 300,
+  "--context-w": 288,           // on 24px snap grid (12 × 24)
   "--activity-bar-w": 36,
+  // Radius
   "--radius": 3,
   "--radius-sm": 3,
   "--radius-lg": 6,
   "--radius-pill": 10,
-  "--icon-size": 18,
+  // Icons + buttons — slightly bigger than the previous 18px for comfort
+  "--icon-size": 18,            // tab icons (kept at 18 since SVGs render at viewBox 0 0 18 18)
+  "--icon-size-sm": 14,
+  "--icon-size-lg": 22,
   "--btn-size": 28,
 };
 

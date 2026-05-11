@@ -70,13 +70,22 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
     return () => clearInterval(interval);
   }, [active?.id]);
 
-  const cycleMode = () => {
+  const setMode = (next: ExecutionMode) => {
     if (!active) return;
-    const next: ExecutionMode = mode === "manual" ? "assisted" : mode === "assisted" ? "autonomous" : "manual";
+    if (next === mode) return;
     dispatch({ type: "SET_EXECUTION_MODE", sessionId: active.id, mode: next });
     dispatch({ type: "SET_DEFAULT_MODE", mode: next });
     setSetting("execution_mode", next).catch(console.error);
   };
+  const modeTooltip: Record<ExecutionMode, string> = {
+    manual: "Manual: No automatic suggestions or execution.",
+    assisted: "Assisted: Shows suggestions and lets you manually apply fixes.",
+    autonomous: "Autonomous: Applies frequent commands and repeated fixes after a countdown.",
+  };
+  // Version chip state — collapses idle / checking / available / downloading
+  // into a single visual element (see docs/design-system/06-components.md).
+  const versionState: "idle" | "available" | "downloading" =
+    updateDownloading ? "downloading" : updateAvailable ? "available" : "idle";
 
   const cwdBasename = active && active.working_directory ? active.working_directory.replace(/\\/g, "/").split("/").pop() || active.working_directory : "";
   const cwdTooltip = active?.mode === "agent"
@@ -93,18 +102,20 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
         {active && active.mode !== "agent" && (
           <>
             <span className="status-bar-divider" />
-            <button
-              className={`status-mode-btn status-mode-${mode}`}
-              onClick={cycleMode}
-              title={mode === "manual"
-                ? "Manual: No automatic suggestions or execution. Click to switch."
-                : mode === "assisted"
-                ? "Assisted: Shows suggestions and lets you manually apply fixes. Click to switch."
-                : "Autonomous: Automatically applies frequent commands and repeated fixes after countdown. Click to switch."}
-            >
-              <span className="status-mode-dot" />
-              {mode === "manual" ? "Manual" : mode === "assisted" ? "Assisted" : "Auto"}
-            </button>
+            <div className="status-mode-segmented" role="radiogroup" aria-label="Execution mode">
+              {(["manual", "assisted", "autonomous"] as const).map((m) => (
+                <button
+                  key={m}
+                  role="radio"
+                  aria-checked={mode === m}
+                  className={`status-mode-seg status-mode-seg-${m}${mode === m ? " is-active" : ""}`}
+                  onClick={() => setMode(m)}
+                  title={modeTooltip[m]}
+                >
+                  {m === "manual" ? "Manual" : m === "assisted" ? "Assisted" : "Auto"}
+                </button>
+              ))}
+            </div>
           </>
         )}
         {active?.detected_agent && (
@@ -121,8 +132,18 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
                    active.permission_mode === "bypassPermissions" ? "Bypass" : ""}
                 </span>
               )}
-              {active.phase === "busy" && <span className="status-bar-busy">working</span>}
-              {active.phase === "needs_input" && <span className="status-bar-needs-input">needs input</span>}
+              {active.phase === "busy" && (
+                <span className="status-capsule status-capsule-busy" role="status" aria-live="polite">
+                  <span className="status-capsule-pulse" aria-hidden="true" />
+                  <span className="status-capsule-label">WORKING</span>
+                </span>
+              )}
+              {active.phase === "needs_input" && (
+                <span className="status-capsule status-capsule-needs" role="status" aria-live="assertive">
+                  <span className="status-capsule-pulse" aria-hidden="true" />
+                  <span className="status-capsule-label">NEEDS INPUT</span>
+                </span>
+              )}
             </span>
           </>
         )}
@@ -159,32 +180,44 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
             <span className="status-bar-divider" />
           </>
         )}
-        {updateAvailable && !updateDownloading && (
-          <>
-            <span className="status-bar-item status-bar-update" onClick={onShowUpdate} title={`Update to v${updateVersion}`}>
-              v{updateVersion} available
-            </span>
-            <span className="status-bar-divider" />
-          </>
-        )}
-        {updateDownloading && (
-          <>
-            <span className="status-bar-item status-bar-update" title="Downloading update...">
-              Updating {updateProgress}%
-            </span>
-            <span className="status-bar-divider" />
-          </>
-        )}
+        {/* Unified version chip — one element, four states:
+            idle / available / downloading. (See docs/design-system/06-components.md.) */}
         <button
-          className="status-bar-version"
-          title="Check for updates"
-          onClick={onCheckForUpdates}
+          className="status-version-chip"
+          data-state={versionState}
+          style={versionState === "downloading"
+            ? { ["--progress" as string]: String(updateProgress ?? 0) }
+            : undefined}
+          title={
+            versionState === "downloading"
+              ? `Downloading v${updateVersion}… ${updateProgress ?? 0}%`
+              : versionState === "available"
+              ? `Update to v${updateVersion}`
+              : "Check for updates"
+          }
+          onClick={
+            versionState === "available" ? onShowUpdate :
+            versionState === "downloading" ? onShowUpdate :
+            onCheckForUpdates
+          }
         >
-          v{__APP_VERSION__}
-          <svg className="status-bar-version-icon" width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M8 2v9M4.5 7.5L8 11l3.5-3.5" />
-            <path d="M2.5 13.5h11" />
-          </svg>
+          {versionState === "downloading" && (
+            <span className="status-version-arc" aria-hidden="true" />
+          )}
+          <span className="status-version-label">
+            {versionState === "idle" && `v${__APP_VERSION__}`}
+            {versionState === "available" && `v${updateVersion} ready`}
+            {versionState === "downloading" && `v${__APP_VERSION__} → ${updateVersion}`}
+          </span>
+          {versionState === "downloading" && (
+            <span className="status-version-pct">{updateProgress ?? 0}%</span>
+          )}
+          {versionState === "idle" && (
+            <svg className="status-version-icon" width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M8 2v9M4.5 7.5L8 11l3.5-3.5" />
+              <path d="M2.5 13.5h11" />
+            </svg>
+          )}
         </button>
         {/* ThemePicker removed in 1.1.15 — theme switching now lives
             in Settings → Appearance, the single source of truth.  The

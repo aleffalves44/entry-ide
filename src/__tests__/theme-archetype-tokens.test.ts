@@ -138,12 +138,13 @@ describe("themes.css — dark theme fingerprints", () => {
     expect(block).toMatch(/--accent:\s*#0a84ff/i);
   });
 
-  it("frosted-dark uses a near-black neutral background", () => {
+  it("frosted-dark uses a near-black background with subtle blue chroma", () => {
     const block = extractBlock(themesCss, "frosted-dark");
-    // Spec: #1c1c1e (mockup) or #1e1e1e (legacy in-tree).  Either is a
-    // dark Apple-y neutral; pin the prefix `#1` and the `1e` byte to
-    // catch a regression to a coloured background.
-    expect(block).toMatch(/--bg-0:\s*#1[ce]1[ce]1[ce]/i);
+    // Design-system v2: bg-0 carries 2-3% blue chroma so the frost has
+    // something to refract (see docs/design-system/02-color.md "Default
+    // theme atmosphere").  Pin the shape — #1a1c20 — without locking
+    // every byte so minor future tuning is not blocked.
+    expect(block).toMatch(/--bg-0:\s*#1a1c20/i);
   });
 
   it("atelier has the terracotta accent that defines its mood", () => {
@@ -192,9 +193,12 @@ describe("themes.css — light theme fingerprints", () => {
     expect(block).toMatch(/--accent:\s*#0a84ff/i);
   });
 
-  it("frosted-light uses an off-white background (not pure white)", () => {
+  it("frosted-light uses an off-white background with cool tint", () => {
     const block = extractBlock(themesCss, "frosted-light");
-    expect(block).toMatch(/--bg-0:\s*#f5f5f7/i);
+    // Design-system v2: bg-0 carries a hint of cool chroma so the
+    // frost reads as glass-over-something (mirrors the Frosted Dark
+    // treatment).  See docs/design-system/02-color.md.
+    expect(block).toMatch(/--bg-0:\s*#f4f6fa/i);
   });
 
   it("linen has the terracotta accent (the Atelier light counterpart)", () => {
@@ -207,9 +211,16 @@ describe("themes.css — light theme fingerprints", () => {
     expect(block).toMatch(/--bg-0:\s*#f4ede0/i);
   });
 
-  it("newsprint uses true black ink as its accent (broadsheet feel)", () => {
+  it("newsprint uses brass as its live accent and ink as the body color (duotone)", () => {
     const block = extractBlock(themesCss, "newsprint");
-    expect(block).toMatch(/--accent:\s*#0a0a0a/i);
+    // Design-system v2: Newsprint was previously mono — pure black
+    // ink for body AND accent, which collapsed CTAs/links/selection
+    // into body text.  The redesign promotes brass to --accent so the
+    // page has a real duotone (ink + warm voice); true ink stays
+    // available via --ink-emphasis.  See docs/design-system/02-color.md
+    // "Atrium and Newsprint corrections".
+    expect(block).toMatch(/--accent:\s*#b8862a/i);
+    expect(block).toMatch(/--ink-emphasis:\s*#0a0a0a/i);
   });
 
   it("newsprint uses an off-white broadsheet background", () => {
@@ -217,9 +228,13 @@ describe("themes.css — light theme fingerprints", () => {
     expect(block).toMatch(/--bg-0:\s*#f7f4ec/i);
   });
 
-  it("atrium has the slate-blue accent that distinguishes it from Frosted Light", () => {
+  it("atrium has a slate-teal accent that distinguishes it from Frosted Light", () => {
     const block = extractBlock(themesCss, "atrium");
-    expect(block).toMatch(/--accent:\s*#4a6a8c/i);
+    // Design-system v2: the original #4a6a8c was too desaturated to
+    // pop on pale daylight surfaces.  Shifted toward a richer slate-
+    // teal so selected items earn their "daylight" identity.  See
+    // docs/design-system/02-color.md "Atrium and Newsprint corrections".
+    expect(block).toMatch(/--accent:\s*#2f6f9a/i);
   });
 
   it("atrium uses a soft blue-gray background (low-contrast daylight)", () => {

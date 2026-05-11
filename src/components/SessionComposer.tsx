@@ -445,6 +445,44 @@ export function SessionComposer() {
     setPendingImages((prev) => prev.filter((p) => p.id !== id));
   }, []);
 
+  // ─── Attach-by-button ─────────────────────────────────────
+  // Hidden <input type="file"> reached via ref.  Mirrors the paste
+  // flow (blobToBytes → base64 → setPendingImages) so the attached
+  // image lives in the same pendingImages stack and renders in the
+  // existing attachment row.
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const openFilePicker = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+  const handleFileInputChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!composerSessionId) return;
+    const files = Array.from(e.target.files ?? []);
+    e.target.value = ""; // allow re-selecting the same file
+    for (const file of files) {
+      const ext = extFromMime(file.type);
+      if (!ext) {
+        console.warn(`[SessionComposer] Unsupported file type: ${file.type}`);
+        continue;
+      }
+      if (file.size > MAX_PASTED_IMAGE_BYTES) {
+        console.warn(`[SessionComposer] File too large (${file.size} > ${MAX_PASTED_IMAGE_BYTES}): ${file.name}`);
+        continue;
+      }
+      try {
+        const bytes = await blobToBytes(file);
+        const base64 = bytesToBase64(bytes);
+        setPendingImages((prev) => [...prev, {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          label: file.name || `attached.${ext}`,
+          base64,
+          mediaType: mimeFromExt(ext),
+        }]);
+      } catch (err) {
+        console.error(`[SessionComposer] Failed to read attached file ${file.name}:`, err);
+      }
+    }
+  }, [composerSessionId]);
+
   const handleResizeMouseDown = useCallback((e: React.MouseEvent) => {
     if (!composerSessionId) return;
     e.preventDefault();
@@ -706,18 +744,30 @@ export function SessionComposer() {
   }
 
   if (!expanded) {
+    // Wrap the FAB in a properly-sized container so it has its own
+    // positioning context.  Without this wrapper, `position: absolute`
+    // on the FAB falls back to a positioned ancestor up the tree (often
+    // the entire pane) and the pill ends up clipped against the status
+    // bar.  The wrapper carries enough vertical room for the 36px pill
+    // plus comfortable margin above the status bar.
     return (
-      <button
-        type="button"
-        className="session-composer-fab"
-        onClick={() => dispatch({ type: "SET_COMPOSER_EXPANDED", sessionId: composerSessionId, expanded: true })}
-        title={`Open chat (${isMac ? "⌘⇧J" : "Ctrl+Shift+J"})`}
-        aria-label="Open composer"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-        </svg>
-      </button>
+      <div className="session-composer-collapsed">
+        <button
+          type="button"
+          className="session-composer-fab"
+          onClick={() => dispatch({ type: "SET_COMPOSER_EXPANDED", sessionId: composerSessionId, expanded: true })}
+          title={`Open composer (${isMac ? "⌘⇧J" : "Ctrl+Shift+J"})`}
+          aria-label="Open composer"
+        >
+          <svg className="session-composer-fab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          <span className="session-composer-fab-label">Compose</span>
+          <span className="session-composer-fab-kbd" aria-hidden="true">
+            <kbd>{isMac ? "⌘" : "Ctrl"}</kbd><kbd>⇧</kbd><kbd>J</kbd>
+          </span>
+        </button>
+      </div>
     );
   }
 
@@ -741,7 +791,6 @@ export function SessionComposer() {
     : "Type a message…";
 
   const liveModel = init?.model ?? null;
-  const agentName = "Claude";
 
   /** Compact display for the chip — collapse Claude's full model id
    *  (`claude-haiku-4-5-20251001`) down to its family alias (`haiku`)
@@ -920,6 +969,41 @@ export function SessionComposer() {
             >
               ›_ Terminal
             </button>
+            {/* Attach-by-button — explicit affordance for the same
+                image-attachment flow that paste/drop already use.  The
+                hidden <input type="file"> sits outside the row so it
+                doesn't affect layout; the visible button calls .click()
+                on it. */}
+            <button
+              type="button"
+              className="session-composer-attach-btn"
+              onClick={openFilePicker}
+              title="Attach image (PNG, JPG, GIF, WebP, BMP)"
+              aria-label="Attach image"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+              <span className="session-composer-attach-label">Attach</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/gif,image/webp,image/bmp"
+              multiple
+              onChange={handleFileInputChange}
+              style={{ display: "none" }}
+              aria-hidden="true"
+              tabIndex={-1}
+            />
             {/* Model picker.  Click → opens ModelPicker → switchAgentModel
                 respawns the Claude subprocess with the new --model flag and
                 `--resume <prior-uuid>` so the conversation is preserved.
@@ -930,7 +1014,7 @@ export function SessionComposer() {
                 <button
                   ref={agentChipRef}
                   type="button"
-                  className={`session-composer-agent session-composer-agent-clickable${pendingModel ? " session-composer-agent-pending" : ""}`}
+                  className={`session-composer-agent session-composer-agent-clickable composer-chip composer-chip-model${pendingModel ? " session-composer-agent-pending" : ""}`}
                   onClick={() => setModelPickerOpen((o) => !o)}
                   // Full id in the tooltip so the user can still see it without
                   // the long string blowing out the row.
@@ -939,14 +1023,12 @@ export function SessionComposer() {
                   aria-expanded={modelPickerOpen}
                   aria-haspopup="menu"
                 >
-                  <span className="session-composer-agent-name">{agentName}</span>
-                  <span className="session-composer-agent-model">
-                    {compactModel(pendingModel ?? liveModel)}
-                    {pendingModel && (
-                      <span className="session-composer-agent-pending-dot" aria-hidden="true">•</span>
-                    )}
-                  </span>
-                  <span className="session-composer-agent-chevron" aria-hidden="true">▾</span>
+                  <span className="composer-chip-dot" aria-hidden="true" />
+                  <span className="composer-chip-value">{compactModel(pendingModel ?? liveModel)}</span>
+                  {pendingModel && (
+                    <span className="session-composer-agent-pending-dot" aria-hidden="true">•</span>
+                  )}
+                  <span className="composer-chip-caret" aria-hidden="true">▾</span>
                 </button>
                 {modelPickerOpen && (
                   <ModelPicker
@@ -983,18 +1065,19 @@ export function SessionComposer() {
                   <button
                     ref={permChipRef}
                     type="button"
-                    className={`session-composer-perm-chip-btn${pendingPerm ? " session-composer-perm-chip-btn-pending" : ""}${isDanger ? " session-composer-perm-chip-btn-danger" : ""}`}
+                    className={`session-composer-perm-chip-btn composer-chip composer-chip-perms${pendingPerm ? " session-composer-perm-chip-btn-pending" : ""}${isDanger ? " session-composer-perm-chip-btn-danger composer-chip-danger" : ""}`}
                     onClick={() => setPermPickerOpen((o) => !o)}
                     title={`Permission mode: ${meta.label} — click to switch`}
                     aria-label={`Permission mode: ${meta.label}`}
                     aria-haspopup="menu"
                     aria-expanded={permPickerOpen}
                   >
-                    <span className="session-composer-perm-chip-label">{meta.label}</span>
+                    <span className="composer-chip-dot" aria-hidden="true" />
+                    <span className="composer-chip-value">{meta.label}</span>
                     {pendingPerm && (
                       <span className="session-composer-agent-pending-dot" aria-hidden="true">•</span>
                     )}
-                    <span className="session-composer-agent-chevron" aria-hidden="true">▾</span>
+                    <span className="composer-chip-caret" aria-hidden="true">▾</span>
                   </button>
                   {permPickerOpen && (
                     <PermissionPicker
@@ -1027,18 +1110,19 @@ export function SessionComposer() {
                   <button
                     ref={effortChipRef}
                     type="button"
-                    className={`session-composer-perm-chip-btn${pendingEffort ? " session-composer-perm-chip-btn-pending" : ""}`}
+                    className={`session-composer-perm-chip-btn composer-chip composer-chip-effort${pendingEffort ? " session-composer-perm-chip-btn-pending" : ""}`}
                     onClick={() => setEffortPickerOpen((o) => !o)}
                     title="Thinking effort — respawns Claude with --effort"
                     aria-label={`Effort: ${effortLabel}`}
                     aria-haspopup="menu"
                     aria-expanded={effortPickerOpen}
                   >
-                    <span className="session-composer-perm-chip-label">{effortLabel}</span>
+                    <span className="composer-chip-dot" aria-hidden="true" />
+                    <span className="composer-chip-value">{effortLabel}</span>
                     {pendingEffort && (
                       <span className="session-composer-agent-pending-dot" aria-hidden="true">•</span>
                     )}
-                    <span className="session-composer-agent-chevron" aria-hidden="true">▾</span>
+                    <span className="composer-chip-caret" aria-hidden="true">▾</span>
                   </button>
                   {effortPickerOpen && (
                     <EffortPicker
@@ -1077,10 +1161,19 @@ export function SessionComposer() {
             aria-label="Send message"
           >
             <span className="session-composer-send-label">Send</span>
-            <span className="session-composer-send-kbd" aria-hidden="true">
-              <kbd>{isMac ? "⌘" : "Ctrl"}</kbd>
-              <kbd>↵</kbd>
-            </span>
+            <svg
+              className="session-composer-send-arrow"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M5 12h14" />
+              <path d="M13 6l6 6-6 6" />
+            </svg>
           </button>
         </div>
       </div>

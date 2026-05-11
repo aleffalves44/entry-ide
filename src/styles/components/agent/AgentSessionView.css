@@ -441,13 +441,17 @@
 .agent-message {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   padding: 0;
   position: relative;
   /* Cap conversation column width on wide monitors so prose lines
-   * don't blow past comfortable reading length.  68ch is the sweet
-   * spot for sans-serif body at 14–15px. */
-  max-width: 68ch;
+   * don't blow past comfortable reading length. 72ch sweet spot for
+   * sans-serif body at 14–15px (slightly wider than before for code). */
+  max-width: 72ch;
+  /* Message entry animation — fade + lift on first mount only.
+   * React sets data-mounted="true" on next frame so scroll-in repaints
+   * don't re-animate. See docs/design-system/05-motion.md. */
+  animation: agent-block-in var(--dur-base) var(--ease-out-expo) backwards;
   /* AGENT-25: skip layout/paint for off-screen messages in long sessions.
    * `content-visibility: auto` lets the browser elide rendering work for
    * rows scrolled out of view; `contain-intrinsic-size` reserves a sane
@@ -461,14 +465,27 @@
   contain: layout style;
 }
 
+.agent-message[data-mounted="true"] {
+  animation: none;
+}
+
+@keyframes agent-block-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-message { animation: none; }
+}
+
 /* Generous space between turns — the modern app feel.  No hairline
  * rule: whitespace IS the separator. */
 .agent-message + .agent-message[data-role="user"] {
-  margin-top: 28px;
+  margin-top: var(--space-6);
 }
 
 .agent-message + .agent-message[data-role="assistant"] {
-  margin-top: 16px;
+  margin-top: var(--space-4);
 }
 
 /* Speaker row — the small chip identifying who's speaking. */
@@ -482,10 +499,10 @@
 }
 
 /* Speaker chip — a small rounded square holding the bot/person icon.
- * No more solid disc.  The chip background is a tinted accent at low
- * alpha; the border is the same accent at higher alpha; the icon
- * itself takes the FULL accent via currentColor.  Each theme's accent
- * (brass-remapped per theme via #254) lights the chip its own way. */
+ * The user chip is tinted with --brass (the warm operator voice); the
+ * assistant chip is tinted with --accent (the cool agent voice).
+ * In design-system v2 every theme declares both voices explicitly;
+ * see docs/design-system/02-color.md · "Voice colors". */
 .agent-message-avatar {
   width: 26px;
   height: 26px;
@@ -691,28 +708,70 @@
 .agent-md-h1,
 .agent-md-h2,
 .agent-md-h3,
+/* Heading hierarchy follows the editorial scale.
+ * See docs/design-system/01-typography.md · "Heading hierarchy in agent markdown" */
+.agent-md-h1,
+.agent-md-h2,
+.agent-md-h3,
 .agent-md-h4 {
-  font-family: var(--font-ui, var(--font-mono));
+  font-family: var(--font-display, var(--font-ui));
   color: var(--ink-primary);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.25;
-  margin-top: 8px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-snug);
+  line-height: var(--leading-tight);
+  margin-top: var(--space-3);
 }
 
-.agent-md-h1 { font-size: 19px; }
-.agent-md-h2 { font-size: 16px; }
+.agent-md-h1 {
+  font-size: var(--text-3xl);
+  font-variation-settings: "opsz" 24;
+}
+.agent-md-h2 {
+  font-size: 20px;
+  line-height: var(--leading-tight);
+  font-variation-settings: "opsz" 20;
+}
 .agent-md-h3 {
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-secondary);
-  font-weight: 500;
+  font-size: var(--text-lg);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-normal);
+  color: var(--ink-primary);
+  font-weight: var(--weight-semibold);
 }
 .agent-md-h4 {
-  font-size: 13px;
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-wider);
   color: var(--ink-secondary);
-  font-weight: 500;
+  font-weight: var(--weight-semibold);
+  text-transform: uppercase;
+}
+
+/* Editorial themes get serif headings — Newsreader was loaded but
+ * previously only rendered in WebFetch excerpts. */
+html[data-theme="atelier"] .agent-md-h1,
+html[data-theme="linen"] .agent-md-h1,
+html[data-theme="observatory"] .agent-md-h1,
+html[data-theme="newsprint"] .agent-md-h1,
+html[data-theme="atelier"] .agent-md-h2,
+html[data-theme="linen"] .agent-md-h2,
+html[data-theme="observatory"] .agent-md-h2,
+html[data-theme="newsprint"] .agent-md-h2 {
+  font-family: var(--font-serif);
+  font-weight: var(--weight-medium);
+}
+
+/* Blockquotes — always Newsreader. */
+.agent-md-blockquote {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--ink-secondary);
+  border-left: 2px solid var(--rule-strong);
+  padding-left: var(--space-3);
+  margin: var(--space-3) 0;
+  font-variation-settings: "opsz" 14;
 }
 
 .agent-md-p {
@@ -1629,61 +1688,122 @@
   text-align: left;
 }
 
-/* ─── Thinking ─── */
+/* ─── Thinking (a.k.a. thought) ──────────────────────────────
+ * Posture: a thought is a FOOTNOTE on a message, not a free-standing
+ * container. The collapsed state is JUST the chip — no full-width
+ * empty box. When expanded, the body lives inside the same footprint.
+ *
+ * See docs/design-system/06-components.md · ThinkingBlock.
+ * ──────────────────────────────────────────────────────── */
 
 .agent-thinking-block {
-  border: 1px dashed var(--border-light);
-  border-radius: var(--radius);
-  background: transparent;
+  /* The outer wrapper has no visible chrome when collapsed.
+   * The chip itself is the visible element. When open, the body
+   * follows the chip and the wrapper just stacks them. */
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  max-width: 100%;
+}
+
+.agent-thinking-block.open {
+  display: flex;
+  align-items: stretch;
 }
 
 .agent-thinking-toggle {
-  display: flex;
+  /* Inline chip — small brass-tinted pill that hugs its content. */
+  display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  width: 100%;
-  background: transparent;
-  border: 0;
-  padding: var(--space-1) var(--space-2);
-  color: var(--text-2);
-  font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  align-self: flex-start;
+  background: color-mix(in srgb, var(--brass, var(--voice-user)) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brass, var(--voice-user)) 24%, transparent);
+  border-radius: 99px;
+  padding: 3px var(--space-2) 3px 9px;
+  color: var(--brass, var(--voice-user));
+  font-family: var(--font-code);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-medium);
+  letter-spacing: var(--tracking-snug);
   cursor: pointer;
   text-align: left;
+  white-space: nowrap;
+  transition: background var(--dur-quick) var(--ease-out-soft),
+              border-color var(--dur-quick) var(--ease-out-soft),
+              color var(--dur-quick) var(--ease-out-soft);
+}
+
+.agent-thinking-block.open .agent-thinking-toggle {
+  /* When expanded, the chip transforms into a card header. */
+  align-self: stretch;
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-bottom-color: transparent;
+  background: color-mix(in srgb, var(--brass, var(--voice-user)) 6%, var(--bg-1));
 }
 
 .agent-thinking-toggle:hover {
-  color: var(--text-1);
+  background: color-mix(in srgb, var(--brass, var(--voice-user)) 18%, transparent);
+  color: var(--brass-bright, var(--voice-user));
 }
 
+/* A tiny live dot — pulses while streaming, stable when frozen. */
 .agent-thinking-caret {
-  width: 12px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 8px;
+  height: 8px;
+  font-size: 9px;
+  color: var(--text-3);
+  transition: transform var(--dur-quick) var(--ease-out-soft);
+}
+.agent-thinking-block.open .agent-thinking-caret {
+  transform: rotate(90deg);
+  color: var(--brass, var(--voice-user));
 }
 
 .agent-thinking-label {
-  font-style: italic;
+  font-style: normal;
+  color: inherit;
 }
 
-/* Elapsed counter — small mono whisper at the end of the toggle row.
-   Frozen on completion; ticks at 10Hz while streaming. */
+/* Elapsed counter — small mono whisper at the end of the chip.
+ * Frozen on completion; ticks at 10Hz while streaming. */
 .agent-thinking-elapsed {
-  font: 10px/1 var(--font-mono);
-  color: var(--ink-tertiary);
+  font: var(--text-2xs)/1 var(--font-numeric);
+  color: var(--text-3);
   font-variant-numeric: tabular-nums;
-  margin-left: auto;
-  padding-left: 8px;
+  margin-left: var(--space-1);
+  padding-left: var(--space-2);
+  border-left: 1px solid color-mix(in srgb, var(--brass, var(--voice-user)) 22%, transparent);
+  letter-spacing: var(--tracking-normal);
 }
 
 .agent-thinking-body {
   margin: 0;
-  padding: var(--space-2) var(--space-3);
-  border-top: 1px dashed var(--border-light);
-  font-family: var(--font-mono);
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--brass, var(--voice-user)) 4%, var(--bg-1));
+  border: 1px solid color-mix(in srgb, var(--brass, var(--voice-user)) 24%, transparent);
+  border-top: 0;
+  border-radius: 0 0 var(--radius) var(--radius);
+  font-family: var(--font-code);
   font-size: var(--text-sm);
-  color: var(--text-2);
+  line-height: var(--leading-relaxed);
+  color: var(--text-1);
   white-space: pre-wrap;
   word-break: break-word;
+  animation: thinking-body-in var(--dur-base) var(--ease-out-expo) backwards;
+}
+
+@keyframes thinking-body-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-thinking-body { animation: none; }
 }
 
 /* ─── Tool families (v1 redesign — playbook §5) ─────────────

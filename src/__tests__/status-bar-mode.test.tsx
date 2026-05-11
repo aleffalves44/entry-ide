@@ -103,30 +103,36 @@ function makeSession(mode: SessionMode, workingDir = "/Users/me/projects/h-ide")
   };
 }
 
-describe("StatusBar mode-conditional cycle button (Phase 7)", () => {
-  it("hides the Manual/Assisted/Auto cycle button when active session is in agent mode", () => {
+describe("StatusBar mode-conditional segmented control (Phase 7 → design-system v2)", () => {
+  it("hides the Manual/Assisted/Auto segmented control when active session is in agent mode", () => {
     currentSession = makeSession("agent");
     const html = renderToString(<StatusBar />);
-    expect(html).not.toContain("status-mode-btn");
-    // Also confirm the labels themselves don't bleed into the bar.
+    // Design-system v2: the cycle button was replaced with a 3-segment
+    // segmented control (see docs/design-system/06-components.md ·
+    // "Mode segmented control").  Assert against the new class.
+    expect(html).not.toContain("status-mode-segmented");
+    expect(html).not.toContain("status-mode-seg");
+    // And the labels themselves don't bleed into the bar.
     expect(html).not.toMatch(/>Manual</);
     expect(html).not.toMatch(/>Assisted</);
     expect(html).not.toMatch(/>Auto</);
   });
 
-  it("renders the cycle button when active session is in terminal mode", () => {
+  it("renders the segmented control when active session is in terminal mode", () => {
     currentSession = makeSession("terminal");
     const html = renderToString(<StatusBar />);
-    expect(html).toContain("status-mode-btn");
+    expect(html).toContain("status-mode-segmented");
+    expect(html).toContain("status-mode-seg");
     expect(html).toMatch(/>Manual</);
+    expect(html).toMatch(/>Assisted</);
+    expect(html).toMatch(/>Auto</);
   });
 
   it("does not crash when there is no active session", () => {
     currentSession = null;
     expect(() => renderToString(<StatusBar />)).not.toThrow();
     const html = renderToString(<StatusBar />);
-    // No active session → no cycle button is gated through.
-    expect(html).not.toContain("status-mode-btn");
+    expect(html).not.toContain("status-mode-segmented");
   });
 });
 

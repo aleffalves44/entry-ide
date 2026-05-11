@@ -7,6 +7,46 @@ Each release uses the categories: **New**, **Fixed**, **Improved**, **Removed**.
 
 ---
 
+# 1.2.0 (2026-05-11)
+
+## New
+- Voice-color system across every theme — your turns wear a warm tone, the agent's turns wear a cool tone, so a long conversation reads at a glance
+- Attach button in the composer for adding images by clicking (paste and drag-and-drop continue to work)
+- Three-segment execution mode control in the status bar — Manual, Assisted, and Auto are all visible at once instead of cycling on click
+- Pulsing status capsules for "working" and "needs input" replace the bare-text labels
+- Version chip in the status bar that shows idle, checking, update-available, and downloading-with-progress in a single element
+- Comprehensive design-system documentation describing every visual token and component pattern
+
+## Fixed
+- Collapsed "thought" footnotes in agent conversations no longer render as an empty dashed box with their content escaping below; the collapsed state is now an inline brass chip, expanded thoughts pull their body inside the same footprint
+- Text contrast on Frosted Light, Atrium, and Linen now meets WCAG AA — previously failed for secondary metadata
+- Activity bar icons no longer bob vertically when you hover them
+- The minimized composer is a discoverable "Compose" brass pill with the keyboard shortcut visible, instead of a small dark circle hugging the corner
+
+## Improved
+- Agent conversation headings have a proper editorial hierarchy (24 / 20 / 16 / 14) — markdown structure in long replies is finally scannable
+- Editorial themes (Atelier, Linen, Observatory, Newsprint) use the Newsreader serif typeface for headings
+- Newsprint is now a true duotone — brass is the live accent for links and selection, true ink stays as the body color
+- Atrium gains a richer slate-teal accent; the previous muted slate didn't pop on the daylight surface
+- Frosted Dark and Frosted Light carry subtle cool chroma so the frosted overlays have something to refract
+- Composer settings (Model · Permission · Effort) are now compact dot-chips with categorical colored dots
+- The Permission chip turns red and pulses when set to Bypass — the danger state announces itself instead of looking like every other pill
+- The Send button is now a brass pill that reads `Send →` with the arrow sliding right on hover; the keyboard shortcut moved to the tooltip
+- Session row left band carries the live phase — vertical shimmer when busy, amber pulse when needs-input, solid red on error
+- Session list description and project chips hide until the row is active or hovered, so the sidebar reads as a glanceable index
+- Single-letter monogram glyphs replace the agent-name and SSH chips on session rows
+- Logbook entries on the empty state show a preview snippet and shell name for each recent session
+- Sliding underline between Terminal and Git tabs instead of a snap
+- Focus ring is themed per theme — soft halo on glass themes, sharp double-rule on Newsprint, accent glow on Phosphor, brass on editorial themes
+- Activity bar icons are larger and the active-tab indicator anchors flush to the bar edge
+- Token count, cost, and elapsed time in the status bar settle to calm grey by default and flash brass briefly when they change
+- All animations respect prefers-reduced-motion
+
+## Removed
+- The legacy theme rule that quietly collapsed every multi-tone theme's "your" voice into its accent color — themes now declare both voices explicitly
+
+---
+
 # 1.0.0 (2026-04-27)
 
 ## New
