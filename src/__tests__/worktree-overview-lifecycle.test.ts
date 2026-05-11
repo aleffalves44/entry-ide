@@ -306,9 +306,22 @@ describe("isStale detection", () => {
   });
 
   it("returns false at exactly 14 days", () => {
-    // At exactly 14 days, diffDays === 14, and the condition is > (not >=)
-    const exactlyFourteenDays = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
-    expect(isStale(exactlyFourteenDays)).toBe(false);
+    // At exactly 14 days, diffDays === 14, and the condition is `>`
+    // (not `>=`).  Without fake timers this test is flaky on slow
+    // runners: the (microseconds-later) `new Date()` inside isStale
+    // pushes diffDays marginally above 14 and the test trips on CI.
+    // Freezing the clock ensures the test's `Date.now()` matches the
+    // `new Date()` used inside the helper.
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date("2026-01-15T12:00:00.000Z"));
+      const exactlyFourteenDays = new Date(
+        Date.now() - 14 * 24 * 60 * 60 * 1000,
+      ).toISOString();
+      expect(isStale(exactlyFourteenDays)).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("respects custom threshold", () => {

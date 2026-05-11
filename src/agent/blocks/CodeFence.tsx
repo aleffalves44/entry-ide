@@ -147,27 +147,37 @@ function HighlightedCode({ code, language }: { code: string; language: string })
           // pass through raw user-controlled HTML; only highlight.js output.
           dangerouslySetInnerHTML={{ __html: html }}
         />
-        {isCollapsible && !expanded && (
-          <button
-            type="button"
-            className="agent-code-fence-show-more"
-            onClick={() => setExpanded(true)}
-            aria-label={`Show all ${lineCount} lines`}
-          >
-            ▾ Show {hiddenLines} more lines
-          </button>
-        )}
-        {isCollapsible && expanded && (
-          <button
-            type="button"
-            className="agent-code-fence-show-less"
-            onClick={() => setExpanded(false)}
-            aria-label="Collapse code block"
-          >
-            ▴ Collapse
-          </button>
-        )}
       </pre>
+      {/* The expand/collapse triggers MUST live outside the <pre>.  The
+       *  <pre> sets `overflow-x: auto`, which makes it a horizontal
+       *  scroll container; an absolutely-positioned `left: 50%` child
+       *  there resolves against the SCROLL content width (not the
+       *  visible viewport), so for wide lines the button sits off-
+       *  screen, and clicking it triggers the browser's "scroll
+       *  focused element into view" pass which yanks the content
+       *  sideways — the user sees the button "drift right and back"
+       *  and clicks miss.  Anchored to the figure (not a scroll
+       *  container) the geometry is stable. */}
+      {isCollapsible && !expanded && (
+        <button
+          type="button"
+          className="agent-code-fence-show-more"
+          onClick={() => setExpanded(true)}
+          aria-label={`Show all ${lineCount} lines`}
+        >
+          ▾ Show {hiddenLines} more lines
+        </button>
+      )}
+      {isCollapsible && expanded && (
+        <button
+          type="button"
+          className="agent-code-fence-show-less"
+          onClick={() => setExpanded(false)}
+          aria-label="Collapse code block"
+        >
+          ▴ Collapse
+        </button>
+      )}
     </figure>
   );
 }

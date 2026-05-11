@@ -231,7 +231,11 @@
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: var(--space-2) var(--space-3) 0 var(--space-3);
+  /* All four sides padded.  The bottom value used to be 0, which
+   * pinned the thumbnail strip against the textarea below — visually
+   * the image looked like it overlapped the input area.  Matching
+   * top + bottom restores breathing room above the prompt. */
+  padding: var(--space-2) var(--space-3);
   flex: 0 0 auto;
   /* Cap so a flurry of pastes can't dominate the composer; scroll the
    * row instead of pushing the textarea off-screen. */

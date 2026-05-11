@@ -144,8 +144,16 @@ export function classifySlashCommand(item: ClassifiableCommand): SlashCommandKin
     return "native";
   }
 
-  // No description: fall back to the curated CLI verb list.
-  const bare = item.command.replace(/^\//, "").toLowerCase();
+  // No description: fall back to the curated CLI verb list.  The
+  // bare-verb extraction strips a leading slash AND ignores trailing
+  // arguments — `/remote-control random` must still match the
+  // `remote-control` entry, otherwise the command is mis-routed as a
+  // native prompt and Claude itself emits a "isn't available in this
+  // environment" error.
+  const bare = item.command
+    .replace(/^\//, "")
+    .split(/\s+/, 1)[0]!
+    .toLowerCase();
   if (KNOWN_CLI_COMMANDS.has(bare)) return "cli";
 
   return "native";
@@ -155,6 +163,17 @@ export function classifySlashCommand(item: ClassifiableCommand): SlashCommandKin
  *  spawned `claude <cmd>` process. */
 export function stripSlash(command: string): string {
   return command.startsWith("/") ? command.slice(1) : command;
+}
+
+/** Extract the bare verb (no leading slash, no trailing arguments,
+ *  lowercased) from a slash-command input.  Mirrors the normalization
+ *  done inside `classifySlashCommand` so the composer can use the
+ *  same key when deciding whether to route to an embedded PTY. */
+export function slashCommandVerb(command: string): string {
+  return command
+    .replace(/^\//, "")
+    .split(/\s+/, 1)[0]!
+    .toLowerCase();
 }
 
 /** Curated catalog of Claude Code's well-known interactive built-ins

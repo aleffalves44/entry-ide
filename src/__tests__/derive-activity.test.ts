@@ -121,4 +121,53 @@ describe("deriveActivity", () => {
     });
     expect(deriveActivity(state).status).toBe("running");
   });
+
+  // ── Regression: stuck-on-awaiting after user interrupt ─────────────
+  //
+  // When the user clicks the Stop button BEFORE Claude has streamed
+  // its first byte, the bridge sends an interrupt to the SDK and the
+  // SDK emits a closing `result` event.  The reducer clears
+  // `streamingMessageId` but does NOT append an assistant message
+  // (none ever arrived), so the message list is still `[user_msg]`
+  // and the old `deriveActivity` returned `awaiting` forever — the
+  // "awaiting claude" indicator spun even though the turn was over
+  // and "[Request interrupted by user]" was visible in the footer.
+  //
+  // Fix: track `resultEventAt` and short-circuit step 3 when a
+  // result event is dated at or after the trailing user message.
+
+  it("returns idle when a result event arrives after a user message with no assistant reply (Stop pre-stream)", () => {
+    const state = stateWith({
+      messages: [userMessage("u1", 100)],
+      // The reducer would normally also have set resultEvent here;
+      // for deriveActivity what matters is the timestamp marker.
+      resultEventAt: 150,
+    });
+    expect(deriveActivity(state)).toEqual({ status: "idle", since: null });
+  });
+
+  it("still reports awaiting for a NEW user message sent after a previously-finished turn", () => {
+    // The user sent u1, got a reply, then sent u2.  The
+    // resultEventAt from turn 1 is older than u2 — we must NOT
+    // short-circuit to idle just because some past result exists.
+    const state = stateWith({
+      messages: [
+        userMessage("u1", 100),
+        assistantMessage("a1", 150),
+        userMessage("u2", 300),
+      ],
+      resultEventAt: 200, // closed turn 1, before u2
+    });
+    expect(deriveActivity(state)).toEqual({ status: "awaiting", since: 300 });
+  });
+
+  it("interrupt with no preceding result event still reports awaiting (defensive)", () => {
+    // Belt-and-suspenders: if the bridge crashes mid-interrupt and
+    // never emits a result event, we don't accidentally flip to idle.
+    const state = stateWith({
+      messages: [userMessage("u1", 100)],
+      resultEventAt: null,
+    });
+    expect(deriveActivity(state)).toEqual({ status: "awaiting", since: 100 });
+  });
 });

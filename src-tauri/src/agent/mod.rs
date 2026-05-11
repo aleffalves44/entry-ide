@@ -1154,7 +1154,13 @@ fn which_claude() -> Option<std::path::PathBuf> {
 /// inherited PATH and appends every directory in [`fallback_node_dirs`]
 /// that's not already present.  This is the minimum required to keep the
 /// agent bridge working in a Finder-launched .app bundle.
-fn enriched_path_var() -> std::ffi::OsString {
+///
+/// `pub(crate)` so the inline-PTY surface (used for `/mcp`, `/agents`,
+/// `/remote-control`, etc.) can apply the same PATH augmentation when
+/// spawning `claude` directly — otherwise GUI-launched apps inherit the
+/// sanitized `/usr/bin:/bin:/usr/sbin:/sbin` PATH from launchd and fail
+/// with "No viable candidates found in PATH".
+pub(crate) fn enriched_path_var() -> std::ffi::OsString {
     use std::collections::HashSet;
     use std::ffi::OsString;
 
@@ -2002,9 +2008,7 @@ mod tests {
         let mut reader = BufReader::new(&bytes[..]);
         let mut buf = Vec::with_capacity(64);
         for expected in lines {
-            let r = read_bounded_line(&mut reader, &mut buf, 256)
-                .await
-                .unwrap();
+            let r = read_bounded_line(&mut reader, &mut buf, 256).await.unwrap();
             match r {
                 BoundedLine::Line(s) => assert_eq!(s, expected),
                 _ => panic!("expected Line(\"{}\")", expected),

@@ -277,16 +277,22 @@ export function SessionComposer() {
     if (inFlightRef.current) return;
     if (!draft.trim() && pendingImages.length === 0) return;
 
-    // Pre-submit routing: if the entire draft is a single slash
-    // command and that command classifies as `cli` (built-in
-    // interactive verb the SDK can't drive over stream-json), route
-    // to the embedded terminal banner instead of sending it as a
-    // chat message.  Honors the dynamic-list contract: even commands
-    // the SDK didn't include in init.slash_commands get routed
-    // correctly when the user types them manually.
+    // Pre-submit routing: if the draft starts with a slash command
+    // whose first token classifies as `cli` (built-in interactive
+    // verb the SDK can't drive over stream-json), route to the
+    // embedded terminal banner instead of sending it as a chat
+    // message.  We pass the FULL command (including any trailing
+    // arguments) to the embedded PTY — `/remote-control random`,
+    // `/agents create foo`, etc. are valid invocations that need
+    // their args preserved.  Earlier versions required `!/\s/` here,
+    // which routed `/<cli-verb> <args>` to Claude as a native
+    // prompt; Claude then rejected it with "isn't available in this
+    // environment" since interactive slash commands aren't usable in
+    // stream-json mode.
     const trimmed = draft.trim();
-    if (trimmed.startsWith("/") && !/\s/.test(trimmed)) {
-      const kind = classifySlashCommand({ command: trimmed });
+    if (trimmed.startsWith("/")) {
+      const firstToken = trimmed.split(/\s+/, 1)[0]!;
+      const kind = classifySlashCommand({ command: firstToken });
       if (kind === "cli") {
         dispatch({ type: "SET_COMPOSER_DRAFT", sessionId: composerSessionId, draft: "" });
         setPendingCliCommand(trimmed);

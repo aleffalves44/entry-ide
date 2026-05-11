@@ -124,6 +124,73 @@ describe("classifySlashCommand — user / custom commands", () => {
   });
 });
 
+/* ─── Regression: `/cli-verb <args>` must still classify as cli ────
+ *
+ * Real bug shipped in the 1.1.x line: typing `/remote-control random`
+ * (or any CLI verb followed by arguments) made the classifier extract
+ * `remote-control random` as the bare key, miss the curated set, fall
+ * through to `native`, and submit the input to Claude as a normal
+ * prompt.  Claude's own slash-command handler then refused with
+ * "/remote-control isn't available in this environment." because
+ * interactive slash commands aren't usable in stream-json mode.
+ *
+ * Fix: strip trailing arguments before the curated-set lookup.  These
+ * tests pin the new behavior across every well-known CLI verb so any
+ * regression that re-introduces whitespace-sensitivity is caught at
+ * unit-test time on every platform we run CI on (Linux, macOS,
+ * Windows). */
+describe("classifySlashCommand — CLI verbs with trailing arguments (regression)", () => {
+  it("`/remote-control random` classifies as cli, not native", () => {
+    expect(classifySlashCommand({ command: "/remote-control random" })).toBe("cli");
+  });
+
+  it("preserves the cli classification for arbitrary args on every curated verb", () => {
+    // Spot-check a representative slice of the catalog; the classifier
+    // is uniform across entries, so this set proves the contract for
+    // the whole curated list.
+    const cases: Array<[string, string]> = [
+      ["/mcp", "list"],
+      ["/agents", "create foo"],
+      ["/help", "agents"],
+      ["/config", "set theme dark"],
+      ["/model", "claude-opus-4-7"],
+      ["/permissions", "add Read"],
+      ["/remote-control", "random"],
+      ["/remote-env", "set FOO=bar"],
+      ["/cost", "today"],
+      ["/recap", "last 5 turns"],
+    ];
+    for (const [verb, args] of cases) {
+      const input = `${verb} ${args}`;
+      expect(
+        classifySlashCommand({ command: input }),
+        `expected ${input} to classify as cli`,
+      ).toBe("cli");
+    }
+  });
+
+  it("multiple-whitespace / tabs between verb and args still classify as cli", () => {
+    expect(classifySlashCommand({ command: "/mcp   list" })).toBe("cli");
+    expect(classifySlashCommand({ command: "/agents\tcreate" })).toBe("cli");
+    expect(classifySlashCommand({ command: "/help\n--verbose" })).toBe("cli");
+  });
+
+  it("unknown verb with args still falls through to native", () => {
+    // The curated-set lookup must still REJECT unknown verbs even
+    // when args are present.  This guards against an over-eager fix
+    // that classifies anything-with-args as cli.
+    expect(classifySlashCommand({ command: "/ship arg1 arg2" })).toBe("native");
+    expect(classifySlashCommand({ command: "/team-standup yesterday" })).toBe("native");
+  });
+
+  it("plugin-namespaced commands with args remain native", () => {
+    expect(
+      classifySlashCommand({ command: "/frontend-design:frontend-design hero" }),
+    ).toBe("native");
+    expect(classifySlashCommand({ command: "/telegram:configure now" })).toBe("native");
+  });
+});
+
 describe("missingCliBuiltins — curated-mirror merge", () => {
   it("returns the well-known Claude Code CLI built-ins when none are in the existing list", () => {
     const got = missingCliBuiltins([]);

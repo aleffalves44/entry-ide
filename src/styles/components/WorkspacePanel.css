@@ -44,6 +44,13 @@
 
 .workspace-scan-input {
   flex: 1;
+  /* `min-width: 0` lets the flex parent shrink the input below its
+   * intrinsic UA width (~200px).  Without this, in narrow dialogs
+   * (e.g. the New-Session wizard's Project Context step on the
+   * default ~500px width) the input refuses to shrink, the row
+   * pushes past the dialog's right edge, and the trailing `Scan`
+   * button is clipped — see issue: "Scan button not aligned". */
+  min-width: 0;
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -67,6 +74,12 @@
   cursor: pointer;
   font-family: var(--font-ui);
   transition: filter 0.15s;
+  /* The Browse / Scan buttons live in a flex row next to a flexible
+   * input; refusing to shrink keeps their labels intact in narrow
+   * dialogs.  Pairs with `min-width: 0` on `.workspace-scan-input`
+   * above to make the input absorb all the slack instead of the
+   * buttons. */
+  flex-shrink: 0;
 }
 .workspace-scan-btn:hover { filter: brightness(1.1); }
 .workspace-scan-btn:disabled { opacity: 0.5; cursor: not-allowed; }

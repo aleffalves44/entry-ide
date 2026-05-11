@@ -143,6 +143,14 @@ export interface AgentSessionState {
    *  Bounded retention is fine because Claude assigns one uuid per
    *  turn; even a marathon session is < 10 KB. */
   seenResultEventIds: Set<string>;
+  /** Wall-clock ms when the most recent `result` event was observed.
+   *  Used by `deriveActivity` to decide that a turn has concluded
+   *  even when no assistant message was appended (e.g., the user
+   *  hit Stop before Claude streamed its first byte).  Without this,
+   *  the "awaiting claude" indicator stays spinning forever because
+   *  the last message in `messages` is still the user's prompt.
+   *  Null until the first `result` event arrives. */
+  resultEventAt: number | null;
 }
 
 export function emptyState(): AgentSessionState {
@@ -166,6 +174,7 @@ export function emptyState(): AgentSessionState {
     streamingThinkingText: new Map(),
     currentStreamMessageId: null,
     seenResultEventIds: new Set(),
+    resultEventAt: null,
   };
 }
 
@@ -805,6 +814,7 @@ export function reduceEvent(
     return {
       ...state,
       resultEvent: event,
+      resultEventAt: now,
       seenResultEventIds,
       cumulativeCostUsd: state.cumulativeCostUsd + turnCost,
       cumulativeOutputTokens: state.cumulativeOutputTokens + turnOut,
@@ -978,6 +988,24 @@ export function deriveActivity(state: AgentSessionState): AgentActivity {
   // 3. Tail of conversation is a user message with no assistant reply yet.
   const last = state.messages[state.messages.length - 1];
   if (last && last.role === "user") {
+    // If a `result` event has arrived AT OR AFTER the user message
+    // was sent, the turn has already concluded — likely interrupted
+    // or errored before Claude emitted any assistant content.  In
+    // that case `streamingMessageId` is already null and no assistant
+    // message ever got appended, so without this branch the
+    // "awaiting claude" indicator would stay spinning forever (the
+    // last message in `messages` is still the user prompt).  The
+    // timestamp comparison avoids a false-idle for the NEXT turn:
+    // when the user fires off a brand-new prompt after a finished
+    // turn, `resultEventAt` is older than the new user message so
+    // we still report `awaiting` until Claude actually replies.
+    const lastTs = last.timestamp ?? 0;
+    if (
+      state.resultEventAt !== null &&
+      state.resultEventAt >= lastTs
+    ) {
+      return { status: "idle", since: null };
+    }
     return { status: "awaiting", since: last.timestamp ?? null };
   }
 

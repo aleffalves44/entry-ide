@@ -924,6 +924,15 @@ html[data-theme="newsprint"] .agent-md-h2 {
  * speaks the same color language as the rest of the agent UI. */
 
 .agent-code-fence {
+  /* `position: relative` is the offset parent for the absolutely-
+   * positioned `.agent-code-fence-show-more` button below.  Previously
+   * the button anchored to `.agent-code-fence-body` (the <pre>), which
+   * is `overflow-x: auto` — so `left: 50%` resolved against the
+   * scrolled CONTENT width, not the visible width.  For wide lines the
+   * button rendered off-screen and clicking it auto-scrolled the pre,
+   * yanking the button out from under the cursor and producing the
+   * "drifts right, moves back, takes many clicks" symptom. */
+  position: relative;
   margin: 4px 0;
   background: var(--bg-1);
   border: 1px solid var(--rule);
@@ -1047,6 +1056,18 @@ html[data-theme="newsprint"] .agent-md-h2 {
   background: var(--bg-1);
   border-color: var(--brass, var(--accent));
   color: var(--brass, var(--accent));
+}
+
+/* Preserve the centering `translateX(-50%)` while the press-scale
+ * feedback runs.  The global `button:active:not(:disabled)` rule in
+ * `base.css` sets `transform: scale(0.97)`, which CLOBBERS the
+ * translateX above and snaps the button's left edge to the 50% line
+ * — visually the button jumps half-its-width to the right on press,
+ * the cursor falls off the new bounds, mouseup misses, and clicks
+ * don't register.  Concat both transforms here so the active state
+ * keeps the centering offset. */
+.agent-code-fence-show-more:active:not(:disabled) {
+  transform: translateX(-50%) scale(0.97);
 }
 
 /* Mirror "show more" with a "collapse" button at the bottom of an
