@@ -1,3 +1,131 @@
+# Hermes IDE 1.2.0
+
+A redesigned conversation surface, a cleaner composer, and a calmer
+status bar. The same eight themes, all sharing a new visual language:
+a warm voice for your turns, a cool voice for the agent's, a real type
+system, and an actual motion vocabulary.
+
+## Two voices, finally distinguishable
+
+Every theme now declares a **warm tone for the operator** (your prompts,
+your composer, the user-message bar) and a **cool tone for the agent**
+(assistant messages, thinking pulses, tool focus). A long conversation
+now reads at a glance — you can see your turns versus the agent's
+without reading a single word.
+
+Mono-tone themes (Atelier, Linen, Phosphor) keep their single accent on
+purpose; everywhere else you'll see a clear duotone. Newsprint in
+particular is now a real broadsheet duotone — brass becomes the live
+accent for links and selection, while true ink stays as the body color.
+
+## A real type system
+
+Agent markdown headings now have a proper editorial hierarchy — 24 / 20 /
+16 / 14 — so the structure in long replies is actually scannable.
+Editorial themes (Atelier, Linen, Observatory, Newsprint) render those
+headings in Newsreader serif, the typeface that previously only showed up
+in web-fetch excerpts.
+
+The whole app rebases its size and weight ladder on a modular 1.125 scale
+rooted at 13px. Chrome text is one step bigger and easier to read; tracked
+uppercase labels get the spacing they need at small sizes.
+
+## The composer, rethought
+
+The settings row at the bottom of the composer is no longer a wall of
+labeled pills. Model, Permission, and Effort are now compact dot-chips —
+a small colored dot identifies the slot, the value sits next to it.
+
+**Bypass mode now announces itself** — the Permission chip turns red and
+its dot pulses when you're running without confirmation. Previously
+Bypass was just another grey pill among five.
+
+The **Send** button is now a brass pill that reads `Send →` with the
+arrow sliding right on hover. The keyboard shortcut moved into the
+tooltip so the button can breathe.
+
+The composer also gained an **explicit Attach button** for adding images.
+Paste and drag-and-drop continue to work; you can now click a button too.
+
+When you press Esc with an empty draft, the minimized composer is now a
+**discoverable brass pill labeled "Compose"** with the keyboard shortcut
+visible, instead of a tiny circle hugging the corner.
+
+## A calmer status bar
+
+The "working" and "needs input" labels are now **pulsing capsules** with
+shape and color — your peripheral vision will catch them without you
+looking down.
+
+The execution mode toggle is now a **3-segment control** showing Manual /
+Assisted / Auto at once. No more cycle-on-click guessing about which
+mode you're switching to.
+
+The version chip collapses four states into one element: idle, checking,
+update available, and downloading-with-progress (the border becomes a
+progress arc).
+
+Token count, cost, and elapsed time settle to calm grey by default and
+flash brass briefly when they change — you notice movement, not stillness.
+
+## The activity bar stays put
+
+Hovering an icon in the activity bar no longer shifts its neighbours.
+The active-tab indicator now travels smoothly between tabs and the icons
+themselves are bigger.
+
+## Session list reads more clearly
+
+Each session row's left band now carries its live state — a slow vertical
+shimmer when busy, an amber pulse when it needs input, solid red on error.
+The agent and SSH tag chips are replaced with single-letter monogram
+glyphs next to the session name. Description and project chips hide on
+inactive rows so the sidebar reads as a glanceable index.
+
+## The "thought" block is no longer empty
+
+In agent conversations, the collapsed "thought" footnote previously
+rendered as an empty dashed box with its content appearing below it.
+Collapsed thoughts are now a small brass chip; expanded thoughts pull
+their body inside the same footprint. You see the reasoning trace
+exactly where you'd expect it.
+
+## More legible light themes
+
+Text contrast on Frosted Light, Atrium, and Linen now meets WCAG AA.
+Secondary metadata in those themes was previously hard to read.
+
+## More atmosphere
+
+Frosted Dark and Frosted Light carry a faint cool tint so the frosted
+overlays have something to refract — the default theme finally has
+weather. Atrium gains a richer slate-teal accent; the previous muted
+slate didn't pop on the daylight surface.
+
+Every theme also has a tailored focus ring — a soft halo on glass
+themes, a sharp double-rule on Newsprint that survives any backdrop,
+an accent glow on Phosphor, brass on the editorial family.
+
+## Tab strips slide
+
+Switching between Terminal and Git tabs now uses a smoothly sliding
+underline instead of a snap.
+
+## Logbook entries get a preview
+
+The "Logbook" of recent sessions on the empty-state page now shows a
+preview snippet and shell name for each session, alongside the title
+and time-ago. Hover slides a brass page-edge in from the left.
+
+## A documented design system
+
+This release also lands a comprehensive design-system documentation
+suite recording every token, rule, and component pattern — the same
+foundation 1.2.0 is built on. New contributors and new themes can
+build on top of it.
+
+---
+
 # Hermes IDE 1.1.15
 
 A redesigned theme system. Eight themes, one identity.
