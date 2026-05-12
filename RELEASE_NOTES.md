@@ -1,50 +1,90 @@
-# Hermes IDE 1.2.1
+# Hermes IDE 1.2.2
 
-A focused stability release closing six regressions introduced by the
-1.2 design refresh.
+See exactly what your sub-agents are doing, watch Claude reason in
+real time, and notice when your checklist drifts.
 
-## Slash commands with arguments now run as expected
+## See your sub-agents at a glance
 
-Typing `/remote-control random`, `/agents create foo`, or any other
-CLI slash command followed by arguments used to be rejected with
-"isn't available in this environment." These commands now open the
-embedded terminal with their arguments intact, the way they always
-should have.
+When Claude dispatches sub-agents in parallel, each one now shows up
+as a clean, compact row under its parent — name, state dot, elapsed
+time, and a quiet `(+N)` hint if it spawned more sub-agents of its
+own. Click any row to read its final reply; the metadata strip
+underneath reveals token counts and the agent ID for the times you
+need to dig in.
 
-## CLI slash commands find `claude` again on app launches
+A small **`● N subagents ▾`** pill appears in the session header
+whenever sub-agents are running. Click it to open a popover of every
+active sub-agent across the session, nested by depth. Click any row
+to jump back to where it was dispatched.
 
-Running `/mcp`, `/agents`, `/remote-control`, etc. from a Finder- or
-Launchpad-launched Hermes was failing with "No viable candidates
-found in PATH" because the system PATH the app inherits at launch
-doesn't include the toolchain folders where `claude` actually lives.
-The embedded terminal now augments its PATH the same way the main
-agent does, so the binary is found regardless of how you launched
-the app.
+No more wall of identical tool-use cards. No more losing track of who
+is doing what.
 
-## Pasted image thumbnails no longer crash into the prompt
+## Watch Claude work in real time
 
-The thumbnail row above the composer now has proper breathing room
-below the images. Previously the bottom of an attached thumbnail sat
-flush against the text input.
+The old flashing-cursor experience is gone. In its place: two new
+surfaces pinned to the bottom of every Claude session.
 
-## "Show N more lines" button no longer drifts under your cursor
+A **status line** shows the present-tense verb and what Claude is
+acting on — `reading src/foo.ts`, `running grep -rn …`,
+`coordinating 2 of 3 subagents`, `drafting reply · ~620 tokens` —
+alongside a chronograph, a token counter, and a `Stop` button (or
+just press Esc). When you've been waiting a while on the first byte,
+the line escalates its copy from "first byte" to "negotiating with
+the API" to "long context, may take 30–60s" so you know the IDE
+isn't hung.
 
-Two distinct bugs were causing the expand button on long code blocks
-to "move and move back" — leaving you stabbing at it three or four
-times before a click registered. Both are gone: the button now sits
-stably under your cursor on press and the first click expands the
-block.
+A **rolling preview rail** above the status line shows the last two
+sentences of Claude's narration as it's being written. When Claude
+is thinking before its first byte, the rail surfaces what it's
+responding to so you always have context.
 
-## Stop button actually stops the spinner
+## Live thinking, finally readable
 
-Hitting Stop before Claude streamed its first reply used to leave
-the "awaiting claude" indicator spinning forever, even though the
-request was already cancelled and "[Request interrupted by user]"
-was visible. The indicator now clears the moment the interrupt
-completes.
+Thinking blocks now **auto-open while Claude is reasoning** and
+auto-collapse once the turn ends. While streaming, the body fills
+sentence-by-sentence with a small brass pulse at the tail showing
+the live edge. Click the chip any time to pin it open (or closed) —
+your preference sticks for the rest of that block.
 
-## Scan button stays inside the New-Session wizard
+The conversation pane **auto-scrolls to follow** the growing
+reasoning, exactly like it does for the final answer. Scroll up to
+re-read and we leave you alone — scroll back down and the
+auto-follow re-engages.
 
-The Scan button in the Project Context step was hanging off the
-right edge of narrow dialogs. The footer row now fits regardless of
-the dialog width — the input shrinks before the buttons do.
+## Bug fixes
+
+- **Numbered answers like `4.` no longer render as `1.`** — the
+  rendered text now honours the actual number the model produced.
+- **Esc reliably stops the current turn** when focus is anywhere
+  outside an input or textarea, and the visual variant of the
+  status line briefly turns red-striped while we flush partial
+  output.
+
+## Notice when your TODO list drifts
+
+The TODO panel now flags when Claude has gone three or more turns
+without refreshing the list. A quiet brass dot in the header reads
+**`STALE · *3 turns ago*`** — no alarms, just a heads-up that the
+checklist may not reflect what the agent is actually doing right now.
+
+You can also mark any row done yourself: hover the row, click the
+**`✓`**. The override is local — your finger on the scale, not a
+message to the agent — and it clears the moment the agent writes a
+fresh list. Useful when you've completed a step but the agent forgot
+to tick it.
+
+## A few editorial touches
+
+- The **in-progress** TODO glyph is now `❯`, distinct from the
+  expand-disclosure `▸` it used to share. One shape per meaning.
+- Sub-agent rows and the masthead chip **fade in** instead of
+  popping, matching the rest of the IDE's motion vocabulary.
+  Respects your system "reduce motion" preference.
+- Status words ("done", "running", "thinking") render in **italic**
+  — editorial register for the captions, mono numbers for the facts.
+- The masthead popover is now **opaque on every theme** — no more
+  conversation bleeding through when you check the running list.
+- A thin brass thread connects each sub-agent's state dot down to
+  its expanded body, so the eye reads the row and its detail as
+  one continuous instrument.

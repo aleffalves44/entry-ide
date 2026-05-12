@@ -72,3 +72,82 @@ export function todoCounts(todos: readonly TodoItem[]): { done: number; total: n
     total: todos.length,
   };
 }
+
+/**
+ * Richer snapshot used by the panel to surface staleness:
+ *   - `todos` — the live list (same as `extractTodosFromMessages`)
+ *   - `sourceMessageId` — id of the assistant message that owns the
+ *     latest TodoWrite call.  Used to detect "the agent updated the
+ *     list" and reset client-side overrides.
+ *   - `assistantTurnsSince` — number of *additional* assistant turns
+ *     that have arrived AFTER the latest TodoWrite.  Zero means the
+ *     latest TodoWrite is from the current turn; ≥3 means the list
+ *     has gone stale and the panel should flag it.
+ *   - `lastUpdatedAt` — wall-clock ms when the latest TodoWrite was
+ *     observed (best-effort via the source message's timestamp).
+ */
+export interface TodoSnapshot {
+  todos: TodoItem[];
+  sourceMessageId: string | null;
+  assistantTurnsSince: number;
+  lastUpdatedAt: number | null;
+}
+
+interface MessageLike {
+  id?: string;
+  role: string;
+  blocks?: readonly ToolUseLike[];
+  timestamp?: number;
+}
+
+export function extractTodoSnapshot(
+  messages: readonly MessageLike[],
+): TodoSnapshot {
+  for (let mi = messages.length - 1; mi >= 0; mi--) {
+    const m = messages[mi];
+    if (m.role !== "assistant" || !m.blocks || m.blocks.length === 0) continue;
+    for (let bi = m.blocks.length - 1; bi >= 0; bi--) {
+      const b = m.blocks[bi];
+      if (b.type !== "tool_use" || b.name !== "TodoWrite") continue;
+      const rawTodos = b.input?.todos;
+      const todos: TodoItem[] = Array.isArray(rawTodos)
+        ? rawTodos.map((t) => {
+            const content = typeof t.content === "string" ? t.content : "";
+            const rawStatus =
+              typeof t.status === "string" ? (t.status as TodoStatus) : "unknown";
+            const status: TodoStatus = KNOWN_STATUSES.has(rawStatus)
+              ? rawStatus
+              : "unknown";
+            return { content, status };
+          })
+        : [];
+
+      // Count assistant turns that ARRIVED AFTER this TodoWrite.
+      // We walk forward from mi+1 to the end and count distinct
+      // assistant messages.  A subagent message (parentToolUseId set)
+      // is NOT counted — those are nested fan-out, not new top-level
+      // turns from the operator's perspective.
+      let assistantTurnsSince = 0;
+      for (let fi = mi + 1; fi < messages.length; fi++) {
+        const fm = messages[fi];
+        if (fm.role !== "assistant") continue;
+        const fmAny = fm as MessageLike & { parentToolUseId?: string | null };
+        if (fmAny.parentToolUseId) continue;
+        assistantTurnsSince += 1;
+      }
+
+      return {
+        todos,
+        sourceMessageId: typeof m.id === "string" ? m.id : null,
+        assistantTurnsSince,
+        lastUpdatedAt: typeof m.timestamp === "number" ? m.timestamp : null,
+      };
+    }
+  }
+  return {
+    todos: [],
+    sourceMessageId: null,
+    assistantTurnsSince: 0,
+    lastUpdatedAt: null,
+  };
+}

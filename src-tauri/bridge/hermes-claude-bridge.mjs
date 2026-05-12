@@ -486,6 +486,15 @@ const sdkOptions = {
   ...buildPermissionOptions(flags),
   ...(flags.effort ? { effort: flags.effort } : {}),
   ...(flags.addDir.length > 0 ? { additionalDirectories: flags.addDir } : {}),
+  // Force `display: "summarized"` on the thinking config so the SDK
+  // emits `thinking_delta` partial events even on models that default
+  // to `display: "omitted"` (Opus 4.7, Claude Mythos Preview).  Without
+  // this, those models stream a single `signature_delta` and the
+  // operator sees an empty thinking block until the turn ends.
+  // `type: "adaptive"` lets Claude choose the budget per turn (Opus
+  // 4.6+ semantics); older models silently ignore the field.
+  // See https://platform.claude.com/docs/en/build-with-claude/extended-thinking
+  thinking: { type: "adaptive", display: "summarized" },
   includePartialMessages: !!flags.includePartialMessages,
   includeHookEvents: !!flags.includeHookEvents,
   ...(flags.maxBudgetUsd != null ? { maxBudgetUsd: flags.maxBudgetUsd } : {}),
