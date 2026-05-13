@@ -62,6 +62,7 @@ import { spawnAgentSession, closeAgentSession, sendAgentInput, updateHermesState
 import { reportAgentSpawnFailure } from "../utils/agentSpawnFailure";
 import { destroyAgentSessionStore } from "../agent/agentSessionStore";
 import { cleanupSessionRefs } from "../utils/sessionRefCleanup";
+import { cacheAgentInit, clearAgentInitCache, peekAgentInitCache } from "../agent/useAgentInit";
 import {
   buildUserEnvelope,
   echoUserEnvelope,
@@ -1228,6 +1229,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             if (typeof event.permissionMode === "string") {
               claudePermissionModes.current.set(sessionId, event.permissionMode);
             }
+            // Bug 5 (1.2.x): mirror the init into the module-level
+            // cache `useAgentInit` reads on mount.  The init event
+            // fires ONCE per spawn and Tauri does not replay to late
+            // subscribers; without this write, the composer's
+            // model/permission/effort chips vanish for any session
+            // the user navigates to after its initial spawn.
+            cacheAgentInit(sessionId, event);
           } else if (isStateChangedEvent(event)) {
             console.log(
               `[state-changed] sid=${sessionId} model=${event.model ?? "?"}` +
@@ -1251,6 +1259,19 @@ export function SessionProvider({ children }: { children: ReactNode }) {
                   session: { ...existing, permission_mode: event.permissionMode },
                 });
               }
+            }
+            // Patch the cached init snapshot too so a late-mounting
+            // composer (e.g. switching to the session AFTER plan-mode
+            // was entered) sees the current permissionMode, not the
+            // stale spawn-time value.
+            const cached = peekAgentInitCache(sessionId);
+            if (cached) {
+              const patched = { ...cached };
+              if (typeof event.model === "string") patched.model = event.model;
+              if (typeof event.permissionMode === "string") {
+                patched.permissionMode = event.permissionMode;
+              }
+              cacheAgentInit(sessionId, patched);
             }
           }
         },
@@ -1445,6 +1466,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // Tear down the long-lived agent message store so its Tauri
         // listeners don't leak after the session is gone.
         destroyAgentSessionStore(event.payload);
+        // Release the module-level init cache entry (Bug 5 fix) —
+        // otherwise the Map grows unbounded across long-running app
+        // sessions.
+        clearAgentInitCache(event.payload);
         dispatch({ type: "SESSION_REMOVED", id: event.payload });
       });
       unlisteners.push(u2);
