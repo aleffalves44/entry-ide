@@ -2057,11 +2057,7 @@ pub fn drain_session_db_state(db: &Database, session_id: &str) -> Vec<SessionWor
             // Main worktrees live in the project repo itself; close must
             // never remove them from disk.  Drop the link row.
             if let Err(e) = db.delete_session_worktree(&wt.id) {
-                log::warn!(
-                    "Failed to delete main-worktree DB row '{}': {}",
-                    wt.id,
-                    e,
-                );
+                log::warn!("Failed to delete main-worktree DB row '{}': {}", wt.id, e,);
             }
             continue;
         }
@@ -2074,11 +2070,7 @@ pub fn drain_session_db_state(db: &Database, session_id: &str) -> Vec<SessionWor
             // only, leave the disk alone.  Tests guarantee the surviving
             // session keeps its own row.
             if let Err(e) = db.delete_session_worktree(&wt.id) {
-                log::warn!(
-                    "Failed to delete shared-worktree DB row '{}': {}",
-                    wt.id,
-                    e,
-                );
+                log::warn!("Failed to delete shared-worktree DB row '{}': {}", wt.id, e,);
             }
             continue;
         }
@@ -2113,11 +2105,7 @@ fn remove_owned_worktrees_from_disk(
             // `git worktree remove`, but we can still drop the dangling
             // DB row so it doesn't accumulate.
             if let Err(e) = db.delete_session_worktree(&wt.id) {
-                log::warn!(
-                    "Failed to delete orphan-worktree DB row '{}': {}",
-                    wt.id,
-                    e,
-                );
+                log::warn!("Failed to delete orphan-worktree DB row '{}': {}", wt.id, e,);
             }
             continue;
         };
@@ -3302,12 +3290,23 @@ mod tests {
     fn drain_session_db_state_returns_owned_worktrees_for_disk_removal() {
         let db = test_db();
         // Single owned, non-main worktree linked to an agent session.
-        db.insert_session_worktree("wt1", "agent-1", "proj-1", "/tmp/wt-agent-1", Some("feature-x"), false)
-            .unwrap();
+        db.insert_session_worktree(
+            "wt1",
+            "agent-1",
+            "proj-1",
+            "/tmp/wt-agent-1",
+            Some("feature-x"),
+            false,
+        )
+        .unwrap();
 
         let needs_disk = drain_session_db_state(&db, "agent-1");
 
-        assert_eq!(needs_disk.len(), 1, "owned non-main worktree must be returned for git worktree remove");
+        assert_eq!(
+            needs_disk.len(),
+            1,
+            "owned non-main worktree must be returned for git worktree remove"
+        );
         assert_eq!(needs_disk[0].worktree_path, "/tmp/wt-agent-1");
 
         // DB row is kept so the caller can delete it AFTER successful disk
@@ -3324,7 +3323,10 @@ mod tests {
 
         let needs_disk = drain_session_db_state(&db, "agent-1");
 
-        assert!(needs_disk.is_empty(), "main worktree is never removed from disk by close");
+        assert!(
+            needs_disk.is_empty(),
+            "main worktree is never removed from disk by close"
+        );
         let rows = db.get_session_worktrees("agent-1").unwrap();
         assert!(rows.is_empty(), "main worktree DB row should be dropped");
     }
@@ -3333,14 +3335,31 @@ mod tests {
     fn drain_session_db_state_drops_shared_worktree_row_without_disk_removal() {
         let db = test_db();
         // Two sessions reference the same worktree_path → ref_count = 2.
-        db.insert_session_worktree("wt-shared-a", "agent-1", "proj-1", "/tmp/wt-shared", Some("feature-x"), false)
-            .unwrap();
-        db.insert_session_worktree("wt-shared-b", "agent-2", "proj-1", "/tmp/wt-shared", Some("feature-x"), false)
-            .unwrap();
+        db.insert_session_worktree(
+            "wt-shared-a",
+            "agent-1",
+            "proj-1",
+            "/tmp/wt-shared",
+            Some("feature-x"),
+            false,
+        )
+        .unwrap();
+        db.insert_session_worktree(
+            "wt-shared-b",
+            "agent-2",
+            "proj-1",
+            "/tmp/wt-shared",
+            Some("feature-x"),
+            false,
+        )
+        .unwrap();
 
         let needs_disk = drain_session_db_state(&db, "agent-1");
 
-        assert!(needs_disk.is_empty(), "shared worktree must not be removed while another session uses it");
+        assert!(
+            needs_disk.is_empty(),
+            "shared worktree must not be removed while another session uses it"
+        );
         // Our row is gone; the other session's row survives.
         let ours = db.get_session_worktrees("agent-1").unwrap();
         let theirs = db.get_session_worktrees("agent-2").unwrap();
@@ -3450,7 +3469,11 @@ mod tests {
 
         let needs_disk = drain_session_db_state(&db, "term-mix");
 
-        assert_eq!(needs_disk.len(), 1, "only the owned non-main worktree needs disk removal");
+        assert_eq!(
+            needs_disk.len(),
+            1,
+            "only the owned non-main worktree needs disk removal"
+        );
         assert_eq!(needs_disk[0].id, "wt-feat");
         // Main row was dropped; owned row is kept for the caller.
         let remaining: Vec<String> = db
@@ -3484,7 +3507,11 @@ mod tests {
         let second = drain_session_db_state(&db, "agent-retry");
 
         assert_eq!(first.len(), 1);
-        assert_eq!(second.len(), 1, "second drain must see the same row (caller didn't delete after failure)");
+        assert_eq!(
+            second.len(),
+            1,
+            "second drain must see the same row (caller didn't delete after failure)"
+        );
         assert_eq!(first[0].id, "wt-retry");
         assert_eq!(second[0].id, "wt-retry");
         assert_eq!(phase_of(&db, "agent-retry").as_deref(), Some("destroyed"));
@@ -3498,14 +3525,32 @@ mod tests {
         let db = test_db();
         insert_minimal_session(&db, "closing", "agent");
         insert_minimal_session(&db, "surviving", "terminal");
-        db.insert_session_worktree("wt-c", "closing", "proj-1", "/tmp/wt-c", Some("feat-c"), false)
-            .unwrap();
-        db.insert_session_worktree("wt-s", "surviving", "proj-1", "/tmp/wt-s", Some("feat-s"), false)
-            .unwrap();
+        db.insert_session_worktree(
+            "wt-c",
+            "closing",
+            "proj-1",
+            "/tmp/wt-c",
+            Some("feat-c"),
+            false,
+        )
+        .unwrap();
+        db.insert_session_worktree(
+            "wt-s",
+            "surviving",
+            "proj-1",
+            "/tmp/wt-s",
+            Some("feat-s"),
+            false,
+        )
+        .unwrap();
 
         drain_session_db_state(&db, "closing");
 
-        assert_eq!(phase_of(&db, "surviving").as_deref(), Some("idle"), "the other session must not be touched");
+        assert_eq!(
+            phase_of(&db, "surviving").as_deref(),
+            Some("idle"),
+            "the other session must not be touched"
+        );
         let surviving_wts = db.get_session_worktrees("surviving").unwrap();
         assert_eq!(surviving_wts.len(), 1);
         assert_eq!(surviving_wts[0].id, "wt-s");
@@ -3571,6 +3616,9 @@ mod tests {
             .conn
             .query_row("SELECT COUNT(*) FROM context_pins", [], |r| r.get(0))
             .unwrap();
-        assert_eq!(count, 0, "agent-session pin must be cleaned (Bug 1 regression)");
+        assert_eq!(
+            count, 0,
+            "agent-session pin must be cleaned (Bug 1 regression)"
+        );
     }
 }
