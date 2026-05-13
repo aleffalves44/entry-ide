@@ -1,90 +1,67 @@
-# Hermes IDE 1.2.2
+# Hermes IDE 1.2.3
 
-See exactly what your sub-agents are doing, watch Claude reason in
-real time, and notice when your checklist drifts.
+The branch you pick is the branch you get. Closing a Claude session
+cleans up after itself. The "Select Branch" panel stays open long
+enough to actually read.
 
-## See your sub-agents at a glance
+This is a focused fix-up release on top of 1.2.2 — same Agent mode,
+same masthead, just the four sharp edges most users have hit at
+least once.
 
-When Claude dispatches sub-agents in parallel, each one now shows up
-as a clean, compact row under its parent — name, state dot, elapsed
-time, and a quiet `(+N)` hint if it spawned more sub-agents of its
-own. Click any row to read its final reply; the metadata strip
-underneath reveals token counts and the agent ID for the times you
-need to dig in.
+## The branch you pick is now actually used
 
-A small **`● N subagents ▾`** pill appears in the session header
-whenever sub-agents are running. Click it to open a popover of every
-active sub-agent across the session, nested by depth. Click any row
-to jump back to where it was dispatched.
+In the New Session flow, the branch highlighted in the "Select
+Branch" step is now applied automatically. Previously, if you didn't
+click `Use Branch` inside the per-project panel — which a lot of
+people don't, because the panel looks decided — the selection was
+silently dropped and your Claude session booted on whatever branch
+the project happened to be on, with no isolation.
 
-No more wall of identical tool-use cards. No more losing track of who
-is doing what.
+The highlighted local branch is now propagated the moment the panel
+loads. Click another row + `Use Branch` to change it, or just click
+`Continue` to accept the default.
 
-## Watch Claude work in real time
+When you re-open a project's branch panel to change your mind, it
+stays open. Your previously chosen branch is highlighted so you can
+see what you picked and either keep it or pick a different one.
 
-The old flashing-cursor experience is gone. In its place: two new
-surfaces pinned to the bottom of every Claude session.
+## Closing a Claude session tidies up after itself
 
-A **status line** shows the present-tense verb and what Claude is
-acting on — `reading src/foo.ts`, `running grep -rn …`,
-`coordinating 2 of 3 subagents`, `drafting reply · ~620 tokens` —
-alongside a chronograph, a token counter, and a `Stop` button (or
-just press Esc). When you've been waiting a while on the first byte,
-the line escalates its copy from "first byte" to "negotiating with
-the API" to "long context, may take 30–60s" so you know the IDE
-isn't hung.
+Closing a Claude session now reliably cleans up its isolated branch
+worktree on disk, drops the underlying records, and exits the agent
+process cleanly. Before this, the directory and the branch-claim
+both lingered, so creating another session on the same branch a few
+minutes later would fail with "branch already checked out
+elsewhere".
 
-A **rolling preview rail** above the status line shows the last two
-sentences of Claude's narration as it's being written. When Claude
-is thinking before its first byte, the rail surfaces what it's
-responding to so you always have context.
+If two sessions share the same branch worktree, closing one of them
+leaves the directory in place — the other session is still using it.
 
-## Live thinking, finally readable
+## Failed isolation surfaces an error instead of silently regressing
 
-Thinking blocks now **auto-open while Claude is reasoning** and
-auto-collapse once the turn ends. While streaming, the body fills
-sentence-by-sentence with a small brass pulse at the tail showing
-the live edge. Click the chip any time to pin it open (or closed) —
-your preference sticks for the rest of that block.
+If branch isolation can't be set up for every project you attached
+(for example: the branch is already checked out elsewhere, the disk
+is full, or you don't have permission to write the worktree
+location), the New Session flow now stops with a clear error
+instead of starting your agent in the project root and pretending
+nothing happened.
 
-The conversation pane **auto-scrolls to follow** the growing
-reasoning, exactly like it does for the final answer. Scroll up to
-re-read and we leave you alone — scroll back down and the
-auto-follow re-engages.
+Partial failures still proceed — the projects that did get
+isolation will work normally, and the ones that didn't are called
+out.
+
+## Converting a terminal session to Claude keeps your branch
+
+Right-clicking a terminal session and choosing **Convert to
+Claude** now preserves the isolated branch you were working on,
+instead of leaving the new agent in the project root.
 
 ## Bug fixes
 
-- **Numbered answers like `4.` no longer render as `1.`** — the
-  rendered text now honours the actual number the model produced.
-- **Esc reliably stops the current turn** when focus is anywhere
-  outside an input or textarea, and the visual variant of the
-  status line briefly turns red-striped while we flush partial
-  output.
-
-## Notice when your TODO list drifts
-
-The TODO panel now flags when Claude has gone three or more turns
-without refreshing the list. A quiet brass dot in the header reads
-**`STALE · *3 turns ago*`** — no alarms, just a heads-up that the
-checklist may not reflect what the agent is actually doing right now.
-
-You can also mark any row done yourself: hover the row, click the
-**`✓`**. The override is local — your finger on the scale, not a
-message to the agent — and it clears the moment the agent writes a
-fresh list. Useful when you've completed a step but the agent forgot
-to tick it.
-
-## A few editorial touches
-
-- The **in-progress** TODO glyph is now `❯`, distinct from the
-  expand-disclosure `▸` it used to share. One shape per meaning.
-- Sub-agent rows and the masthead chip **fade in** instead of
-  popping, matching the rest of the IDE's motion vocabulary.
-  Respects your system "reduce motion" preference.
-- Status words ("done", "running", "thinking") render in **italic**
-  — editorial register for the captions, mono numbers for the facts.
-- The masthead popover is now **opaque on every theme** — no more
-  conversation bleeding through when you check the running list.
-- A thin brass thread connects each sub-agent's state dot down to
-  its expanded body, so the eye reads the row and its detail as
-  one continuous instrument.
+- The branch selector panel no longer snaps shut immediately when
+  you re-open it to change your selection.
+- Closing a Claude session no longer leaves an orphan Node process
+  in your activity monitor.
+- The "Discard changes" choice in the close-confirmation dialog
+  correctly leaves shared work alone when another session is still
+  using the same branch.
