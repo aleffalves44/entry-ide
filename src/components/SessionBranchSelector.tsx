@@ -84,6 +84,15 @@ export function sortBranchesMainFirst<T extends { name: string; is_remote: boole
 }
 
 export function SessionBranchSelector({ projectId, onBranchSelected, onSkip }: SessionBranchSelectorProps) {
+  // Keep the latest onBranchSelected behind a ref so loadData can read
+  // it without including it in the useCallback dependency array.  The
+  // parent re-creates the inline callback on every render; if we put it
+  // in the dep array, loadData (and therefore the load effect) would
+  // re-fire on every parent render and re-issue the git_list_branches
+  // IPC, freezing the UI.
+  const onBranchSelectedRef = useRef(onBranchSelected);
+  onBranchSelectedRef.current = onBranchSelected;
+
   const [tab, setTab] = useState<Tab>("existing");
   const [branches, setBranches] = useState<GitBranch[]>([]);
   const [worktrees, setWorktrees] = useState<WorktreeInfo[]>([]);
@@ -121,6 +130,32 @@ export function SessionBranchSelector({ projectId, onBranchSelected, onSkip }: S
       const current = branchList.find((b) => b.is_current && !b.is_remote);
       const firstLocal = branchList.find((b) => !b.is_remote);
       setBaseBranch(current?.name || firstLocal?.name || "");
+
+      // Bug 2 fix (1.2.x):
+      // Auto-propagate the current local branch so the parent's
+      // `branchSelections[projectId]` is populated even when the user
+      // doesn't click "Use Branch" explicitly.  Before this, clicking
+      // SessionCreator's project-list "Continue" submitted with
+      // `branchSelections: undefined` and the agent session booted on
+      // the current branch with no worktree isolation.
+      //
+      // Constraints:
+      //   - Only propagate when a current LOCAL branch exists
+      //     (detached HEAD / remote-only repos must NOT auto-pick).
+      //   - Only propagate when no other session's worktree already
+      //     claims that branch (avoids the "branch in use" failure
+      //     downstream in git_create_worktree).
+      //
+      // The user can still override by selecting a different branch +
+      // "Use Branch", or skip isolation entirely via "Use current
+      // branch" (which calls onSkip and clears the selection upstream).
+      if (current) {
+        const taken = worktreeList.some((wt) => wt.branchName === current.name);
+        if (!taken) {
+          // Read through the ref so loadData's deps stay stable.
+          onBranchSelectedRef.current(current.name, false);
+        }
+      }
 
       // Remote branches from the initial list come from cached git refs (no network).
       // Do NOT auto-fetch from network — it blocks Tauri command threads and freezes

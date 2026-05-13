@@ -67,7 +67,9 @@ pub struct ProjectCostEntry {
 }
 
 pub struct Database {
-    conn: Connection,
+    // `pub(crate)` so close_session integration tests in pty/commands.rs
+    // can insert minimal session rows without a full SessionUpdate.
+    pub(crate) conn: Connection,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
