@@ -3322,14 +3322,14 @@ html[data-agent-timeline-style="classic"] .agent-message {
   z-index: 200;
   min-width: 280px;
   max-width: 360px;
-  /* Fully opaque single fill.  Earlier we layered a gradient over `--bg-0`
-   * with `backdrop-filter: blur(10px)` as a fallback for themes whose
-   * `--bg-elevated` might be semi-transparent — but every shipped theme
-   * defines `--bg-elevated` as an opaque hex, and the backdrop-filter
-   * still leaked a subtle blurred bleed of the chat content through on
-   * some GPU compositors.  A solid `--bg-elevated` (with `--bg-1`
-   * fallback) is correct, simpler, and reliably opaque. */
-  background: var(--bg-elevated, var(--bg-1));
+  /* Solid floating-panel surface.  Matches every other popover in the
+   * app (`.commands-popover`, `.status-theme-popover`, `.color-picker-popover`),
+   * which all sit on `--bg-1` / `--bg-2` rather than `--bg-elevated`.
+   * `--bg-2` gives a reliable tonal lift above both the header (`--bg-0`)
+   * and the conversation surface (`--bg-1`) on every theme, so the
+   * popover no longer reads as part of the page in warm-toned palettes.
+   * Frosted themes get an Apple-HUD glass override in `themes.css`. */
+  background: var(--bg-2);
   border: 1px solid var(--rule-strong, var(--rule));
   border-radius: 8px;
   box-shadow:
