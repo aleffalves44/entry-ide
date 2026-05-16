@@ -70,9 +70,9 @@
   align-items: center;
   gap: 10px;
   min-width: 0;
-  overflow: hidden;
-  /* Items inside the title can themselves shrink (cwd path is the
-   * usual culprit); ellipsis happens at the leaf level. */
+  /* No overflow: hidden here — it clips the brass glow on .agent-session-ticker
+   * along the bottom edge.  Children handle their own truncation (the ticker,
+   * cwd label, and model label all set white-space + ellipsis). */
 }
 
 .agent-session-header-title > * {
@@ -129,6 +129,14 @@
   letter-spacing: -0.005em;
   text-shadow: 0 0 8px var(--brass-dim);
   font-size: 13px;
+  line-height: 1.4;
+  /* Keep multi-word labels ("Running Bash", "Awaiting Claude") on a
+   * single line.  Without nowrap the title row would jump to a second
+   * line in narrow panes, causing the whole header to grow and the
+   * surrounding chips to shift on every state change. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .agent-session-cwd-name {
@@ -3314,16 +3322,14 @@ html[data-agent-timeline-style="classic"] .agent-message {
   z-index: 200;
   min-width: 280px;
   max-width: 360px;
-  /* Opaque underlay (`--bg-0` is the deepest ground — always opaque)
-   * with an `--bg-elevated` veneer painted on top.  This guarantees
-   * legibility on themes whose `--bg-elevated` is semi-transparent
-   * (e.g. Frosted Dark) without losing the slight tonal lift that
-   * `--bg-elevated` gives on themes where it's a solid color. */
-  background:
-    linear-gradient(var(--bg-elevated, var(--bg-1)), var(--bg-elevated, var(--bg-1))),
-    var(--bg-0);
-  backdrop-filter: blur(10px) saturate(120%);
-  -webkit-backdrop-filter: blur(10px) saturate(120%);
+  /* Fully opaque single fill.  Earlier we layered a gradient over `--bg-0`
+   * with `backdrop-filter: blur(10px)` as a fallback for themes whose
+   * `--bg-elevated` might be semi-transparent — but every shipped theme
+   * defines `--bg-elevated` as an opaque hex, and the backdrop-filter
+   * still leaked a subtle blurred bleed of the chat content through on
+   * some GPU compositors.  A solid `--bg-elevated` (with `--bg-1`
+   * fallback) is correct, simpler, and reliably opaque. */
+  background: var(--bg-elevated, var(--bg-1));
   border: 1px solid var(--rule-strong, var(--rule));
   border-radius: 8px;
   box-shadow:
