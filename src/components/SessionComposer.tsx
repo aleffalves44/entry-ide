@@ -5,7 +5,10 @@ import type { AgentAttachment } from "../utils/submitToAgent";
 import { isActionMod, isMac } from "../utils/platform";
 import { readImageForAttachment } from "../api/agent";
 import { getActiveSlashCommand, replaceSlashCommand } from "../utils/slashCommands";
-import { classifySlashCommand, missingCliBuiltins } from "../utils/slashCommandKind";
+import {
+  buildSlashItemsFromInit,
+  resolveSlashCommandKind,
+} from "../utils/slashCommandKind";
 import { fuzzyRank } from "../utils/fuzzy";
 import { SlashCommandsDropdown, type SlashCommandItem } from "./SlashCommandsDropdown";
 import { CliCommandBanner } from "./CliCommandBanner";
@@ -19,7 +22,6 @@ import { CLAUDE_MODEL_OPTIONS } from "../agent/modelOptions";
 const CLAUDE_EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;
 import { useAgentInit } from "../agent/useAgentInit";
 import { useAgentPrewarm } from "../agent/useAgentPrewarm";
-import { mergeSlashCommands } from "../utils/prewarm";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 let composerTextarea: HTMLTextAreaElement | null = null;
@@ -127,63 +129,28 @@ export function SessionComposer() {
   // surfaces the kind as a badge so the user knows up-front whether
   // accepting the item will send a chat message or pop a terminal.
   const slashCommandsFromInit = useMemo<SlashCommandItem[]>(() => {
-    // Two-source merge:
+    // Two-source merge (delegated to `buildSlashItemsFromInit`):
     //   1. Live: whatever the SDK reports in `init.slash_commands`.
-    //      This is the only truly version-matched source — picks up
-    //      every plugin / skill / user command the user has installed.
+    //      Authoritatively native — these are the verbs the SDK says
+    //      run over stream-json.  Bare-string entries (the SDK's most
+    //      common shape) get `kind: "native"` BEFORE any classifier
+    //      runs, so name-collisions with KNOWN_CLI_COMMANDS no longer
+    //      mis-route `/compact`, `/clear`, `/init`, `/review` to the
+    //      embedded-terminal path.  Regression: see
+    //      `slash-command-kind.test.ts` § buildSlashItemsFromInit.
     //   2. Curated: the well-known Claude Code CLI-only built-ins
     //      (`/mcp`, `/agents`, `/login`, etc.) that the SDK omits
-    //      because they don't work over stream-json.  The binary
-    //      doesn't expose an enumeration API, so Conductor and other
-    //      clients curate the same list — see CLAUDE_CLI_BUILTINS in
-    //      slashCommandKind.ts.
-    //   The merge is deduped: if the SDK does report a name, it
-    //   wins (we trust the SDK's description over ours).
-    const raw = init?.slash_commands;
-    let items: SlashCommandItem[];
-    if (Array.isArray(raw)) {
-      items = raw
-        .map((entry): SlashCommandItem | null => {
-          if (typeof entry === "string") {
-            const command = entry.startsWith("/") ? entry : `/${entry}`;
-            return { command, label: "", description: "", source: "builtin" };
-          }
-          if (entry && typeof entry === "object") {
-            const command = typeof entry.command === "string"
-              ? (entry.command.startsWith("/") ? entry.command : `/${entry.command}`)
-              : null;
-            if (!command) return null;
-            const description = typeof entry.description === "string" ? entry.description : "";
-            return { command, label: "", description, source: "builtin" };
-          }
-          return null;
-        })
-        .filter((c): c is SlashCommandItem => c !== null);
-    } else {
-      const merged = mergeSlashCommands(prewarm.slashCommands, undefined);
-      items = merged.map((cmd) => ({
-        command: cmd.startsWith("/") ? cmd : `/${cmd}`,
-        label: "",
-        description: "",
-        source: "builtin" as const,
-      }));
-    }
-    // Append curated CLI built-ins that the SDK didn't include.
-    // These are interactive-only by definition — mark them `cli`
-    // explicitly so the classifier doesn't get tripped up by their
-    // descriptions (which don't carry a CLI hint phrase).
-    for (const builtin of missingCliBuiltins(items)) {
-      items.push({
-        command: builtin.command,
-        label: "",
-        description: builtin.description,
-        source: "builtin",
-        kind: "cli",
-      });
-    }
-    // Items already marked (catalog) keep their kind.  Everything
-    // else runs through the classifier.
-    return items.map((it) => ({ ...it, kind: it.kind ?? classifySlashCommand(it) }));
+    //      because they don't work over stream-json.
+    const rawInit = init?.slash_commands;
+    const rawForBuilder = Array.isArray(rawInit) ? rawInit : undefined;
+    const resolved = buildSlashItemsFromInit(rawForBuilder, prewarm.slashCommands);
+    return resolved.map((r) => ({
+      command: r.command,
+      label: "",
+      description: r.description,
+      source: r.source,
+      kind: r.kind,
+    }));
   }, [init, prewarm.slashCommands]);
 
   // ─── Active slash overlay state ─────────────────────────────────────
@@ -291,8 +258,11 @@ export function SessionComposer() {
     // stream-json mode.
     const trimmed = draft.trim();
     if (trimmed.startsWith("/")) {
-      const firstToken = trimmed.split(/\s+/, 1)[0]!;
-      const kind = classifySlashCommand({ command: firstToken });
+      // Prefer the SDK's verdict over the heuristic classifier: if
+      // `init.slash_commands` enumerated this verb, it's native
+      // regardless of what KNOWN_CLI_COMMANDS would say.  Falls back
+      // to the classifier when the SDK doesn't list the verb.
+      const kind = resolveSlashCommandKind(trimmed, slashCommandsFromInit);
       if (kind === "cli") {
         dispatch({ type: "SET_COMPOSER_DRAFT", sessionId: composerSessionId, draft: "" });
         setPendingCliCommand(trimmed);
@@ -320,7 +290,7 @@ export function SessionComposer() {
     } finally {
       inFlightRef.current = false;
     }
-  }, [draft, composerSessionId, pendingImages, dispatch, closeOverlay, submitAgentMessage]);
+  }, [draft, composerSessionId, pendingImages, dispatch, closeOverlay, submitAgentMessage, slashCommandsFromInit]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (slash && rankedCommands && rankedCommands.length > 0) {

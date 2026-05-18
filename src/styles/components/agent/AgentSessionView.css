@@ -307,13 +307,30 @@
   flex: 1 1 auto;
   min-height: 0;
   overflow: auto;
+  /* Reserve the full hover-state scrollbar width so growing the pill on
+   * hover never shifts the conversation column horizontally. */
+  scrollbar-gutter: stable;
 }
 
-/* Brass thin-line scrollbar.  No rail, no chrome — the line itself is the
- * indicator, like a sliding cursor on an instrument scale. */
+/* Brass overlay-style scrollbar.  The 12px track is reserved at all
+ * times via `scrollbar-gutter: stable` on the parent; the visible pill
+ * is rendered via `background-clip: padding-box` inside a transparent
+ * border, so the apparent pill is much thinner than the full track.
+ * Shrinking the border on direct hover grows the pill without touching
+ * the track or causing reflow.
+ *
+ * Two resting states (matches macOS overlay scrollbars):
+ *   - cursor not on the pill      →   6 px pill, 32% brass
+ *   - cursor directly on the pill →  12 px pill, 80% brass
+ *
+ * We intentionally do NOT fatten on container-level hover — that
+ * version (1.3.1) made the pill grow whenever the cursor was anywhere
+ * in the conversation and stay grown until the cursor left the entire
+ * pane, which read as "stuck big".  Direct-hover-only matches the
+ * platform convention and gives the user crisp local feedback. */
 .agent-session-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 12px;
+  height: 12px;
 }
 
 .agent-session-scroll::-webkit-scrollbar-track {
@@ -321,15 +338,15 @@
 }
 
 .agent-session-scroll::-webkit-scrollbar-thumb {
-  background: color-mix(in srgb, var(--brass, var(--accent-paper)) 22%, transparent);
-  border-radius: 3px;
-  border: 1px solid transparent;
+  background: color-mix(in srgb, var(--brass, var(--accent-paper)) 32%, transparent);
+  border-radius: 6px;
+  border: 3px solid transparent;
   background-clip: padding-box;
 }
 
 .agent-session-scroll::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in srgb, var(--brass, var(--accent-paper)) 50%, transparent);
-  background-clip: padding-box;
+  background: color-mix(in srgb, var(--brass, var(--accent-paper)) 80%, transparent);
+  border-width: 0;
 }
 
 /* The conversation column.  Left-aligned, not centered — wide monitors
@@ -2606,6 +2623,97 @@ html[data-theme="newsprint"] .agent-md-h2 {
   font: 12px/1.5 var(--font-mono);
   color: var(--ink-secondary);
   background: transparent;
+}
+
+/* Slash-command receipt card — replaces the "(no content)" placeholder
+ * Claude emits for /compact, /clear, /init, /review.  Brass checkmark
+ * + one-line label + one-line description, sized like a quiet status
+ * banner rather than a full message body so the user reads it as
+ * "the action succeeded" not "here's a reply". */
+.agent-slash-receipt-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(
+    in srgb,
+    var(--brass, var(--accent-paper)) 28%,
+    transparent
+  );
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: color-mix(
+    in srgb,
+    var(--brass, var(--accent-paper)) 6%,
+    transparent
+  );
+}
+.agent-slash-receipt-mark {
+  flex: 0 0 auto;
+  font: var(--weight-bold) var(--text-sm) / 1 var(--mono);
+  color: var(--brass-bright, var(--brass, var(--accent-paper)));
+  /* Lift the check so it baseline-aligns with the label, not its mid-x. */
+  padding-top: 1px;
+}
+.agent-slash-receipt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.agent-slash-receipt-label {
+  font: var(--weight-semibold) var(--text-sm) / 1.3 var(--font-ui);
+  color: var(--text-0);
+}
+.agent-slash-receipt-description {
+  font: var(--text-xs) / 1.5 var(--font-ui);
+  color: var(--text-2);
+}
+
+/* Result-event error banner — Claude returned `is_error: true` (e.g.
+ * "prompt is too long").  Distinct from the agent-exit-notice strip:
+ * exit-notice fires on non-zero subprocess exit codes, this fires
+ * when the subprocess exited cleanly (code 0) but the result payload
+ * carried a hard error from the upstream API.  See errorSelector.ts. */
+.agent-result-error {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--danger, var(--red, var(--tool-error)));
+  border-left-width: 3px;
+  border-radius: 6px;
+  background: color-mix(
+    in srgb,
+    var(--danger, var(--red, var(--tool-error))) 8%,
+    transparent
+  );
+}
+.agent-result-error-title {
+  font: var(--weight-semibold) var(--text-sm) / 1.2 var(--font-ui);
+  color: var(--danger, var(--red, var(--tool-error)));
+  margin-bottom: 6px;
+  letter-spacing: 0.01em;
+}
+.agent-result-error-body {
+  margin: 0 0 8px;
+  font: var(--text-xs) / 1.4 var(--mono);
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--text-1);
+}
+.agent-result-error-hint {
+  font: var(--text-xs) / 1.5 var(--font-ui);
+  color: var(--text-2);
+}
+.agent-result-error-hint code {
+  font-family: var(--mono);
+  padding: 0 4px;
+  border-radius: 3px;
+  background: color-mix(
+    in srgb,
+    var(--brass, var(--accent-paper)) 14%,
+    transparent
+  );
+  color: var(--brass-bright, var(--brass, var(--accent-paper)));
 }
 
 /* Inline action on the exit notice (e.g. "Start fresh from here").  Quiet

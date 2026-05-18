@@ -1,5 +1,5 @@
 import "../styles/components/agent/AgentSessionView.css";
-import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { listen } from "@tauri-apps/api/event";
 import type {
   AgentEvent,
@@ -39,6 +39,12 @@ import {
   type PermissionDecision,
 } from "../utils/permissionRequest";
 import { extractTodoSnapshot } from "../utils/todoStore";
+import { selectFatalError } from "./errorSelector";
+import {
+  slashReceiptAfterUserMessage,
+  slashReceiptForMessage,
+  type SlashReceipt,
+} from "./slashReceiptSelector";
 
 interface AgentSessionViewProps {
   sessionId: string;
@@ -238,24 +244,89 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
     ?? "default";
 
   return (
-    <div className="agent-session-view">
+    <div className="agent-session-view" data-session-id={sessionId}>
       <AgentHeader state={state} sessionId={sessionId} workspacePathCount={workspacePathCount} />
       <div className="agent-session-scroll" ref={scrollRef}>
         <div className="agent-session-messages">
-          {numbered.map(({ message, turn, isFirstOfTurn }) => (
-            <MessageRow
-              key={message.id}
-              message={message}
-              turnNumber={turn}
-              isFirstOfTurn={isFirstOfTurn}
-              toolResults={state.toolResults}
-              streamingMessageId={state.streamingMessageId}
-              thinkingStartedAt={state.thinkingStartedAt}
-              thinkingElapsed={state.thinkingElapsed}
-              streamingThinkingText={state.streamingThinkingText}
-            />
-          ))}
+          {numbered.flatMap(({ message, turn, isFirstOfTurn }, idx, arr) => {
+            const prev = idx > 0 ? arr[idx - 1].message : null;
+            const next = idx + 1 < arr.length ? arr[idx + 1].message : null;
+            const out: ReactNode[] = [];
+
+            // Path A — empty assistant turn following a receipt-verb
+            // user message (e.g. `/clear` → "(no content)"): swap the
+            // empty assistant for a receipt card.
+            const replaceReceipt = slashReceiptForMessage(message, prev);
+            if (replaceReceipt) {
+              out.push(
+                <SlashReceiptCard
+                  key={message.id}
+                  receipt={replaceReceipt}
+                  isFirstOfTurn={isFirstOfTurn}
+                />,
+              );
+            } else {
+              out.push(
+                <MessageRow
+                  key={message.id}
+                  message={message}
+                  turnNumber={turn}
+                  isFirstOfTurn={isFirstOfTurn}
+                  toolResults={state.toolResults}
+                  streamingMessageId={state.streamingMessageId}
+                  thinkingStartedAt={state.thinkingStartedAt}
+                  thinkingElapsed={state.thinkingElapsed}
+                  streamingThinkingText={state.streamingThinkingText}
+                />,
+              );
+            }
+
+            // Path B — user submitted a receipt verb that produced NO
+            // assistant turn at all (e.g. `/compact` → only a result
+            // event lands).  Inject a synthetic receipt after the user
+            // message so the timeline acknowledges the action.
+            const injectReceipt = slashReceiptAfterUserMessage(message, next);
+            if (injectReceipt) {
+              out.push(
+                <SlashReceiptCard
+                  key={`${message.id}-receipt`}
+                  receipt={injectReceipt}
+                  isFirstOfTurn={true}
+                />,
+              );
+            }
+
+            return out;
+          })}
           {state.resultEvent ? <ResultFooter result={state.resultEvent} /> : null}
+          {/* Result-event error banner — Claude returned `is_error: true`
+              (e.g. "prompt is too long").  The subprocess exits with
+              code 0 in this case, so the exit-notice block below never
+              fires; without this banner the user just saw the assistant
+              freeze with no explanation.  See `errorSelector.ts`. */}
+          {(() => {
+            const fatal = selectFatalError(state);
+            if (!fatal) return null;
+            return (
+              <div
+                className="agent-result-error"
+                role="alert"
+                data-kind={fatal.isContextLimit ? "context-limit" : "generic"}
+              >
+                <div className="agent-result-error-title">
+                  Claude couldn't continue
+                </div>
+                <pre className="agent-result-error-body">{fatal.message}</pre>
+                {fatal.isContextLimit ? (
+                  <div className="agent-result-error-hint">
+                    The conversation has grown past the model's context window.
+                    Try <code>/compact</code> to summarize the history, or
+                    fork a fresh session from this point with <code>/branch</code>.
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()}
           {exitInfo && shouldShowExitNotice(exitInfo, state.messages.length) ? (
             <div className="agent-exit-notice">
               {classifyExit(exitInfo, stderr).label}
@@ -826,6 +897,47 @@ export function classifyExit(
     return { label: "Agent process crashed", kind: "crash" };
   }
   return { label: "Agent process exited", kind: "exit" };
+}
+
+/* ─── SlashReceiptCard ────────────────────────────────────────────
+ *
+ * Rendered IN PLACE OF the empty assistant message that the
+ * `--print --input-format stream-json` channel emits for receipt-style
+ * slash commands (`/compact`, `/clear`, `/init`, `/review`).  Claude's
+ * reply for these is the literal text `"(no content)"`, which used
+ * to render as a confusing "Hermes: (no content)" turn — leaving the
+ * user wondering whether their command worked.
+ *
+ * The card occupies the same horizontal slot the message would have:
+ * a brass checkmark, a label, and one line of explanatory copy.  Keeps
+ * the speaker chip rendering style consistent with surrounding turns
+ * (data-role / data-first-of-turn) so layout css applies uniformly. */
+function SlashReceiptCard({
+  receipt,
+  isFirstOfTurn,
+}: {
+  receipt: SlashReceipt;
+  isFirstOfTurn: boolean;
+}) {
+  return (
+    <div
+      className="agent-message agent-message-assistant agent-slash-receipt"
+      data-role="assistant"
+      data-first-of-turn={isFirstOfTurn ? "true" : "false"}
+      data-receipt-command={receipt.command}
+    >
+      <div className="agent-message-speaker">
+        <span className="agent-message-speaker-name">Hermes</span>
+      </div>
+      <div className="agent-slash-receipt-card">
+        <span className="agent-slash-receipt-mark" aria-hidden="true">✓</span>
+        <div className="agent-slash-receipt-text">
+          <div className="agent-slash-receipt-label">{receipt.label}</div>
+          <div className="agent-slash-receipt-description">{receipt.description}</div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 interface MessageRowProps {

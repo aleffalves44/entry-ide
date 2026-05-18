@@ -922,9 +922,15 @@ export function reduceEvent(
       seenResultEventIds,
       cumulativeCostUsd: state.cumulativeCostUsd + turnCost,
       cumulativeOutputTokens: state.cumulativeOutputTokens + turnOut,
+      // A SUCCESSFUL result clears any prior error — once the user has
+      // recovered (via /compact, /branch, a fork, etc.) the banner
+      // should disappear.  Mid-turn events (assistant deltas, tool
+      // results) leave `lastError` untouched so the banner stays put
+      // until the next FULL turn lands; the result event itself is
+      // what gates banner visibility via `selectFatalError`.
       lastError: event.is_error
         ? event.result ?? `Agent returned ${event.subtype}`
-        : state.lastError,
+        : null,
       streamingMessageId: null,
       runningToolUseIds:
         state.runningToolUseIds.size === 0
