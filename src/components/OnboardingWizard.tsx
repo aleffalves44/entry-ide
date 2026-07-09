@@ -1,10 +1,8 @@
 import "../styles/components/OnboardingWizard.css";
 import { useState, useEffect, useCallback } from "react";
-import { open } from "@tauri-apps/plugin-shell";
 import { getSetting, setSetting, getSettings } from "../api/settings";
 import { checkAiProviders } from "../api/sessions";
 import { applyTheme, applyUiScale, DARK_THEMES, LIGHT_THEMES, UI_SCALE_OPTIONS, normalizeThemeId, DEFAULT_THEME_ID } from "../utils/themeManager";
-import { setAnalyticsEnabled } from "../utils/analytics";
 import { AI_PROVIDERS } from "../utils/aiProviders";
 
 type Step = "welcome" | "theme" | "ai_setup" | "privacy";
@@ -43,9 +41,6 @@ export function OnboardingWizard() {
   const [providerAvailability, setProviderAvailability] = useState<Record<string, boolean>>({});
   const [detectionDone, setDetectionDone] = useState(false);
 
-  // Privacy step
-  const [analyticsOptIn, setAnalyticsOptIn] = useState(true);
-  const [policyAccepted, setPolicyAccepted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -110,25 +105,20 @@ export function OnboardingWizard() {
   }, [selectedTheme]);
 
   const handleFinish = useCallback(async () => {
-    // Save analytics preference
-    const telemetryValue = analyticsOptIn ? "true" : "false";
-    await setSetting("telemetry_enabled", telemetryValue).catch(console.warn);
-    setAnalyticsEnabled(analyticsOptIn);
-
     // Mark onboarding as completed
     await setSetting(SETTING_KEY, "true").catch(console.warn);
 
     setVisible(false);
-  }, [analyticsOptIn]);
+  }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       if (step === "welcome") goNext();
       else if (step === "theme") goNext();
       else if (step === "ai_setup") goNext();
-      else if (step === "privacy" && policyAccepted) handleFinish();
+      else if (step === "privacy") handleFinish();
     }
-  }, [step, goNext, policyAccepted, handleFinish]);
+  }, [step, goNext, handleFinish]);
 
   if (!visible) return null;
 
@@ -152,7 +142,7 @@ export function OnboardingWizard() {
           {/* ── Step 1: Welcome ── */}
           {step === "welcome" && (
             <div className="onboarding-welcome">
-              <div className="onboarding-logo">Hermes IDE</div>
+              <div className="onboarding-logo">Entry IDE</div>
               <p className="onboarding-tagline">
                 AI-powered terminal emulator for developers. Wrap your existing
                 shell with AI superpowers — ghost-text suggestions, prompt
@@ -260,74 +250,23 @@ export function OnboardingWizard() {
                 })}
               </div>
               <div className="onboarding-ai-note">
-                You can use Hermes as a terminal without AI tools. Install them anytime.
+                You can use Entry IDE as a terminal without AI tools. Install them anytime.
               </div>
             </>
           )}
 
           {/* ── Step 4: Privacy ── */}
           {step === "privacy" && (
-            <>
-              <div className="onboarding-privacy-section">
-                <div className="onboarding-privacy-section-title">
-                  What we collect (anonymously)
-                </div>
-                <ul className="onboarding-privacy-list collect">
-                  <li>App version and operating system</li>
-                  <li>Feature usage counts (e.g. which panels you open)</li>
-                  <li>Session creation events (no content)</li>
-                </ul>
+            <div className="onboarding-privacy-section">
+              <div className="onboarding-privacy-section-title">
+                No telemetry
               </div>
-              <div className="onboarding-privacy-section">
-                <div className="onboarding-privacy-section-title">
-                  What we never collect
-                </div>
-                <ul className="onboarding-privacy-list never">
-                  <li>Terminal content, commands, or output</li>
-                  <li>File paths, file names, or source code</li>
-                  <li>Personal information or IP addresses</li>
-                </ul>
-              </div>
-
-              <label className="onboarding-privacy-checkbox">
-                <input
-                  type="checkbox"
-                  checked={analyticsOptIn}
-                  onChange={(e) => setAnalyticsOptIn(e.target.checked)}
-                />
-                <div className="onboarding-privacy-checkbox-text">
-                  <span className="onboarding-privacy-checkbox-label">
-                    Help improve Hermes IDE by sending anonymous usage analytics
-                  </span>
-                  <span className="onboarding-privacy-checkbox-hint">
-                    You can change this anytime in Settings &gt; Privacy
-                  </span>
-                </div>
-              </label>
-
-              <label className="onboarding-privacy-checkbox">
-                <input
-                  type="checkbox"
-                  checked={policyAccepted}
-                  onChange={(e) => setPolicyAccepted(e.target.checked)}
-                />
-                <div className="onboarding-privacy-checkbox-text">
-                  <span className="onboarding-privacy-checkbox-label">
-                    I accept the{" "}
-                    <a
-                      href="#"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        open("https://hermes-ide.com/legal");
-                      }}
-                    >
-                      Privacy Policy
-                    </a>
-                  </span>
-                </div>
-              </label>
-            </>
+              <ul className="onboarding-privacy-list never">
+                <li>Entry IDE does not collect any usage analytics</li>
+                <li>Terminal content, commands, and files never leave your machine</li>
+                <li>AI requests go directly to your configured provider</li>
+              </ul>
+            </div>
           )}
         </div>
 
@@ -384,7 +323,6 @@ export function OnboardingWizard() {
                 <button
                   className="onboarding-btn onboarding-btn-primary"
                   onClick={handleFinish}
-                  disabled={!policyAccepted}
                 >
                   Finish
                 </button>

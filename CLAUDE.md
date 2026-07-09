@@ -1,7 +1,7 @@
-# Hermes IDE
+# Entry IDE
 
 ## Overview
-AI-native terminal emulator / IDE built on Tauri 2 + React + Vite. Supports macOS, Windows, and Linux.
+AI-native terminal emulator / IDE (fork of Hermes IDE) built on Tauri 2 + React + Vite. Supports macOS, Windows, and Linux.
 
 ## Architecture (1.0.0)
 

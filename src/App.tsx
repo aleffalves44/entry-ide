@@ -791,7 +791,7 @@ function AppContent() {
               <span className="topbar-session-name">{activeSession.label}</span>
             </>
           ) : (
-            <span className="topbar-title">HERMES-IDE</span>
+            <span className="topbar-title">Entry IDE</span>
           )}
         </div>
 

@@ -80,7 +80,7 @@ describe("modern speaker-chip message rows", () => {
     expect(html).toMatch(/agent-message-name[^>]*>You</);
   });
 
-  it("assistant message has data-role=assistant and a 'Hermes' speaker", () => {
+  it("assistant message has data-role=assistant and an 'Entry' speaker", () => {
     const html = renderToString(
       <MessageRow
         message={assistantMessage("ok")}
@@ -92,7 +92,7 @@ describe("modern speaker-chip message rows", () => {
     expect(html).toContain("agent-message-body");
     expect(html).toContain("agent-message-speaker");
     expect(html).toContain("agent-message-avatar");
-    expect(html).toMatch(/agent-message-name[^>]*>Hermes</);
+    expect(html).toMatch(/agent-message-name[^>]*>Entry</);
   });
 
   it("renders the timestamp inline in the speaker chip on the first message of a turn", () => {

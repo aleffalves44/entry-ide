@@ -1,26 +1,9 @@
-import { trackEvent } from "@aptabase/tauri";
-import { getSetting, setSetting } from "../api/settings";
+// Telemetry removed — all tracking functions are intentional no-ops.
+export async function initAnalytics(): Promise<void> {}
 
-let enabled = false;
+export function setAnalyticsEnabled(_value: boolean): void {}
 
-export async function initAnalytics(): Promise<void> {
-  const stored = await getSetting("telemetry_enabled").catch(() => null);
-  enabled = stored === "true";
-}
-
-export function setAnalyticsEnabled(value: boolean): void {
-  enabled = value;
-  setSetting("telemetry_enabled", value ? "true" : "false").catch(console.error);
-}
-
-function track(name: string, props?: Record<string, string | number>): void {
-  if (!enabled) return;
-  try {
-    trackEvent(name, props);
-  } catch {
-    // silently ignore
-  }
-}
+function track(_name: string, _props?: Record<string, string | number>): void {}
 
 export function trackAppStarted(): void {
   track("app_started");

@@ -54,7 +54,7 @@ function projectName(path: string): string {
   return parts[parts.length - 1] || path;
 }
 
-const TITLE_CHARS = "Hermes IDE".split("");
+const TITLE_CHARS = "Entry IDE".split("");
 
 export function EmptyState({ recentSessions, onNew, onRestore }: EmptyStateProps) {
   return (
@@ -72,11 +72,11 @@ export function EmptyState({ recentSessions, onNew, onRestore }: EmptyStateProps
         <header className="es-masthead">
           <div className="es-eyebrow">
             <span className="es-eyebrow-dot" aria-hidden="true" />
-            HERMES <span className="es-eyebrow-sep" aria-hidden="true">·</span> WORKSHOP
+            ENTRY <span className="es-eyebrow-sep" aria-hidden="true">·</span> WORKSHOP
             <span className="es-eyebrow-sep" aria-hidden="true">·</span> v1.1
           </div>
 
-          <h1 className="es-title" aria-label="Hermes IDE">
+          <h1 className="es-title" aria-label="Entry IDE">
             {TITLE_CHARS.map((c, i) => (
               <span
                 key={i}

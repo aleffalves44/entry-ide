@@ -1,50 +1,41 @@
-# HERMES IDE
+# Entry IDE
 
-[![CI](https://github.com/hermes-hq/hermes-ide/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/hermes-hq/hermes-ide/actions/workflows/ci.yml) [![Release](https://github.com/hermes-hq/hermes-ide/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/hermes-hq/hermes-ide/actions/workflows/release.yml) [![Latest Release](https://img.shields.io/github/v/release/hermes-hq/hermes-ide?label=latest)](https://github.com/hermes-hq/hermes-ide/releases/latest)
+> AI-native terminal that understands your projects, predicts your commands, and executes autonomously.
 
-[![Tauri](https://img.shields.io/badge/Tauri-2.x-FFC131?logo=tauri&logoColor=white)](https://tauri.app)
-[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)](https://react.dev)
-[![Rust](https://img.shields.io/badge/Rust-2021-DEA584?logo=rust&logoColor=white)](https://www.rust-lang.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
-[![License](https://img.shields.io/badge/license-BSL%201.1-blue)](LICENSE)
-[![Discord](https://img.shields.io/badge/Discord-Join_Server-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discord.gg/vMQXSTY6BM)
-[![Sponsor](https://img.shields.io/badge/Sponsor-EA4AAA?style=flat-square&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/hermes-hq)
+Entry IDE is a desktop terminal emulator with deep AI integration for command-line workflows. It scans your projects to build context, suggests commands in real time, tracks errors and resolutions, and can execute tasks autonomously — all without leaving the terminal.
 
-> An AI-native terminal that understands your projects, predicts your commands, and executes autonomously.
-
-Hermes IDE is a desktop terminal emulator that deeply integrates AI assistance into command-line workflows. It scans your projects to build context, suggests commands in real time, tracks errors and resolutions, and can execute tasks autonomously — all without leaving the terminal.
+Fork of [Hermes IDE](https://github.com/hermes-hq/hermes-ide), rebranded and maintained independently. Licensed under the [Business Source License 1.1](LICENSE).
 
 **Platforms:** macOS, Windows, Linux
 
 ---
-![GIF](https://github.com/user-attachments/assets/dce248cc-d215-48c7-a1c1-33e539c2a20f)
 
 ## Features
 
-### Agent mode for Claude (new in 1.0.0)
-- **Real chat for Claude** — Claude sessions open in a rich chat interface by default, with thinking blocks, tool-call cards, and diff previews instead of a TUI in a terminal
-- **Real images** — paste or drop images straight into the composer; Claude sees the actual pixels
-- **Persistent conversations** — Claude sessions resume across app restarts
-- **Bring your own auth** — uses your existing `claude` CLI auth (Pro, Max, or API key); Hermes never asks for tokens
+### Agent mode for Claude
+- **Real chat for Claude** — Claude sessions open in a rich chat interface, with thinking blocks, tool-call cards, and diff previews
+- **Real images** — paste or drop images straight into the composer
+- **Persistent conversations** — sessions resume across app restarts
+- **Bring your own auth** — uses your existing `claude` CLI auth (Pro, Max, or API key)
 
 ### Terminal
 - **Multi-session management** — create, switch, and organize parallel terminal sessions
 - **Split panes** — horizontal and vertical splits with drag-and-drop reordering
 - **WebGL-accelerated rendering** — fast terminal with web links and auto-fit
 - **Execution timeline** — visual history of every command with exit codes and durations
-- **Still excellent for everything else** — Aider, Codex, Gemini, Copilot, Kiro, plain shells all run in classic Terminal mode, unchanged
+- **Works with any CLI** — Aider, Codex, Gemini, Copilot, Kiro, plain shells all run in classic Terminal mode
 
 ### Git Integration
-- **Built-in git panel** — view staged, unstaged, and untracked files per project
+- **Built-in git panel** — staged, unstaged, and untracked files per project
 - **Stage / unstage / commit / push / pull** — all from the sidebar
-- **Inline diff viewer** — click any changed file to see a syntax-highlighted diff
-- **Robust authentication** — SSH agent, SSH key files, Git Credential Manager, and token-based auth
+- **Inline diff viewer** — syntax-highlighted diffs for any changed file
+- **Robust authentication** — SSH agent, SSH key files, Git Credential Manager, token-based auth
 
 ### AI Intelligence
 - **Ghost-text suggestions** — real-time command completions from history and context
-- **Prompt Composer** — write natural-language instructions for autonomous task execution
+- **Prompt Composer** — natural-language instructions for autonomous task execution
 - **Error pattern matching** — learns error fingerprints and auto-applies known resolutions
-- **Stuck detection** — monitors for hanging processes and offers interrupts
+- **Stuck detection** — monitors hanging processes and offers interrupts
 
 ### Project Awareness
 - **Automatic scanning** — detects languages, frameworks, architecture, and conventions
@@ -53,25 +44,18 @@ Hermes IDE is a desktop terminal emulator that deeply integrates AI assistance i
 
 ### Productivity
 - **Command Palette** — fuzzy search for any action
-- **Cost Dashboard** — track token usage and estimated costs per model and session
+- **Cost Dashboard** — token usage and estimated costs per model and session
 - **Memory & context pins** — persist important facts, files, and patterns across sessions
-- **System notifications** — get notified about long-running command completions
+- **Plugin system** — extend the IDE with installable plugins
 
----
-
-## Download & Installation
-
-Download the latest version for your platform from the official website:
-
-**[https://www.hermes-ide.com/download](https://www.hermes-ide.com/download)**
-
-Pre-built installers are available for macOS (Apple Silicon & Intel), Windows, and Linux (.deb, .AppImage, .rpm).
+### Privacy
+- **No telemetry** — Entry IDE collects nothing and sends nothing anywhere. AI requests go directly to your configured provider.
 
 ---
 
 ## Getting Started
 
-### Prerequisites (for building from source)
+### Prerequisites
 
 | Tool | Version | Purpose |
 |------|---------|---------|
@@ -91,8 +75,8 @@ Pre-built installers are available for macOS (Apple Silicon & Intel), Windows, a
 ### Setup
 
 ```bash
-git clone https://github.com/hermes-hq/hermes-ide.git
-cd hermes-ide
+git clone https://github.com/aleffalves44/entry-ide.git
+cd entry-ide
 npm install
 npm run tauri dev
 ```
@@ -103,11 +87,20 @@ npm run tauri dev
 npm run tauri build
 ```
 
+### Development Commands
+
+```bash
+npm run tauri dev        # Full app with hot-reload
+npx tsc --noEmit         # Type check
+npm run test             # Frontend tests
+cd src-tauri && cargo test  # Rust tests
+```
+
 ---
 
 ## Architecture
 
-Hermes IDE is a [Tauri 2](https://tauri.app) application:
+Entry IDE is a [Tauri 2](https://tauri.app) application:
 
 ```
 ┌──────────────────────────────────┐
@@ -117,7 +110,7 @@ Hermes IDE is a [Tauri 2](https://tauri.app) application:
 │         Tauri IPC Bridge         │
 ├──────────────────────────────────┤
 │          Rust Backend            │
-│   (PTY, SQLite, Project Scanner)  │
+│  (PTY, SQLite, Project Scanner)  │
 └──────────────────────────────────┘
 ```
 
@@ -127,114 +120,10 @@ Hermes IDE is a [Tauri 2](https://tauri.app) application:
 | **IPC** | Tauri commands bridge React and Rust via typed async invocations |
 | **Backend** (`src-tauri/`) | PTY session lifecycle, SQLite persistence, project scanning, context assembly |
 
----
-
-## Project Structure
-
-```
-hermes-ide/
-├── src/                        # React/TypeScript frontend
-│   ├── api/                    # Tauri IPC command wrappers
-│   ├── components/             # UI components
-│   ├── hooks/                  # Custom React hooks
-│   ├── state/                  # State management (Context + useReducer)
-│   ├── styles/                 # Per-component CSS
-│   ├── terminal/               # Terminal pool & intelligence engine
-│   ├── types/                  # TypeScript interfaces
-│   └── utils/                  # Helper functions
-├── src-tauri/                  # Rust backend
-│   ├── src/
-│   │   ├── pty/                # PTY session management
-│   │   ├── db/                 # SQLite persistence layer
-│   │   ├── project/            # Project scanning & context assembly
-│   │   └── workspace/          # Workspace detection
-│   ├── Cargo.toml              # Rust dependencies
-│   └── tauri.conf.json         # Tauri app configuration
-├── public/                     # Static assets
-├── package.json                # npm dependencies & scripts
-├── vite.config.ts              # Vite build config
-└── tsconfig.json               # TypeScript config
-```
-
----
-
-## Documentation
-
-- **[Architecture Guide](ARCHITECTURE.md)** — How the codebase is structured, data flow, and key design decisions
-- **[Design Principles](DESIGN_PRINCIPLES.md)** — What Hermes IDE is and isn't
-- **[Governance](GOVERNANCE.md)** — How decisions are made
-
----
-
-## Contributing
-
-We welcome contributions! Before you start, please read:
-
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** — How to contribute, what we accept, PR process
-- **[DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md)** — Our anti-bloat philosophy (please read this)
-- **[CLA.md](CLA.md)** — Contributor License Agreement (required for all contributions)
-- **[Code of Conduct](https://github.com/hermes-hq/.github/blob/main/CODE_OF_CONDUCT.md)** — Be kind
-
-**The #1 rule:** Open an issue or discussion before writing code for any new feature. Bug fixes and docs don't require prior discussion.
-
-### Quick Start for Contributors
-
-```bash
-git clone https://github.com/hermes-hq/hermes-ide.git
-cd hermes-ide
-npm install
-npm run tauri dev        # Full app with hot-reload
-npx tsc --noEmit         # Type check
-npm run test             # Run tests
-cd src-tauri && cargo test  # Rust tests
-```
+See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed technical overview.
 
 ---
 
 ## License
 
-Hermes IDE is source-available under the **[Business Source License 1.1](LICENSE)** (BSL 1.1).
-
-- **You can:** copy, modify, create derivative works, redistribute, and make non-production use freely. Production use is allowed as long as it does not compete with Hermes IDE.
-- **You cannot:** use it to build a competing code editor, terminal emulator, or IDE offered to third parties.
-- **After 3 years** from each release, the code converts to **Apache License 2.0** — fully open source.
-
-All contributions require signing the [Contributor License Agreement](CLA.md).
-
-See [ARCHITECTURE.md](ARCHITECTURE.md) for a detailed technical overview.
-
----
-
-## Security
-
-Found a vulnerability? Please report it responsibly via [ga.contact.me@gmail.com](mailto:ga.contact.me@gmail.com). See our [Security Policy](https://github.com/hermes-hq/.github/blob/main/SECURITY.md) for details.
-
----
-
-## 💛 Sponsors
-
-Hermes IDE is built and maintained by a small team. If you find it useful, please consider sponsoring to help keep the project alive and accelerate development.
-
-[![Sponsor Hermes IDE](https://img.shields.io/badge/Sponsor-Hermes_IDE-EA4AAA?style=for-the-badge&logo=github-sponsors&logoColor=white)](https://github.com/sponsors/hermes-hq)
-[![GitHub Sponsors](https://img.shields.io/github/sponsors/hermes-hq?style=flat-square&logo=github-sponsors&label=Sponsors&color=EA4AAA)](https://github.com/sponsors/hermes-hq)
-
-| Tier | Monthly | Perks |
-|------|---------|-------|
-| ☕ Supporter | $5 | Sponsor badge |
-| 🚀 Backer | $20 | Badge + release notes mention |
-| 💎 Contributor | $50 | Badge + README credit + early access |
-| 🤝 Partner | $100 | Logo in README + priority bug reports |
-| 🏢 Company | $500 | Logo on website + direct support channel |
-
-**[→ View all sponsorship tiers and become a sponsor](https://github.com/sponsors/hermes-hq)**
-
-See [SPONSORS.md](./SPONSORS.md) for the full list of sponsors and details.
-
----
-
-<p align="center">
-  <a href="https://hermes-ide.com">Website</a> &middot;
-  <a href="https://github.com/hermes-hq/hermes-ide/discussions">Discussions</a> &middot;
-      <a href="https://discord.gg/vMQXSTY6BM">Discord</a>a> &middot;
-  <a href="https://hermes-ide.com/changelog">Changelog</a>
-</p>
+Source-available under the **[Business Source License 1.1](LICENSE)** (BSL 1.1), inherited from the upstream Hermes IDE project. Each release converts to **Apache License 2.0** three years after publication.

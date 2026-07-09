@@ -84,7 +84,7 @@ describe("SessionCreatorModeStep (Phase 6)", () => {
     );
     expect(map.agent.label).toBe("Chat with Claude");
     expect(map.agent.description).toContain("Diffs");
-    expect(map.agent.description).toContain("Built natively into Hermes");
+    expect(map.agent.description).toContain("Built natively into Entry IDE");
     expect(map.terminal.label).toBe("Terminal");
     expect(map.terminal.description.toLowerCase()).toContain("universal");
     expect(map.terminal.description).toContain("Claude Code");

@@ -47,10 +47,10 @@ pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::
     // ── Hermes menu (app menu) ──
     let about = PredefinedMenuItem::about(
         app,
-        Some("About HERMES-IDE"),
+        Some("About Entry IDE"),
         Some(
             AboutMetadataBuilder::new()
-                .name(Some("HERMES-IDE"))
+                .name(Some("Entry IDE"))
                 .version(Some(env!("CARGO_PKG_VERSION")))
                 .build(),
         ),
@@ -67,7 +67,7 @@ pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::
         let hide_others = PredefinedMenuItem::hide_others(app, None)?;
         let show_all = PredefinedMenuItem::show_all(app, None)?;
 
-        SubmenuBuilder::new(app, "HERMES-IDE")
+        SubmenuBuilder::new(app, "Entry IDE")
             .item(&about)
             .separator()
             .item(&settings)
@@ -83,7 +83,7 @@ pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::
     };
 
     #[cfg(not(target_os = "macos"))]
-    let hermes_menu = SubmenuBuilder::new(app, "HERMES-IDE")
+    let hermes_menu = SubmenuBuilder::new(app, "Entry IDE")
         .item(&about)
         .separator()
         .item(&settings)
@@ -252,7 +252,7 @@ pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::
     // ── Help menu ──
     let help_check_update =
         MenuItemBuilder::with_id("help.check-update", "Check for Updates...").build(app)?;
-    let help_website = MenuItemBuilder::with_id("help.website", "Hermes IDE Website").build(app)?;
+    let help_website = MenuItemBuilder::with_id("help.website", "Entry IDE on GitHub").build(app)?;
     let help_legal =
         MenuItemBuilder::with_id("help.legal", "Privacy, Terms & License").build(app)?;
     let help_report_bug =

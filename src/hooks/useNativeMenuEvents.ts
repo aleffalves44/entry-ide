@@ -155,10 +155,10 @@ export function useNativeMenuEvents(handlers: MenuEventHandlers): void {
           onCheckForUpdates();
           break;
         case "help.website":
-          open("https://hermes-ide.com");
+          open("https://github.com/aleffalves44/entry-ide");
           break;
         case "help.legal":
-          open("https://hermes-ide.com/legal");
+          open("https://github.com/aleffalves44/entry-ide/blob/main/LICENSE");
           break;
         case "help.report-bug": {
           const os = PLATFORM === "mac" ? "macOS" : PLATFORM === "win" ? "Windows" : "Linux";
@@ -168,7 +168,7 @@ export function useNativeMenuEvents(handlers: MenuEventHandlers): void {
             os,
             "os-version": OS_VERSION,
           });
-          open(`https://github.com/hermes-hq/hermes-ide/issues/new?${params}`);
+          open(`https://github.com/aleffalves44/entry-ide/issues/new?${params}`);
           break;
         }
         case "help.shortcuts":

@@ -564,7 +564,7 @@ export function PluginManager({ runtime, onConfirmUpdate, onConfirmUpdateAll, re
 						{!compatible && (
 							<div className="pm-compat-warning">
 								<strong>Incompatible with your app version</strong>
-								<span>This plugin requires Hermes IDE v{p.minAppVersion} or later. You are on v{appVersion}. Please update the app first.</span>
+								<span>This plugin requires Entry IDE v{p.minAppVersion} or later. You are on v{appVersion}. Please update the app first.</span>
 							</div>
 						)}
 						<div className="pm-detail-actions">

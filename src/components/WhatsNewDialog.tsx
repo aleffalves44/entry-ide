@@ -222,7 +222,7 @@ function SectionPreview({ kind }: { kind: ChangelogPreviewKind }) {
           <div className="wn-tl-row" data-role="assistant">
             <div className="wn-tl-chip">
               <span className="wn-tl-avatar wn-tl-avatar-bot" />
-              <span className="wn-tl-name">Hermes</span>
+              <span className="wn-tl-name">Entry IDE</span>
             </div>
             <div className="wn-tl-body wn-tl-body-bot">
               I&rsquo;ll start by reading the existing nav component

@@ -8,7 +8,7 @@
 //! - Eviction paths: VecDeque front-removal for files_touched / memory_facts at capacity
 
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
-use hermes_ide_lib::pty::analyzer::OutputAnalyzer;
+use entry_ide_lib::pty::analyzer::OutputAnalyzer;
 use std::hint::black_box;
 
 /// Realistic 4KB chunk of ANSI-heavy terminal output (Claude Code style).

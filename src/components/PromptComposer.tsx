@@ -354,7 +354,7 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
       const safeName = tpl.name.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
       const path = await save({
         defaultPath: `${safeName}.hermes-prompts`,
-        filters: [{ name: "Hermes Prompts", extensions: ["hermes-prompts"] }],
+        filters: [{ name: "Entry Prompts", extensions: ["hermes-prompts"] }],
       });
       if (!path) return;
       await exportPromptBundle(path, json);
@@ -373,7 +373,7 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
       const json = JSON.stringify(bundle, null, 2);
       const path = await save({
         defaultPath: "my-prompts.hermes-prompts",
-        filters: [{ name: "Hermes Prompts", extensions: ["hermes-prompts"] }],
+        filters: [{ name: "Entry Prompts", extensions: ["hermes-prompts"] }],
       });
       if (!path) return;
       await exportPromptBundle(path, json);
@@ -387,7 +387,7 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
   const handleImportBundle = useCallback(async () => {
     try {
       const path = await open({
-        filters: [{ name: "Hermes Prompts", extensions: ["hermes-prompts"] }],
+        filters: [{ name: "Entry Prompts", extensions: ["hermes-prompts"] }],
         multiple: false,
         directory: false,
       });

@@ -461,8 +461,7 @@ pub fn run() {
     install_crash_handler();
 
     // Create a Tokio runtime context for plugins that spawn async tasks during
-    // initialization (tauri-plugin-aptabase calls tokio::task::spawn in its init
-    // callback, before Tauri's own runtime is active).
+    // initialization, before Tauri's own runtime is active.
     let rt = tokio::runtime::Runtime::new().expect("Failed to create Tokio runtime");
     let _guard = rt.enter();
 
@@ -470,9 +469,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_dialog::init())
-        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
-        .plugin(tauri_plugin_aptabase::Builder::new("A-EU-1922161061").build())
         .setup(|app| {
             let app_dir = app
                 .path()

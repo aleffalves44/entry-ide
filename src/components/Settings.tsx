@@ -836,20 +836,8 @@ export function Settings({ onClose, initialTab, pluginRuntime, onConfirmPluginUp
             {activeTab === "privacy" && (
               <div className="settings-section">
                 <div className="settings-group">
-                  <label className="settings-label-row">
-                    <input
-                      type="checkbox"
-                      checked={settings.telemetry_enabled === "true"}
-                      onChange={(e) => {
-                        const val = e.target.checked;
-                        updateSetting("telemetry_enabled", val ? "true" : "false");
-                        setAnalyticsEnabled(val);
-                      }}
-                    />
-                    Send anonymous usage analytics
-                  </label>
                   <p className="settings-hint">
-                    Help improve Hermes IDE by sending anonymous usage data. No personal information, terminal content, or file paths are collected.
+                    Entry IDE does not collect any telemetry or usage analytics. Nothing is sent anywhere.
                   </p>
                 </div>
               </div>

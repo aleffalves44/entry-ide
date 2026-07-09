@@ -927,7 +927,7 @@ function SlashReceiptCard({
       data-receipt-command={receipt.command}
     >
       <div className="agent-message-speaker">
-        <span className="agent-message-speaker-name">Hermes</span>
+        <span className="agent-message-speaker-name">Entry</span>
       </div>
       <div className="agent-slash-receipt-card">
         <span className="agent-slash-receipt-mark" aria-hidden="true">✓</span>
@@ -989,7 +989,7 @@ export function MessageRow({
   // source.  User messages don't need this — what you typed is what you see.
   const [showRaw, setShowRaw] = useState(false);
   const rawText = message.role === "assistant" ? collectRawText(message) : "";
-  const speakerName = message.role === "user" ? "You" : "Hermes";
+  const speakerName = message.role === "user" ? "You" : "Entry";
 
   return (
     <div

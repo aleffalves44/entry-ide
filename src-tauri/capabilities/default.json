@@ -30,7 +30,6 @@
     "core:window:allow-is-maximized",
     "updater:default",
     "process:allow-restart",
-    "process:allow-exit",
-    "aptabase:allow-track-event"
+    "process:allow-exit"
   ]
 }

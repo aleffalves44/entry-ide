@@ -164,7 +164,7 @@ export function AgentContextPanel({
         aria-orientation="vertical"
       />
       <header className="agent-context-panel-header">
-        <span className="agent-context-panel-title">HERMES · CONTEXT</span>
+        <span className="agent-context-panel-title">ENTRY · CONTEXT</span>
       </header>
       <div className="agent-context-panel-body">
         <SectionContent

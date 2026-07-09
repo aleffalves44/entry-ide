@@ -1,5 +1,5 @@
 {
-  "name": "hermes-ide",
+  "name": "entry-ide",
   "private": true,
   "version": "1.3.2",
   "type": "module",
@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-agent-sdk": "^0.2.132",
-    "@aptabase/tauri": "^0.4.1",
     "@codemirror/autocomplete": "^6.20.1",
     "@codemirror/commands": "^6.10.3",
     "@codemirror/lang-cpp": "^6.0.3",

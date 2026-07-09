@@ -38,7 +38,7 @@ export const SESSION_CREATOR_MODES: ModeOption[] = [
     category: "native",
     label: "Chat with Claude",
     description:
-      "Real conversation with Claude on your code. Diffs, tool runs, files, plan mode. Built natively into Hermes.",
+      "Real conversation with Claude on your code. Diffs, tool runs, files, plan mode. Built natively into Entry IDE.",
     badge: "NEW",
   },
   {
@@ -46,7 +46,7 @@ export const SESSION_CREATOR_MODES: ModeOption[] = [
     category: "universal",
     label: "Terminal",
     description:
-      "Universal CLI host (the original Hermes mode). A shell or any AI CLI you have installed: Claude Code, Aider, Codex, Gemini, Copilot, Kiro, plain bash/zsh.",
+      "Universal CLI host (the classic terminal mode). A shell or any AI CLI you have installed: Claude Code, Aider, Codex, Gemini, Copilot, Kiro, plain bash/zsh.",
   },
   {
     id: "ssh",

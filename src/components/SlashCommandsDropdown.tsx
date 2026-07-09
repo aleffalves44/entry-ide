@@ -73,7 +73,7 @@ export function SlashCommandsDropdown({
             {item.kind === "cli" ? (
               <span
                 className="slash-dropdown-kind slash-dropdown-kind-cli"
-                title="Runs in the embedded terminal — this command's interactive TUI can't talk over stream-json, so Hermes spawns claude /<cmd> in a small inline PTY"
+                title="Runs in the embedded terminal — this command's interactive TUI can't talk over stream-json, so Entry IDE spawns claude /<cmd> in a small inline PTY"
               >
                 ▣ terminal
               </span>

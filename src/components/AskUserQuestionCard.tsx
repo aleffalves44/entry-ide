@@ -146,11 +146,11 @@ export function AskUserQuestionCard({ input, onAllow, onDeny, dialogId }: Props)
       className="aq-card"
       data-dialog-id={dialogId}
       role="dialog"
-      aria-label="Hermes is waiting for your answer"
+      aria-label="Entry IDE is waiting for your answer"
     >
       <div className="aq-card-bar" aria-hidden="true" />
       <div className="aq-card-body">
-        <div className="aq-card-header">HERMES IS WAITING FOR YOU</div>
+        <div className="aq-card-header">ENTRY IS WAITING FOR YOU</div>
         {questions.map((q, qi) => (
           <fieldset key={qi} className="aq-question">
             <legend className="aq-question-legend">{q.header || `Q${qi + 1}`}</legend>

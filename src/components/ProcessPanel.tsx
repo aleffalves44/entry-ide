@@ -475,10 +475,10 @@ export function ProcessPanel({ visible }: ProcessPanelProps) {
           <button
             className={`process-toggle${filter.showHermesOnly ? " process-toggle-active" : ""}`}
             onClick={() => setFilter((f) => ({ ...f, showHermesOnly: !f.showHermesOnly }))}
-            title="Show Hermes sessions only"
+            title="Show Entry IDE sessions only"
             aria-pressed={filter.showHermesOnly}
           >
-            Hermes
+            Entry
           </button>
           <button
             className={`process-toggle${filter.showZombiesOnly ? " process-toggle-active" : ""}`}
