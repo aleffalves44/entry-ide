@@ -41,6 +41,25 @@ export const PHASE_COMMANDS: Record<PhaseKey, string> = {
   pr: "harness-cmd:pr",
 };
 
+/** Static descriptions shown in the expanded phase section.  Each entry
+ *  explains what the phase does and what context the plugin will ask for
+ *  in chat.  Text is FLEXIBLE; existence, keys, and non-empty values are RIGID. */
+export const PHASE_DESCRIPTIONS: Record<PhaseKey, string> = {
+  spike: "investigacao/discovery — informe a chave Jira ou o tema a investigar",
+  plan: "gera SPEC.md + PLAN.md — informe CRED-XXX ou a descricao da task",
+  task: "implementa o PLAN existente no worktree",
+  pr: "abre pull request para o branch atual",
+};
+
+/** Placeholder shown in each phase's context input.  The text typed there
+ *  is appended verbatim as the slash-command argument. */
+export const PHASE_PLACEHOLDERS: Record<PhaseKey, string> = {
+  spike: "CRED-1234 ou tema a investigar",
+  plan: "CRED-1234 ou descrição da feature",
+  task: "CRED-1234 ou instruções extras (opcional)",
+  pr: "contexto extra para o PR (opcional)",
+};
+
 function fileName(path: string): string {
   const parts = path.split("/");
   return parts[parts.length - 1] || path;
