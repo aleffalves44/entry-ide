@@ -14,10 +14,12 @@ pr_policy: draft
 branch: feat/pipeline-phase-inline-input (base: main)
 
 ## /task steps
-- [ ] 1 inference
-- [ ] 2 write
-- [ ] 3 review
-- [ ] 4 PR (draft)
+- [x] 1 inference (frontend-engineer, planned, standard, pr_policy=draft)
+- [x] 2 write — commits 6541570, 9a7437a, 3d70746
+- [x] 3 review — PASS 11/11, tsc clean, 3596 tests green, sensei 4125→4127
+- [x] 4 PR (draft) — https://github.com/aleffalves44/entry-ide/pull/1
+
+task_status: done
 
 ## Steps
 - [x] 1 pre-fetch + normalize
