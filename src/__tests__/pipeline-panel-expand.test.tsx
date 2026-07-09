@@ -44,7 +44,7 @@ vi.mock("../hooks/usePipelineState", () => ({
 }));
 
 import { PipelinePanel } from "../components/PipelinePanel";
-import { PHASE_DESCRIPTIONS } from "../utils/pipelinePhases";
+import { PHASE_DESCRIPTIONS, PHASE_PLACEHOLDERS } from "../utils/pipelinePhases";
 import type { SessionData } from "../types/session";
 
 const SESSION: SessionData = {
@@ -288,10 +288,14 @@ describe("UI-03 — expanded section content", () => {
     expect(screen.getByText(PHASE_DESCRIPTIONS.spike)).toBeInTheDocument();
   });
 
-  it("no <input> inside expanded section", () => {
+  it("renders context input with the phase placeholder", () => {
     renderPanel();
     clickRow(0);
-    expect(document.querySelector(".pipeline-phase-expanded input")).toBeNull();
+    const input = document.querySelector(
+      ".pipeline-phase-expanded input.pipeline-phase-input",
+    ) as HTMLInputElement;
+    expect(input).not.toBeNull();
+    expect(input).toHaveAttribute("placeholder", PHASE_PLACEHOLDERS.spike);
   });
 
   it("exactly one send button visible when a phase is open", () => {
@@ -299,5 +303,79 @@ describe("UI-03 — expanded section content", () => {
     clickRow(0);
     const sendBtns = screen.getAllByRole("button", { name: /enviar|send/i });
     expect(sendBtns).toHaveLength(1);
+  });
+});
+
+describe("RF-06 — context input feeds the slash-command argument", () => {
+  beforeEach(() => {
+    submitToAgentMock.mockClear();
+  });
+  afterEach(() => cleanup());
+
+  function getInput(): HTMLInputElement {
+    return document.querySelector(".pipeline-phase-input") as HTMLInputElement;
+  }
+
+  it("typed context is appended to the command on send", () => {
+    renderPanel();
+    clickRow(1); // plan
+    fireEvent.change(getInput(), { target: { value: "CRED-1234" } });
+    fireEvent.click(document.querySelector(".pipeline-phase-send") as HTMLButtonElement);
+    expect(submitToAgentMock).toHaveBeenCalledWith(
+      "test-session",
+      "/harness-cmd:plan CRED-1234",
+      [],
+    );
+  });
+
+  it("whitespace-only context sends the bare command", () => {
+    renderPanel();
+    clickRow(0); // spike
+    fireEvent.change(getInput(), { target: { value: "   " } });
+    fireEvent.click(document.querySelector(".pipeline-phase-send") as HTMLButtonElement);
+    expect(submitToAgentMock).toHaveBeenCalledWith("test-session", "/harness-cmd:spike", []);
+  });
+
+  it("Enter inside the input sends the command with the argument", () => {
+    renderPanel();
+    clickRow(0); // spike
+    fireEvent.change(getInput(), { target: { value: "investigar cache" } });
+    fireEvent.keyDown(getInput(), { key: "Enter" });
+    expect(submitToAgentMock).toHaveBeenCalledTimes(1);
+    expect(submitToAgentMock).toHaveBeenCalledWith(
+      "test-session",
+      "/harness-cmd:spike investigar cache",
+      [],
+    );
+  });
+
+  it("draft persists per phase across accordion toggles and after send", () => {
+    renderPanel();
+    clickRow(0); // spike
+    fireEvent.change(getInput(), { target: { value: "CRED-1" } });
+    clickRow(1); // switch to plan — spike collapses
+    expect(getInput().value).toBe(""); // plan draft independent
+    fireEvent.change(getInput(), { target: { value: "CRED-2" } });
+    fireEvent.click(document.querySelector(".pipeline-phase-send") as HTMLButtonElement);
+    expect(getInput().value).toBe("CRED-2"); // survives send
+    clickRow(0); // back to spike
+    expect(getInput().value).toBe("CRED-1"); // survives collapse
+  });
+
+  it("clicking the input does not collapse the row", () => {
+    renderPanel();
+    clickRow(0);
+    fireEvent.click(getInput());
+    expect(document.querySelectorAll(".pipeline-phase-expanded")).toHaveLength(1);
+  });
+
+  it("input is disabled while streaming", () => {
+    pipelineStateMock.isStreaming = false;
+    const { rerender } = renderPanel();
+    clickRow(0);
+    pipelineStateMock.isStreaming = true;
+    rerender(<PipelinePanel session={SESSION} />);
+    expect(getInput()).toBeDisabled();
+    pipelineStateMock.isStreaming = false;
   });
 });

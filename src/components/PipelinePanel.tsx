@@ -20,6 +20,7 @@ import { submitToAgent } from "../utils/submitToAgent";
 import { usePipelineState } from "../hooks/usePipelineState";
 import {
   PHASE_DESCRIPTIONS,
+  PHASE_PLACEHOLDERS,
   type PhaseKey,
   type PipelinePhase,
 } from "../utils/pipelinePhases";
@@ -31,23 +32,46 @@ interface PipelinePanelProps {
 
 interface PhaseExpandedSectionProps {
   phase: PipelinePhase;
+  draft: string;
+  onDraftChange: (value: string) => void;
   onSend: () => void;
   disabled: boolean;
 }
 
-function PhaseExpandedSection({ phase, onSend, disabled }: PhaseExpandedSectionProps) {
+function PhaseExpandedSection({
+  phase,
+  draft,
+  onDraftChange,
+  onSend,
+  disabled,
+}: PhaseExpandedSectionProps) {
   return (
-    <div className="pipeline-phase-expanded">
+    <div
+      className="pipeline-phase-expanded"
+      // Defensive: keep clicks inside the expanded section (input focus,
+      // text selection, send) from ever reaching the row toggle.
+      onClick={(e) => e.stopPropagation()}
+    >
       <p className="pipeline-phase-description">{PHASE_DESCRIPTIONS[phase.key]}</p>
+      <input
+        type="text"
+        className="pipeline-phase-input"
+        value={draft}
+        placeholder={PHASE_PLACEHOLDERS[phase.key]}
+        disabled={disabled}
+        autoFocus
+        onChange={(e) => onDraftChange(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !disabled) {
+            e.preventDefault();
+            onSend();
+          }
+        }}
+      />
       <button
         type="button"
         className="pipeline-phase-send"
-        onClick={(e) => {
-          // Defensive: keep the send click from ever reaching the row toggle,
-          // mirroring the artifact-button pattern.
-          e.stopPropagation();
-          onSend();
-        }}
+        onClick={onSend}
         disabled={disabled}
       >
         Enviar
@@ -62,6 +86,9 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
     usePipelineState(session);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [activePhase, setActivePhase] = useState<PhaseKey | null>(null);
+  // Per-phase context drafts.  Persist across accordion toggles and after
+  // send, so re-running a phase with the same Jira key costs zero retyping.
+  const [drafts, setDrafts] = useState<Partial<Record<PhaseKey, string>>>({});
 
   // Project id for the artifact → FilePreview handoff.
   useEffect(() => {
@@ -77,8 +104,9 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
   }, [session.id]);
 
   const dispatchPhase = useCallback(
-    (command: string) => {
-      const draft = `/${command}`;
+    (command: string, context: string) => {
+      const arg = context.trim();
+      const draft = arg ? `/${command} ${arg}` : `/${command}`;
       submitToAgent(session.id, draft, []).catch((e) =>
         console.warn("[PipelinePanel] dispatch failed:", e),
       );
@@ -170,7 +198,11 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
             {activePhase === phase.key && (
               <PhaseExpandedSection
                 phase={phase}
-                onSend={() => dispatchPhase(phase.command)}
+                draft={drafts[phase.key] ?? ""}
+                onDraftChange={(value) =>
+                  setDrafts((prev) => ({ ...prev, [phase.key]: value }))
+                }
+                onSend={() => dispatchPhase(phase.command, drafts[phase.key] ?? "")}
                 disabled={isStreaming}
               />
             )}
