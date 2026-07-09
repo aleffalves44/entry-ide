@@ -18,10 +18,37 @@ import { useSession } from "../state/SessionContext";
 import { getSessionProjects } from "../api/projects";
 import { submitToAgent } from "../utils/submitToAgent";
 import { usePipelineState } from "../hooks/usePipelineState";
+import {
+  PHASE_DESCRIPTIONS,
+  type PhaseKey,
+  type PipelinePhase,
+} from "../utils/pipelinePhases";
 import type { SessionData } from "../types/session";
 
 interface PipelinePanelProps {
   session: SessionData;
+}
+
+interface PhaseExpandedSectionProps {
+  phase: PipelinePhase;
+  onSend: () => void;
+  disabled: boolean;
+}
+
+function PhaseExpandedSection({ phase, onSend, disabled }: PhaseExpandedSectionProps) {
+  return (
+    <div className="pipeline-phase-expanded">
+      <p className="pipeline-phase-description">{PHASE_DESCRIPTIONS[phase.key]}</p>
+      <button
+        type="button"
+        className="pipeline-phase-send"
+        onClick={onSend}
+        disabled={disabled}
+      >
+        Enviar
+      </button>
+    </div>
+  );
 }
 
 export function PipelinePanel({ session }: PipelinePanelProps) {
@@ -29,10 +56,7 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
   const { phases, pipeline, loading, refresh, isStreaming, pluginMissing } =
     usePipelineState(session);
   const [projectId, setProjectId] = useState<string | null>(null);
-  // Task context sent along with every phase command (Jira key, short
-  // description).  Deliberately NOT cleared after dispatch — the same
-  // task flows through all four phases.
-  const [taskInput, setTaskInput] = useState("");
+  const [activePhase, setActivePhase] = useState<PhaseKey | null>(null);
 
   // Project id for the artifact → FilePreview handoff.
   useEffect(() => {
@@ -49,13 +73,20 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
 
   const dispatchPhase = useCallback(
     (command: string) => {
-      const args = taskInput.trim();
-      const draft = args.length > 0 ? `/${command} ${args}` : `/${command}`;
+      const draft = `/${command}`;
       submitToAgent(session.id, draft, []).catch((e) =>
         console.warn("[PipelinePanel] dispatch failed:", e),
       );
     },
-    [session.id, taskInput],
+    [session.id],
+  );
+
+  const togglePhase = useCallback(
+    (key: PhaseKey) => {
+      if (isStreaming) return;
+      setActivePhase((prev) => (prev === key ? null : key));
+    },
+    [isStreaming],
   );
 
   const openArtifact = useCallback(
@@ -101,20 +132,23 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
         </button>
       </div>
 
-      <input
-        type="text"
-        className="pipeline-task-input"
-        value={taskInput}
-        onChange={(e) => setTaskInput(e.target.value)}
-        placeholder="ex.: CRED-1234 ou descrição da task"
-        title="Enviado junto com cada fase: /comando <este texto>"
-        spellCheck={false}
-      />
-
       <ol className="pipeline-phases">
         {phases.map((phase) => (
           <li key={phase.key} className={`pipeline-phase is-${phase.status}`}>
-            <div className="pipeline-phase-row">
+            <div
+              className="pipeline-phase-row"
+              role="button"
+              tabIndex={0}
+              aria-expanded={activePhase === phase.key}
+              aria-disabled={isStreaming ? true : undefined}
+              onClick={() => togglePhase(phase.key)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  togglePhase(phase.key);
+                }
+              }}
+            >
               <span className="pipeline-phase-dot" aria-hidden="true">
                 {phase.status === "done" ? "●" : phase.status === "running" ? "◐" : "○"}
               </span>
@@ -126,16 +160,15 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
                     ? "em execução…"
                     : ""}
               </span>
-              <button
-                type="button"
-                className="pipeline-phase-run"
-                onClick={() => dispatchPhase(phase.command)}
-                disabled={isStreaming}
-                title={`Enviar /${phase.command} para a sessão`}
-              >
-                ▶
-              </button>
             </div>
+
+            {activePhase === phase.key && (
+              <PhaseExpandedSection
+                phase={phase}
+                onSend={() => dispatchPhase(phase.command)}
+                disabled={isStreaming}
+              />
+            )}
 
             {phase.detail && <div className="pipeline-phase-detail">{phase.detail}</div>}
 
@@ -146,7 +179,10 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
                     key={a.path}
                     type="button"
                     className="pipeline-artifact"
-                    onClick={() => openArtifact(a.path)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openArtifact(a.path);
+                    }}
                     title={a.path}
                   >
                     {a.label}

@@ -7,6 +7,7 @@ import {
   derivePipelinePhases,
   hasHarnessPlugin,
   runningPhaseFromCommand,
+  PHASE_DESCRIPTIONS,
   type PipelineState,
 } from "../utils/pipelinePhases";
 
@@ -77,6 +78,20 @@ describe("runningPhaseFromCommand", () => {
     expect(runningPhaseFromCommand("harness-cmd:task", false)).toBeNull();
     expect(runningPhaseFromCommand(null, true)).toBeNull();
     expect(runningPhaseFromCommand("compact", true)).toBeNull();
+  });
+});
+
+describe("PHASE_DESCRIPTIONS (RF-06)", () => {
+  it("has exactly the four expected keys in order", () => {
+    expect(Object.keys(PHASE_DESCRIPTIONS)).toEqual(["spike", "plan", "task", "pr"]);
+  });
+
+  it("every value is a non-empty string", () => {
+    for (const key of Object.keys(PHASE_DESCRIPTIONS) as (keyof typeof PHASE_DESCRIPTIONS)[]) {
+      const val = PHASE_DESCRIPTIONS[key];
+      expect(typeof val).toBe("string");
+      expect(val.length).toBeGreaterThan(0);
+    }
   });
 });
 
