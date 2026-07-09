@@ -42,7 +42,12 @@ function PhaseExpandedSection({ phase, onSend, disabled }: PhaseExpandedSectionP
       <button
         type="button"
         className="pipeline-phase-send"
-        onClick={onSend}
+        onClick={(e) => {
+          // Defensive: keep the send click from ever reaching the row toggle,
+          // mirroring the artifact-button pattern.
+          e.stopPropagation();
+          onSend();
+        }}
         disabled={disabled}
       >
         Enviar
