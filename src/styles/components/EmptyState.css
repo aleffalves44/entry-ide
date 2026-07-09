@@ -26,7 +26,7 @@
    *  room, but top-anchors the content when the viewport is shorter than
    *  the composition — without this, plain `center` would clip the
    *  masthead off the top edge on small displays and the user would
-   *  never see the "Hermes IDE" wordmark.  Pairs with `overflow-y: auto`
+   *  never see the "Entry IDE" wordmark.  Pairs with `overflow-y: auto`
    *  below so the user can scroll down to reach the logbook when the
    *  whole composition doesn't fit. */
   align-items: safe center;
@@ -204,7 +204,7 @@
   margin: 0;
   font-family: "Newsreader", "Lyon Text", "Charter", Georgia, serif;
   font-weight: 500;
-  /* Scale aggressively on narrow viewports so "Hermes IDE" never gets
+  /* Scale aggressively on narrow viewports so "Entry IDE" never gets
    * clipped against the frame.  The lower bound used to be 72px which
    * was too large for compact windows — letter ascenders ran past the
    * frame and a serif tail clipped at the top edge. */
@@ -216,7 +216,7 @@
   color: var(--ink-primary, var(--text-0));
   display: flex;
   /* Allow the title to wrap when the wordmark is wider than the frame
-   * — "Hermes" on one line, "IDE" on the next is preferable to a clipped
+   * — "Entry" on one line, "IDE" on the next is preferable to a clipped
    * H. */
   flex-wrap: wrap;
   align-items: baseline;
@@ -234,7 +234,7 @@
   animation: es-title-char-in 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* The space between "Hermes" and "IDE" — render as a normal-width gap
+/* The space between "Entry" and "IDE" — render as a normal-width gap
  * (the inline-block on .es-title-char would otherwise collapse it).  */
 .es-title-char-space {
   width: 0.32em;

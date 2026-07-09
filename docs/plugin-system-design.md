@@ -1,4 +1,4 @@
-# Hermes IDE Plugin System -- Technical Design Document
+# Entry IDE Plugin System -- Technical Design Document
 
 **Version:** 1.0
 **Date:** 2026-03-18
@@ -35,7 +35,7 @@
 
 ### Constraints
 
-- Hermes IDE is a Tauri 2 app. The frontend runs in a system webview (WKWebView, WebView2, WebKitGTK), not Chromium. This rules out Chrome extension APIs and Electron-specific patterns.
+- Entry IDE is a Tauri 2 app. The frontend runs in a system webview (WKWebView, WebView2, WebKitGTK), not Chromium. This rules out Chrome extension APIs and Electron-specific patterns.
 - The state management is a single `useReducer` in `SessionContext`. Plugins must interact with it through a controlled API, never by dispatching raw actions.
 - Terminal rendering uses a module-level pool (`TerminalPool.ts`). Plugin access to terminal content must go through the Rust backend, not by directly touching xterm.js instances.
 - The app currently has ~50 flat components and no module federation or dynamic imports beyond standard code splitting. The plugin system must introduce dynamic loading without disrupting the existing bundle.
@@ -49,7 +49,7 @@
                         ================
 
   ┌─────────────────────────────────────────────────────────────────┐
-  │                      Hermes IDE Host App                        │
+  │                      Entry IDE Host App                        │
   │                                                                 │
   │  ┌────────────────────────────────────────────────────────────┐ │
   │  │                    Plugin Runtime                          │ │
@@ -63,7 +63,7 @@
   │  │  └──────────────┘  └──────────────┘  └────────────────┘  │ │
   │  │                                                            │ │
   │  │  ┌────────────────────────────────────────────────────┐   │ │
-  │  │  │              hermes Plugin API                     │   │ │
+  │  │  │              entry Plugin API                     │   │ │
   │  │  │                                                    │   │ │
   │  │  │  ui.registerPanel()     commands.register()        │   │ │
   │  │  │  ui.registerSidebarIcon()  statusBar.addItem()     │   │ │
@@ -98,7 +98,7 @@
 
   External:
   ┌────────────────────────────────────┐
-  │  hermes-hq/plugins (GitHub repo)   │
+  │  aleffalves44/entry-ide-plugins (GitHub repo)   │
   │  - Plugin registry (index.json)    │
   │  - Published plugin packages       │
   │  - Review pipeline                 │
@@ -107,7 +107,7 @@
 
 ### Key Design Decision: In-Process React Components, Not Iframes
 
-Plugins are loaded as **IIFE bundles that register React components** on a global registry (`window.__hermesPlugins`), rendered in-process within the host app's React tree. This is chosen over iframe-based isolation because:
+Plugins are loaded as **IIFE bundles that register React components** on a global registry (`window.__entryPlugins`), rendered in-process within the host app's React tree. This is chosen over iframe-based isolation because:
 
 1. **Performance** -- No cross-frame serialization overhead. Plugin UI renders at native React speed.
 2. **Theming** -- Plugins inherit CSS custom properties from the host app's theme system. A plugin rendered under the `tron` theme automatically gets tron colors.
@@ -120,28 +120,28 @@ The trade-off is weaker isolation. This is mitigated by the permission system (S
 
 ## 3. Plugin Manifest Format
 
-Every plugin has a `hermes-plugin.json` file at its root. This is the single source of truth for metadata, contributions, and permissions.
+Every plugin has a `entry-plugin.json` file at its root. This is the single source of truth for metadata, contributions, and permissions.
 
 ### Schema
 
 ```jsonc
 {
   // ─── Identity ────────────────────────────────────────────────
-  "id": "hermes-hq.json-formatter",          // Unique ID: scope.name
+  "id": "entry-ide.json-formatter",          // Unique ID: scope.name
   "name": "JSON Formatter",                   // Display name
   "version": "1.0.0",                         // Semver
   "description": "Format, minify, and validate JSON in a side panel.",
   "author": {
-    "name": "Hermes HQ",
-    "url": "https://hermes-ide.com"
+    "name": "Entry HQ",
+    "url": "https://entry-ide.dev"
   },
   "license": "Apache-2.0",
-  "repository": "https://github.com/hermes-hq/plugins",
+  "repository": "https://github.com/aleffalves44/entry-ide-plugins",
   "icon": "./icon.svg",                       // 18x18 SVG icon
 
   // ─── Compatibility ──────────────────────────────────────────
   "engines": {
-    "hermes": ">=0.4.0"                       // Min IDE version (semver range)
+    "entry": ">=0.4.0"                       // Min IDE version (semver range)
   },
 
   // ─── Entry Point ────────────────────────────────────────────
@@ -220,13 +220,13 @@ Every plugin has a `hermes-plugin.json` file at its root. This is the single sou
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `id` | Yes | Globally unique identifier in `scope.name` format. Official plugins use `hermes-hq.*`. Community plugins use their GitHub username/org. |
+| `id` | Yes | Globally unique identifier in `scope.name` format. Official plugins use `entry-ide.*`. Community plugins use their GitHub username/org. |
 | `name` | Yes | Human-readable display name. |
 | `version` | Yes | Semver version string. |
 | `description` | Yes | One-line description shown in marketplace. |
 | `author` | Yes | Object with `name` and optional `url`. |
 | `license` | Yes | SPDX license identifier. |
-| `engines.hermes` | Yes | Semver range of compatible Hermes IDE versions. |
+| `engines.entry` | Yes | Semver range of compatible Entry IDE versions. |
 | `main` | Yes | Path to the built ES module entry point (relative to plugin root). |
 | `source` | No | Path to source entry point. Used for dev-mode hot reload. |
 | `contributes` | No | Declarative UI contribution points. |
@@ -238,7 +238,7 @@ Every plugin has a `hermes-plugin.json` file at its root. This is the single sou
 The host app validates the manifest at install time and at load time:
 - `id` must match `^[a-z0-9-]+\.[a-z0-9-]+$`
 - `version` must be valid semver
-- `engines.hermes` must be satisfied by the current IDE version
+- `engines.entry` must be satisfied by the current IDE version
 - `main` must point to an existing file
 - `contributes` entries are validated against the known slot types
 - `permissions` are validated against the known permission set
@@ -247,12 +247,12 @@ The host app validates the manifest at install time and at load time:
 
 ## 4. Plugin API Surface
 
-Plugins receive a `hermes` API object when their `activate` function is called. This object is the only way plugins interact with the host. Plugins **cannot** import from `@tauri-apps/api`, `react`, or any host module directly -- these are provided by the host as shared dependencies.
+Plugins receive a `entry` API object when their `activate` function is called. This object is the only way plugins interact with the host. Plugins **cannot** import from `@tauri-apps/api`, `react`, or any host module directly -- these are provided by the host as shared dependencies.
 
 ### API Namespace Structure
 
 ```typescript
-interface HermesPluginAPI {
+interface EntryPluginAPI {
   // ─── UI ──────────────────────────────────────────────────────
   ui: {
     /** Register a React component as a panel. */
@@ -495,7 +495,7 @@ The `PluginPanelHost` wrapper provides:
 - Error boundary isolation (a crashing plugin panel does not take down the app)
 - CSS scoping (plugin panel gets a container with `data-plugin-id` attribute for style isolation)
 - Size constraints (panels respect the same min/max width as built-in panels)
-- The `hermes` API object passed via React context
+- The `entry` API object passed via React context
 
 **Panel locations:**
 - `"left"` -- Renders in the left sidebar area, same position as Git/Process/Files/Search panels. Only one left-side panel is visible at a time (same rule as built-in panels).
@@ -519,7 +519,7 @@ The `PluginPanelHost` wrapper provides:
 ]
 
 // Plugin activate() registers handlers:
-hermes.commands.register("json-formatter.format", () => {
+entry.commands.register("json-formatter.format", () => {
   // Format the JSON in the panel
 });
 ```
@@ -546,7 +546,7 @@ Plugin status bar items are rendered in a dedicated zone (between built-in right
 
 ```typescript
 // Dynamic update from plugin code:
-hermes.ui.updateStatusBarItem("json-formatter.status", {
+entry.ui.updateStatusBarItem("json-formatter.status", {
   text: "JSON Valid",
   tooltip: "Last validated: 2 seconds ago"
 });
@@ -558,7 +558,7 @@ Plugins can show modal dialogs through the API. They cannot render arbitrary ove
 
 ```typescript
 // Simple confirmation dialog
-const result = await hermes.ui.showModal({
+const result = await entry.ui.showModal({
   title: "Replace Content?",
   body: "This will replace the current editor content with formatted JSON.",
   buttons: [
@@ -579,9 +579,9 @@ For more complex UI, plugins should use their panel. Modals are intentionally li
 
 Plugins can be installed from three sources:
 
-**A. Marketplace (hermes-hq/plugins repo)**
+**A. Marketplace (aleffalves44/entry-ide-plugins repo)**
 1. User opens Settings > Plugins (or Command Palette: "Install Plugin").
-2. The app fetches the plugin index from `https://raw.githubusercontent.com/hermes-hq/plugins/main/registry/index.json`.
+2. The app fetches the plugin index from `https://raw.githubusercontent.com/aleffalves44/entry-ide-plugins/main/registry/index.json`.
 3. User browses/searches and clicks "Install".
 4. The app downloads the plugin's release tarball (`.tgz`) from the registry.
 5. The tarball is extracted to `{app_data_dir}/plugins/{plugin-id}/`.
@@ -589,7 +589,7 @@ Plugins can be installed from three sources:
 7. The plugin appears in Settings > Plugins as "Installed (inactive)".
 
 **B. Local directory (development)**
-1. User opens Settings > Plugins and clicks "Install from folder..." (or runs `hermes plugin install /path/to/plugin` from terminal).
+1. User opens Settings > Plugins and clicks "Install from folder..." (or runs `entry plugin install /path/to/plugin` from terminal).
 2. The app creates a symlink from `{app_data_dir}/plugins/{plugin-id}` to the local directory.
 3. The manifest is validated.
 4. In dev mode, file watchers enable hot reload.
@@ -606,11 +606,11 @@ App starts
     ▼
 PluginRuntime.initialize()
     │
-    ├─ Scan {app_data_dir}/plugins/ for directories with hermes-plugin.json
+    ├─ Scan {app_data_dir}/plugins/ for directories with entry-plugin.json
     │
     ├─ For each plugin:
-    │   ├─ Parse and validate hermes-plugin.json
-    │   ├─ Check engines.hermes compatibility
+    │   ├─ Parse and validate entry-plugin.json
+    │   ├─ Check engines.entry compatibility
     │   ├─ Check if plugin is enabled (stored in settings table)
     │   ├─ If disabled, skip (but keep in registry for Settings UI)
     │   └─ Add to loading queue
@@ -621,7 +621,7 @@ PluginRuntime.initialize()
         ├─ Dynamic import(main) to load the ES module
         ├─ Resolve contributes (register sidebar icons, commands, panels, status bar items)
         ├─ Create sandboxed API object with permission checks
-        ├─ Call plugin's activate(hermes) function
+        ├─ Call plugin's activate(entry) function
         └─ Mark as "active" in registry
 ```
 
@@ -631,16 +631,16 @@ Each plugin's entry point must export an `activate` function and optionally a `d
 
 ```typescript
 // Plugin entry point (src/index.tsx)
-import type { HermesPluginAPI } from "@hermes-hq/plugin-sdk";
+import type { EntryPluginAPI } from "@aleffalves44/entry-ide-plugin-sdk";
 
-export function activate(hermes: HermesPluginAPI) {
+export function activate(entry: EntryPluginAPI) {
   // Register command handlers, set up subscriptions, etc.
   // Return value is ignored.
 }
 
 export function deactivate() {
   // Optional cleanup. Called when plugin is disabled or app closes.
-  // The host also auto-disposes all subscriptions in hermes.subscriptions.
+  // The host also auto-disposes all subscriptions in entry.subscriptions.
 }
 ```
 
@@ -655,7 +655,7 @@ export function deactivate() {
 
 On deactivation:
 1. The host calls `deactivate()` if exported.
-2. All `Disposable` objects in `hermes.subscriptions` are disposed.
+2. All `Disposable` objects in `entry.subscriptions` are disposed.
 3. All registered panels, commands, sidebar icons, and status bar items are removed.
 4. The plugin's status is set to "inactive" in the registry.
 
@@ -664,7 +664,7 @@ On deactivation:
 1. The app periodically checks the registry index for version updates (configurable interval, default: daily).
 2. If an update is available, the user sees a badge in Settings > Plugins.
 3. The user clicks "Update". The app downloads the new version, deactivates the old one, replaces the files, and activates the new one.
-4. If the new version's `engines.hermes` is incompatible with the current IDE version, the update is shown but not applied until the IDE is updated.
+4. If the new version's `engines.entry` is incompatible with the current IDE version, the update is shown but not applied until the IDE is updated.
 
 ### 6.5 Uninstallation
 
@@ -708,11 +708,11 @@ Permissions are enforced at **two layers** to prevent bypass:
 
 **Layer 1: Frontend (JavaScript API proxy)**
 
-The `hermes` API object passed to each plugin checks permissions before each API call. If a permission is missing, a `PermissionDeniedError` is thrown immediately:
+The `entry` API object passed to each plugin checks permissions before each API call. If a permission is missing, a `PermissionDeniedError` is thrown immediately:
 
 ```typescript
 // Simplified internal implementation:
-function createPluginAPI(pluginId: string, grantedPermissions: Set<string>): HermesPluginAPI {
+function createPluginAPI(pluginId: string, grantedPermissions: Set<string>): EntryPluginAPI {
   return {
     clipboard: {
       readText() {
@@ -760,7 +760,7 @@ When a user installs a plugin from the marketplace that requests permissions, a 
 
 ### 7.4 Tamper Protection
 
-When a plugin bundle is loaded, the host snapshots the existing `window.__hermesPlugins` keys before executing the bundle. After execution, it verifies that the plugin only registered under its own ID. If a plugin attempts to register under a different ID (e.g., to impersonate another plugin), the rogue registration is removed and the plugin is rejected with an error.
+When a plugin bundle is loaded, the host snapshots the existing `window.__entryPlugins` keys before executing the bundle. After execution, it verifies that the plugin only registered under its own ID. If a plugin attempts to register under a different ID (e.g., to impersonate another plugin), the rogue registration is removed and the plugin is rejected with an error.
 
 ### 7.6 Error Isolation
 
@@ -778,39 +778,39 @@ When a plugin bundle is loaded, the host snapshots the existing `window.__hermes
 
 ### 7.8 Plugin Review (Marketplace)
 
-Plugins submitted to the `hermes-hq/plugins` registry go through a review process:
+Plugins submitted to the `aleffalves44/entry-ide-plugins` registry go through a review process:
 1. Automated checks: manifest validation, dependency audit, bundle size limits.
 2. Manual review for high-permission plugins (`terminal.write`, `network`, `filesystem`).
-3. Code signing (future): official plugins are signed with a Hermes key.
+3. Code signing (future): official plugins are signed with a Entry key.
 
 ---
 
 ## 8. Distribution and Marketplace
 
-### 8.1 Registry Structure (hermes-hq/plugins repo)
+### 8.1 Registry Structure (aleffalves44/entry-ide-plugins repo)
 
 ```
-hermes-hq/plugins/
+aleffalves44/entry-ide-plugins/
 ├── registry/
 │   ├── index.json                    # Plugin index (list of all plugins)
 │   └── plugins/
-│       ├── hermes-hq.json-formatter/
+│       ├── entry-ide.json-formatter/
 │       │   ├── metadata.json         # Full manifest + download URL
 │       │   └── versions/
 │       │       ├── 1.0.0.json        # Version-specific metadata
 │       │       └── 1.1.0.json
-│       └── hermes-hq.markdown-preview/
+│       └── entry-ide.markdown-preview/
 │           ├── metadata.json
 │           └── versions/
 │               └── 1.0.0.json
 ├── plugins/                          # Plugin source code (monorepo)
 │   ├── json-formatter/
-│   │   ├── hermes-plugin.json
+│   │   ├── entry-plugin.json
 │   │   ├── package.json
 │   │   ├── src/
 │   │   └── dist/
 │   └── markdown-preview/
-│       ├── hermes-plugin.json
+│       ├── entry-plugin.json
 │       ├── package.json
 │       ├── src/
 │       └── dist/
@@ -827,16 +827,16 @@ hermes-hq/plugins/
   "version": 1,
   "plugins": [
     {
-      "id": "hermes-hq.json-formatter",
+      "id": "entry-ide.json-formatter",
       "name": "JSON Formatter",
       "description": "Format, minify, and validate JSON in a side panel.",
-      "author": "Hermes HQ",
+      "author": "Entry HQ",
       "latestVersion": "1.0.0",
-      "minHermesVersion": "0.4.0",
+      "minEntryVersion": "0.4.0",
       "downloads": 1200,
       "rating": 4.8,
       "tags": ["json", "formatter", "tools"],
-      "icon": "https://raw.githubusercontent.com/hermes-hq/plugins/main/plugins/json-formatter/icon.svg",
+      "icon": "https://raw.githubusercontent.com/aleffalves44/entry-ide-plugins/main/plugins/json-formatter/icon.svg",
       "updatedAt": "2026-03-01T00:00:00Z"
     }
   ]
@@ -856,7 +856,7 @@ hermes-hq/plugins/
 - Plugins use semver.
 - The registry stores all published versions.
 - Users can pin a version or auto-update.
-- Breaking IDE API changes bump the major version of `engines.hermes`.
+- Breaking IDE API changes bump the major version of `engines.entry`.
 
 ---
 
@@ -866,7 +866,7 @@ hermes-hq/plugins/
 
 ```
 my-plugin/
-├── hermes-plugin.json      # Manifest
+├── entry-plugin.json      # Manifest
 ├── package.json            # npm dependencies + build scripts
 ├── tsconfig.json           # TypeScript config
 ├── src/
@@ -880,14 +880,14 @@ my-plugin/
 
 ```typescript
 // src/index.tsx
-import type { HermesPluginAPI } from "@hermes-hq/plugin-sdk";
+import type { EntryPluginAPI } from "@aleffalves44/entry-ide-plugin-sdk";
 
-export function activate(hermes: HermesPluginAPI) {
+export function activate(entry: EntryPluginAPI) {
   // Register a command
-  const cmd = hermes.commands.register("hello-world.greet", () => {
-    hermes.ui.showToast("Hello from my first plugin!", { type: "success" });
+  const cmd = entry.commands.register("hello-world.greet", () => {
+    entry.ui.showToast("Hello from my first plugin!", { type: "success" });
   });
-  hermes.subscriptions.push(cmd);
+  entry.subscriptions.push(cmd);
 }
 
 export function deactivate() {
@@ -896,7 +896,7 @@ export function deactivate() {
 ```
 
 ```jsonc
-// hermes-plugin.json
+// entry-plugin.json
 {
   "id": "my-username.hello-world",
   "name": "Hello World",
@@ -904,7 +904,7 @@ export function deactivate() {
   "description": "A minimal plugin that says hello.",
   "author": { "name": "My Name" },
   "license": "MIT",
-  "engines": { "hermes": ">=0.4.0" },
+  "engines": { "entry": ">=0.4.0" },
   "main": "./dist/index.js",
   "contributes": {
     "commands": [
@@ -921,10 +921,10 @@ export function deactivate() {
 
 ### 9.3 CLI Tooling
 
-A `@hermes-ide/create-plugin` scaffolder:
+A `@entry-ide/create-plugin` scaffolder:
 
 ```bash
-npx @hermes-ide/create-plugin my-plugin
+npx @entry-ide/create-plugin my-plugin
 # Creates the directory structure, manifest, tsconfig, build config
 
 cd my-plugin
@@ -932,23 +932,23 @@ npm install
 npm run dev        # Starts the dev server with hot reload
 ```
 
-A `@hermes-ide/plugin-cli` for development:
+A `@entry-ide/plugin-cli` for development:
 
 ```bash
-hermes-plugin dev          # Watch mode + hot reload into running IDE
-hermes-plugin build        # Production build (bundle + minify)
-hermes-plugin validate     # Validate manifest and permissions
-hermes-plugin package      # Create .tgz for distribution
-hermes-plugin publish      # Submit to the registry (requires auth)
+entry-plugin dev          # Watch mode + hot reload into running IDE
+entry-plugin build        # Production build (bundle + minify)
+entry-plugin validate     # Validate manifest and permissions
+entry-plugin package      # Create .tgz for distribution
+entry-plugin publish      # Submit to the registry (requires auth)
 ```
 
 ### 9.4 Dev Mode and Hot Reload
 
 When developing locally:
 
-1. The developer runs `hermes-plugin dev` in their plugin directory.
+1. The developer runs `entry-plugin dev` in their plugin directory.
 2. This starts a local file watcher that rebuilds on change.
-3. In Hermes IDE, the developer installs the plugin from the local directory (symlink).
+3. In Entry IDE, the developer installs the plugin from the local directory (symlink).
 4. The `PluginRuntime` detects file changes on the symlinked plugin and:
    a. Calls `deactivate()` on the current version.
    b. Invalidates the module cache.
@@ -958,13 +958,13 @@ When developing locally:
 
 ### 9.5 Type Definitions
 
-The `@hermes-hq/plugin-sdk` package provides TypeScript type definitions for the `HermesPluginAPI` interface. This is a types-only package (no runtime code) that plugins install as a dev dependency.
+The `@aleffalves44/entry-ide-plugin-sdk` package provides TypeScript type definitions for the `EntryPluginAPI` interface. This is a types-only package (no runtime code) that plugins install as a dev dependency.
 
 ```json
 // Plugin's package.json
 {
   "devDependencies": {
-    "@hermes-hq/plugin-sdk": "^0.4.0",
+    "@aleffalves44/entry-ide-plugin-sdk": "^0.4.0",
     "typescript": "^5.6.0"
   },
   "peerDependencies": {
@@ -975,13 +975,13 @@ The `@hermes-hq/plugin-sdk` package provides TypeScript type definitions for the
 
 ### 9.6 Build Configuration
 
-Plugins are built as **IIFE bundles** that register on `window.__hermesPlugins`. The host loads them via blob URLs to satisfy CSP (`script-src 'self' blob:`). React is provided as `window.React` so plugins don't need to bundle it.
+Plugins are built as **IIFE bundles** that register on `window.__entryPlugins`. The host loads them via blob URLs to satisfy CSP (`script-src 'self' blob:`). React is provided as `window.React` so plugins don't need to bundle it.
 
 Key requirements:
 
 - Output format: `iife` (Immediately Invoked Function Expression)
 - Externalize `react` and `react-dom` (provided by host as globals)
-- The IIFE footer must register `{ activate, deactivate }` on `window.__hermesPlugins[pluginId]`
+- The IIFE footer must register `{ activate, deactivate }` on `window.__entryPlugins[pluginId]`
 - The bundle is loaded from disk by the Rust backend and executed as a `<script>` tag
 
 ```typescript
@@ -998,7 +998,7 @@ export default defineConfig({
     lib: {
       entry: "src/index.tsx",
       formats: ["iife"],
-      name: "HermesPlugin",
+      name: "EntryPlugin",
       fileName: () => "index.js",
     },
     rollupOptions: {
@@ -1009,9 +1009,9 @@ export default defineConfig({
           "react-dom": "ReactDOM",
           "react/jsx-runtime": "React",
         },
-        // Register on global __hermesPlugins with the plugin ID
-        footer: `window.__hermesPlugins = window.__hermesPlugins || {};
-window.__hermesPlugins["my-scope.my-plugin"] = { activate: HermesPlugin.activate, deactivate: HermesPlugin.deactivate };`,
+        // Register on global __entryPlugins with the plugin ID
+        footer: `window.__entryPlugins = window.__entryPlugins || {};
+window.__entryPlugins["my-scope.my-plugin"] = { activate: EntryPlugin.activate, deactivate: EntryPlugin.deactivate };`,
       },
     },
     outDir: "dist",
@@ -1020,7 +1020,7 @@ window.__hermesPlugins["my-scope.my-plugin"] = { activate: HermesPlugin.activate
 });
 ```
 
-**Important:** The IIFE footer must set `window.__hermesPlugins["<your-plugin-id>"]` with the exact same ID as your `hermes-plugin.json` `id` field. The host verifies this — a plugin that registers under a different ID will be rejected (tamper protection).
+**Important:** The IIFE footer must set `window.__entryPlugins["<your-plugin-id>"]` with the exact same ID as your `entry-plugin.json` `id` field. The host verifies this — a plugin that registers under a different ID will be rejected (tamper protection).
 
 ---
 
@@ -1043,7 +1043,7 @@ Long-term, built-in features like the Git panel could be extracted as plugins. T
 2. The Rust backend `git/` module remains in the host (or becomes a Tauri plugin) and exposes IPC commands.
 3. A new permission `git.read` / `git.write` gates access to git IPC commands.
 4. The plugin API gains a `git` namespace that wraps the IPC calls.
-5. The `ui.gitPanelOpen` state moves to the plugin's internal state, managed via `hermes.ui.showPanel()` / `hermes.ui.hidePanel()`.
+5. The `ui.gitPanelOpen` state moves to the plugin's internal state, managed via `entry.ui.showPanel()` / `entry.ui.hidePanel()`.
 
 **Why not extract immediately:**
 - The Git panel is tightly integrated with session state (worktree resolution per session, project attachments).
@@ -1075,7 +1075,7 @@ This is the planned first prototype plugin. It demonstrates all core plugin capa
 
 ```
 json-formatter/
-├── hermes-plugin.json
+├── entry-plugin.json
 ├── package.json
 ├── tsconfig.json
 ├── icon.svg
@@ -1090,15 +1090,15 @@ json-formatter/
 
 ```jsonc
 {
-  "id": "hermes-hq.json-formatter",
+  "id": "entry-ide.json-formatter",
   "name": "JSON Formatter",
   "version": "1.0.0",
   "description": "Format, minify, and validate JSON in a side panel.",
-  "author": { "name": "Hermes HQ", "url": "https://hermes-ide.com" },
+  "author": { "name": "Entry HQ", "url": "https://entry-ide.dev" },
   "license": "Apache-2.0",
-  "repository": "https://github.com/hermes-hq/plugins",
+  "repository": "https://github.com/aleffalves44/entry-ide-plugins",
   "icon": "./icon.svg",
-  "engines": { "hermes": ">=0.4.0" },
+  "engines": { "entry": ">=0.4.0" },
   "main": "./dist/index.js",
   "source": "./src/index.tsx",
   "contributes": {
@@ -1149,52 +1149,52 @@ json-formatter/
 
 ```tsx
 // src/index.tsx
-import type { HermesPluginAPI } from "@hermes-hq/plugin-sdk";
+import type { EntryPluginAPI } from "@aleffalves44/entry-ide-plugin-sdk";
 import { JsonFormatterPanel } from "./JsonFormatterPanel";
 
 // Re-export the panel component so the host can resolve it by name
 export { JsonFormatterPanel };
 
-let _hermes: HermesPluginAPI | null = null;
+let _entry: EntryPluginAPI | null = null;
 
-export function activate(hermes: HermesPluginAPI) {
-  _hermes = hermes;
+export function activate(entry: EntryPluginAPI) {
+  _entry = entry;
 
   // Register panel component
-  hermes.ui.registerPanel("json-formatter-panel", JsonFormatterPanel);
+  entry.ui.registerPanel("json-formatter-panel", JsonFormatterPanel);
 
   // Register command handlers
-  hermes.subscriptions.push(
-    hermes.commands.register("json-formatter.format", async () => {
-      hermes.ui.showPanel("json-formatter-panel");
+  entry.subscriptions.push(
+    entry.commands.register("json-formatter.format", async () => {
+      entry.ui.showPanel("json-formatter-panel");
       // The panel itself handles the formatting logic
     })
   );
 
-  hermes.subscriptions.push(
-    hermes.commands.register("json-formatter.minify", async () => {
-      hermes.ui.showPanel("json-formatter-panel");
+  entry.subscriptions.push(
+    entry.commands.register("json-formatter.minify", async () => {
+      entry.ui.showPanel("json-formatter-panel");
     })
   );
 
-  hermes.subscriptions.push(
-    hermes.commands.register("json-formatter.validate", async () => {
-      hermes.ui.showPanel("json-formatter-panel");
+  entry.subscriptions.push(
+    entry.commands.register("json-formatter.validate", async () => {
+      entry.ui.showPanel("json-formatter-panel");
     })
   );
 
   // Update status bar when panel is shown/hidden
-  hermes.ui.updateStatusBarItem("json-formatter.status", { visible: false });
+  entry.ui.updateStatusBarItem("json-formatter.status", { visible: false });
 }
 
 export function deactivate() {
-  _hermes = null;
+  _entry = null;
 }
 
 // Export a hook for the panel to access the API
-export function useHermesAPI(): HermesPluginAPI {
-  if (!_hermes) throw new Error("Plugin not activated");
-  return _hermes;
+export function useEntryAPI(): EntryPluginAPI {
+  if (!_entry) throw new Error("Plugin not activated");
+  return _entry;
 }
 ```
 
@@ -1203,10 +1203,10 @@ export function useHermesAPI(): HermesPluginAPI {
 ```tsx
 // src/JsonFormatterPanel.tsx
 import { useState, useCallback } from "react";
-import { useHermesAPI } from "./index";
+import { useEntryAPI } from "./index";
 
 export function JsonFormatterPanel() {
-  const hermes = useHermesAPI();
+  const entry = useEntryAPI();
   const [input, setInput] = useState("");
   const [output, setOutput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -1216,19 +1216,19 @@ export function JsonFormatterPanel() {
       const parsed = JSON.parse(input);
       setOutput(JSON.stringify(parsed, null, 2));
       setError(null);
-      hermes.ui.updateStatusBarItem("json-formatter.status", {
+      entry.ui.updateStatusBarItem("json-formatter.status", {
         text: "JSON Valid",
         visible: true,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Invalid JSON");
       setOutput("");
-      hermes.ui.updateStatusBarItem("json-formatter.status", {
+      entry.ui.updateStatusBarItem("json-formatter.status", {
         text: "JSON Invalid",
         visible: true,
       });
     }
-  }, [input, hermes]);
+  }, [input, entry]);
 
   const minify = useCallback(() => {
     try {
@@ -1246,30 +1246,30 @@ export function JsonFormatterPanel() {
       JSON.parse(input);
       setError(null);
       setOutput("Valid JSON");
-      hermes.ui.showToast("JSON is valid", { type: "success" });
+      entry.ui.showToast("JSON is valid", { type: "success" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Invalid JSON");
       setOutput("");
     }
-  }, [input, hermes]);
+  }, [input, entry]);
 
   const pasteFromClipboard = useCallback(async () => {
     try {
-      const text = await hermes.clipboard.readText();
+      const text = await entry.clipboard.readText();
       setInput(text);
     } catch (e) {
-      hermes.ui.showToast("Failed to read clipboard", { type: "error" });
+      entry.ui.showToast("Failed to read clipboard", { type: "error" });
     }
-  }, [hermes]);
+  }, [entry]);
 
   const copyResult = useCallback(async () => {
     try {
-      await hermes.clipboard.writeText(output);
-      hermes.ui.showToast("Copied to clipboard", { type: "success" });
+      await entry.clipboard.writeText(output);
+      entry.ui.showToast("Copied to clipboard", { type: "success" });
     } catch (e) {
-      hermes.ui.showToast("Failed to copy", { type: "error" });
+      entry.ui.showToast("Failed to copy", { type: "error" });
     }
-  }, [output, hermes]);
+  }, [output, entry]);
 
   return (
     <div className="plugin-panel" style={{ display: "flex", flexDirection: "column", height: "100%", gap: 8, padding: 12 }}>
@@ -1373,12 +1373,12 @@ export function JsonFormatterPanel() {
 
 **Delivered:**
 - `src/plugins/PluginRuntime.ts` -- Plugin registry, loader, lifecycle management
-- `src/plugins/PluginAPI.ts` -- The `hermes` API object factory with permission checks
+- `src/plugins/PluginAPI.ts` -- The `entry` API object factory with permission checks
 - `src/plugins/PluginPanelHost.tsx` -- Error boundary wrapper for plugin panels
 - `src/plugins/PluginLoader.ts` -- IIFE bundle loading via blob URLs with tamper protection
 - ActivityBar, CommandPalette, StatusBar integration with plugin contributions
 - `plugins` and `plugin_storage` tables in SQLite
-- `@hermes-hq/plugin-sdk` types package published to npm
+- `@aleffalves44/entry-ide-plugin-sdk` types package published to npm
 - JSON Formatter, Pomodoro Timer, UUID Generator, RSS Reader, Regex Tester, Session Notes, and Pixel Office plugins
 
 ### Phase 2: Settings UI and Marketplace -- COMPLETE
@@ -1416,8 +1416,8 @@ export function JsonFormatterPanel() {
 ### Phase 5: Ecosystem (Future)
 
 **Planned:**
-1. `@hermes-hq/create-plugin` scaffolder
-2. `@hermes-hq/plugin-cli` dev tool
+1. `@aleffalves44/entry-ide-create-plugin` scaffolder
+2. `@aleffalves44/entry-ide-plugin-cli` dev tool
 3. Plugin documentation site
 4. Plugin submission and review workflow
 5. Plugin ratings and reviews
@@ -1454,7 +1454,7 @@ export function JsonFormatterPanel() {
 ```sql
 -- Installed plugins metadata
 CREATE TABLE IF NOT EXISTS plugins (
-    id TEXT PRIMARY KEY,                    -- e.g., "hermes-hq.json-formatter"
+    id TEXT PRIMARY KEY,                    -- e.g., "entry-ide.json-formatter"
     version TEXT NOT NULL,
     name TEXT NOT NULL,
     description TEXT,

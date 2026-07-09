@@ -11,7 +11,7 @@
  *   - Approve  →  onAllow()                 (SDK runs the tool, mode flips)
  *   - Reject   →  onDeny(feedback || "")    (SDK ends turn with deny msg)
  *
- * The host wraps these into `_hermes_perm_response` envelopes — see
+ * The host wraps these into `_entry_perm_response` envelopes — see
  * permissionRequest.ts.  No tool_result envelope is ever written by
  * the host for ExitPlanMode (that was the v1 silent-drop bug).
  */

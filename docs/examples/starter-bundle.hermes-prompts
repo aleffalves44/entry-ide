@@ -1,7 +1,7 @@
 {
-  "_hermes_bundle_version": 1,
-  "_hermes_app_version": "0.6.4",
-  "_hermes_exported_at": "2026-03-24T00:00:00.000Z",
+  "_entry_bundle_version": 1,
+  "_entry_app_version": "0.6.4",
+  "_entry_exported_at": "2026-03-24T00:00:00.000Z",
   "templates": [
     {
       "id": "starter-1",

@@ -4,7 +4,7 @@
  *
  * Background: `spawnAgentSession` is called fire-and-forget from several
  * paths (initial create, workspace restore).  Until v1.1.1, a spawn that
- * rejected with "could not locate hermes-claude-bridge.mjs" or "node not
+ * rejected with "could not locate entry-claude-bridge.mjs" or "node not
  * found" was caught with `console.error` only, so the user saw a session
  * marked Ready but no agent actually running — every Send call ended up
  * stuck on "awaiting claude" forever.

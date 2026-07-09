@@ -64,7 +64,7 @@ function initEvent(sessionId: string): AgentEvent {
 }
 function permRequestEvent(id: string, toolName = "Bash"): AgentEvent {
   return {
-    type: "_hermes_perm_request",
+    type: "_entry_perm_request",
     id,
     toolName,
     input: { command: "echo hi" },

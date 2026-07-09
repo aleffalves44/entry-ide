@@ -64,7 +64,7 @@ function initEvent(sessionId: string): AgentEvent {
 }
 function permRequestEvent(id: string, toolName = "Bash"): AgentEvent {
   return {
-    type: "_hermes_perm_request",
+    type: "_entry_perm_request",
     id,
     toolName,
     input: { command: "echo hi" },
@@ -116,7 +116,7 @@ describe("B1: pendingPermRequest survives bridge respawn (zombie modal)", () => 
     [...evCh][0].fire(initEvent("new-bridge-uuid"));
 
     // Bug: the perm modal is still showing the old bridge's request.
-    // Clicking allow/deny would write a _hermes_perm_response with an
+    // Clicking allow/deny would write a _entry_perm_response with an
     // id the new bridge has never heard of — a no-op — and the modal
     // would stay clickable forever because the bridge will never echo
     // a matching cancel envelope.

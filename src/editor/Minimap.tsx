@@ -224,7 +224,7 @@ export function Minimap({ view, notifyRef }: MinimapProps) {
 
 		// Listeners
 		view.scrollDOM.addEventListener("scroll", scheduleDraw);
-		window.addEventListener("hermes:theme-changed", onThemeChange);
+		window.addEventListener("entry:theme-changed", onThemeChange);
 		canvas.addEventListener("mousedown", onMouseDown);
 
 		const ro = new ResizeObserver(scheduleDraw);
@@ -237,7 +237,7 @@ export function Minimap({ view, notifyRef }: MinimapProps) {
 			if (notifyRef.current === scheduleDraw) notifyRef.current = null;
 			ro.disconnect();
 			view.scrollDOM.removeEventListener("scroll", scheduleDraw);
-			window.removeEventListener("hermes:theme-changed", onThemeChange);
+			window.removeEventListener("entry:theme-changed", onThemeChange);
 			canvas.removeEventListener("mousedown", onMouseDown);
 			document.removeEventListener("mousemove", onMouseMove);
 			document.removeEventListener("mouseup", onMouseUp);

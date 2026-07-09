@@ -1,8 +1,8 @@
 blank_issues_enabled: false
 contact_links:
   - name: Questions & Discussions
-    url: https://github.com/hermes-hq/hermes-ide/discussions
+    url: https://github.com/aleffalves44/entry-ide/discussions
     about: Ask questions and discuss ideas
   - name: Security Vulnerability
-    url: https://github.com/hermes-hq/.github/blob/main/SECURITY.md
+    url: https://github.com/aleffalves44/entry-ide/blob/main/SECURITY.md
     about: Report security vulnerabilities responsibly

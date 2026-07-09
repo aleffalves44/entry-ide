@@ -27,7 +27,7 @@ fn resolve_ssh_user(user: Option<String>) -> String {
 
 /// Directory for SSH ControlMaster sockets.
 fn ssh_control_dir() -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join("hermes-ssh-mux");
+    let dir = std::env::temp_dir().join("entry-ssh-mux");
     let _ = std::fs::create_dir_all(&dir);
     dir
 }
@@ -757,7 +757,7 @@ pub fn create_session(
         //
         // Include EVERY attached project path, even one that equals
         // `working_directory` — that path is still a "project" from the
-        // user's perspective, and the Hermes MCP `list_projects` tool
+        // user's perspective, and the Entry MCP `list_projects` tool
         // reads the same list to tell Claude what's attached.  Dropping
         // the cwd-equal entry made `list_projects` reply with N-1
         // projects ("the user attached two but Claude only sees one"
@@ -932,15 +932,15 @@ pub fn create_session(
         });
         let zdotdir_str = zdotdir.to_string_lossy();
         log::info!(
-            "[SHELL-INTEGRATION] Setting ZDOTDIR={:?}, HERMES_ORIGINAL_ZDOTDIR={:?}",
+            "[SHELL-INTEGRATION] Setting ZDOTDIR={:?}, ENTRY_ORIGINAL_ZDOTDIR={:?}",
             zdotdir,
             original
         );
-        cmd.env("HERMES_ORIGINAL_ZDOTDIR", &original);
+        cmd.env("ENTRY_ORIGINAL_ZDOTDIR", &original);
         cmd.env("ZDOTDIR", zdotdir_str.as_ref());
-        // _HERMES_ZDOTDIR remembers our temp dir path so each wrapper script
+        // _ENTRY_ZDOTDIR remembers our temp dir path so each wrapper script
         // can re-point ZDOTDIR back after sourcing the user's file.
-        cmd.env("_HERMES_ZDOTDIR", zdotdir_str.as_ref());
+        cmd.env("_ENTRY_ZDOTDIR", zdotdir_str.as_ref());
     } else {
         log::info!(
             "[SHELL-INTEGRATION] No zsh integration (variant: {})",
@@ -955,7 +955,7 @@ pub fn create_session(
     cmd.cwd(&cwd);
     cmd.env("TERM", "xterm-256color");
     cmd.env("COLORTERM", "truecolor");
-    cmd.env("TERM_PROGRAM", "HERMES-IDE");
+    cmd.env("TERM_PROGRAM", "ENTRY-IDE");
 
     // Ensure UTF-8 locale so shells (especially old macOS bash 3.2) treat
     // multi-byte characters correctly.  Without this, readline interprets
@@ -979,9 +979,9 @@ pub fn create_session(
         if let Ok(context_path) =
             crate::project::attunement::session_context_path(&app, &session_id)
         {
-            cmd.env("HERMES_CONTEXT", context_path.to_string_lossy().as_ref());
+            cmd.env("ENTRY_CONTEXT", context_path.to_string_lossy().as_ref());
         }
-        cmd.env("HERMES_SESSION_ID", &session_id);
+        cmd.env("ENTRY_SESSION_ID", &session_id);
     }
 
     // On macOS, portable-pty's spawn_command() uses fork() + pre_exec which
@@ -1187,7 +1187,7 @@ pub fn create_session(
                                         // Build command: base+flags, then prompt, then --channels
                                         // (channels must come AFTER prompt so CLI doesn't treat prompt as a channel entry)
                                         let mut cmd = if has_context && supports_cli_prompt {
-                                            format!("{} \"Read the file at $HERMES_CONTEXT for project context about the attached workspaces.\"", launch_cmd)
+                                            format!("{} \"Read the file at $ENTRY_CONTEXT for project context about the attached workspaces.\"", launch_cmd)
                                         } else {
                                             launch_cmd
                                         };
@@ -1230,7 +1230,7 @@ pub fn create_session(
 
                             // Auto-inject context when agent prompt is first detected
                             // (fallback for non-Claude agents that can't take CLI args).
-                            // Skip for SSH sessions — $HERMES_CONTEXT isn't set remotely.
+                            // Skip for SSH sessions — $ENTRY_CONTEXT isn't set remotely.
                             let is_ssh_session = session_clone
                                 .lock()
                                 .ok()
@@ -1239,7 +1239,7 @@ pub fn create_session(
                                 a.pending_context_inject = false;
                                 let mut write_ok = false;
                                 if let Ok(mut w) = writer_for_reader.lock() {
-                                    let msg = "Read the file at $HERMES_CONTEXT for project context about the attached workspaces.\r";
+                                    let msg = "Read the file at $ENTRY_CONTEXT for project context about the attached workspaces.\r";
                                     if w.write_all(msg.as_bytes()).is_ok() {
                                         let _ = w.flush();
                                         write_ok = true;
@@ -1573,7 +1573,7 @@ pub fn create_session(
                                 let supports_cli_prompt =
                                     provider == "claude" || provider == "gemini";
                                 let mut cmd = if has_context && supports_cli_prompt {
-                                    format!("{} \"Read the file at $HERMES_CONTEXT for project context about the attached workspaces.\"", launch_cmd)
+                                    format!("{} \"Read the file at $ENTRY_CONTEXT for project context about the attached workspaces.\"", launch_cmd)
                                 } else {
                                     launch_cmd
                                 };
@@ -1928,7 +1928,7 @@ pub fn nudge_project_context(
 
     // Send a minimal one-liner telling the agent to read the context file
     let msg =
-        "Read the file at $HERMES_CONTEXT for project context about the attached workspaces.\r";
+        "Read the file at $ENTRY_CONTEXT for project context about the attached workspaces.\r";
     let mut w = pty
         .writer
         .lock()

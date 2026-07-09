@@ -5,7 +5,7 @@
 //!
 //!   * `#[ignore]` so `cargo test` skips them by default.
 //!   * Run with: `cargo test --lib agent::e2e_tests:: -- --ignored --nocapture`
-//!     (set `HERMES_AGENT_E2E=1` to force-run if the gate ever moves to env-only).
+//!     (set `ENTRY_AGENT_E2E=1` to force-run if the gate ever moves to env-only).
 //!
 //! Why this file exists: the unit tests in `agent::tests` only check our
 //! Rust string-building. They cannot tell us whether Claude actually accepts
@@ -99,9 +99,9 @@ impl E2eOutcome {
     }
 }
 
-/// Run one agent turn — by default through the Hermes bridge (`node
-/// hermes-claude-bridge.mjs`) so the suite exercises the production code
-/// path.  Set `HERMES_AGENT_DIRECT=1` in the environment to fall back to
+/// Run one agent turn — by default through the Entry bridge (`node
+/// entry-claude-bridge.mjs`) so the suite exercises the production code
+/// path.  Set `ENTRY_AGENT_DIRECT=1` in the environment to fall back to
 /// the legacy `claude` direct-spawn (kept around for diff-isolating any
 /// bridge-introduced regressions during the M1 migration).
 async fn run_one_turn(
@@ -112,8 +112,8 @@ async fn run_one_turn(
     run_one_turn_inner(args, working_dir, user_prompt, None).await
 }
 
-/// `run_one_turn` variant that also passes `--hermes-state-path <path>`
-/// to the bridge so the SessionStart hook + Hermes MCP tools read from
+/// `run_one_turn` variant that also passes `--entry-state-path <path>`
+/// to the bridge so the SessionStart hook + Entry MCP tools read from
 /// a planted state file (with `attachedPaths`, `cwd`, …).  The
 /// production `spawn_agent_session` always passes this flag; the
 /// orientation tests need it to faithfully reproduce production.
@@ -121,18 +121,18 @@ async fn run_one_turn_with_state(
     args: &[String],
     working_dir: &str,
     user_prompt: &str,
-    hermes_state_path: &str,
+    entry_state_path: &str,
 ) -> Result<E2eOutcome, String> {
-    run_one_turn_inner(args, working_dir, user_prompt, Some(hermes_state_path)).await
+    run_one_turn_inner(args, working_dir, user_prompt, Some(entry_state_path)).await
 }
 
 async fn run_one_turn_inner(
     args: &[String],
     working_dir: &str,
     user_prompt: &str,
-    hermes_state_path: Option<&str>,
+    entry_state_path: Option<&str>,
 ) -> Result<E2eOutcome, String> {
-    let use_direct = std::env::var("HERMES_AGENT_DIRECT")
+    let use_direct = std::env::var("ENTRY_AGENT_DIRECT")
         .map(|v| v == "1" || v == "true")
         .unwrap_or(false);
 
@@ -143,14 +143,14 @@ async fn run_one_turn_inner(
     } else {
         let bridge = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
             .join("bridge")
-            .join("hermes-claude-bridge.mjs");
+            .join("entry-claude-bridge.mjs");
         if !bridge.exists() {
             return Err(format!("bridge not found at {}", bridge.display()));
         }
         let mut c = Command::new("node");
         c.arg(&bridge).args(["--working-dir", working_dir]);
-        if let Some(state_path) = hermes_state_path {
-            c.args(["--hermes-state-path", state_path]);
+        if let Some(state_path) = entry_state_path {
+            c.args(["--entry-state-path", state_path]);
         }
         c.args(args);
         c
@@ -257,7 +257,7 @@ async fn run_multi_turn(
 
     let bridge = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("bridge")
-        .join("hermes-claude-bridge.mjs");
+        .join("entry-claude-bridge.mjs");
     if !bridge.exists() {
         return Err(format!("bridge not found at {}", bridge.display()));
     }
@@ -1254,21 +1254,21 @@ async fn e2e_effort_flag_accepted() {
     }
 }
 
-/// **The M4 MCP proof.**  Spawn the bridge with --hermes-state-path
+/// **The M4 MCP proof.**  Spawn the bridge with --entry-state-path
 /// pointing at an IDE-state JSON file we wrote in a tmp dir.  Ask Claude
-/// to use the `mcp__hermes__get_project_state` tool and report what it
+/// to use the `mcp__entry__get_project_state` tool and report what it
 /// sees.  The assistant text must contain values from the state file —
 /// proving the in-process MCP server is wired and Claude can read IDE
 /// state on demand.
 #[ignore]
 #[tokio::test]
-async fn e2e_hermes_mcp_reads_ide_state() {
+async fn e2e_entry_mcp_reads_ide_state() {
     let (workdir, _td) = isolated_workdir("mcp-state");
     // Sentinel: a phrase that won't show up in any system prompt or
     // model identity, so if it lands in Claude's reply we know the MCP
     // tool was actually called and consumed.
     let sentinel = "magnetar-quartz-7281";
-    let state_path = format!("{workdir}/hermes-state.json");
+    let state_path = format!("{workdir}/entry-state.json");
     std::fs::write(
         &state_path,
         format!(
@@ -1276,7 +1276,7 @@ async fn e2e_hermes_mcp_reads_ide_state() {
   "cwd": "{workdir}",
   "branch": "main",
   "activeFile": "{sentinel}.ts",
-  "attachedPaths": ["/tmp/hermes-extra-1", "/tmp/hermes-extra-2"]
+  "attachedPaths": ["/tmp/entry-extra-1", "/tmp/entry-extra-2"]
 }}"#,
         ),
     )
@@ -1284,16 +1284,16 @@ async fn e2e_hermes_mcp_reads_ide_state() {
 
     let sid = uuid::Uuid::new_v4().to_string();
     let plan = build_spawn_args(&sid, &workdir, None, None, None, None, &[], false);
-    // Spawn manually because we need to inject --hermes-state-path
+    // Spawn manually because we need to inject --entry-state-path
     // alongside the standard spawn args.  Same Command construction as
     // run_one_turn; we just splice the extra flag in.
     let bridge = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("bridge")
-        .join("hermes-claude-bridge.mjs");
+        .join("entry-claude-bridge.mjs");
     let mut cmd = Command::new("node");
     cmd.arg(&bridge)
         .args(["--working-dir", &workdir])
-        .args(["--hermes-state-path", &state_path])
+        .args(["--entry-state-path", &state_path])
         .args(&plan.args)
         .current_dir(&workdir)
         .stdin(Stdio::piped())
@@ -1306,7 +1306,7 @@ async fn e2e_hermes_mcp_reads_ide_state() {
     let stdout = child.stdout.take().expect("stdout");
     let stderr_pipe = child.stderr.take().expect("stderr");
 
-    let prompt = "Use the `mcp__hermes__get_project_state` tool right now to fetch the IDE state, \
+    let prompt = "Use the `mcp__entry__get_project_state` tool right now to fetch the IDE state, \
          then reply with ONLY the value of the `activeFile` field from the result. \
          Reply with just that single string, no other words."
         .to_string();
@@ -1356,19 +1356,19 @@ async fn e2e_hermes_mcp_reads_ide_state() {
     };
     assert_clean_turn(&outcome, "mcp-state");
 
-    // Init must list our `hermes` server as connected.
+    // Init must list our `entry` server as connected.
     let init = outcome.init().expect("init");
     let mcp_servers = init
         .get("mcp_servers")
         .and_then(|v| v.as_array())
         .cloned()
         .unwrap_or_default();
-    let hermes_server = mcp_servers
+    let entry_server = mcp_servers
         .iter()
-        .find(|s| s.get("name").and_then(|v| v.as_str()) == Some("hermes"));
+        .find(|s| s.get("name").and_then(|v| v.as_str()) == Some("entry"));
     assert!(
-        hermes_server.is_some(),
-        "init.mcp_servers should include hermes; got {:?}; stderr={:?}",
+        entry_server.is_some(),
+        "init.mcp_servers should include entry; got {:?}; stderr={:?}",
         mcp_servers,
         outcome.stderr,
     );
@@ -1812,8 +1812,8 @@ async fn e2e_detach_then_resume_revokes_access() {
 /// **Orientation digest must include attached project paths.**
 ///
 /// Production bug: a user opens an agent session with two projects
-/// pre-attached, asks Claude "What attached project paths has Hermes
-/// told you about for this session?", and Claude answers "Hermes
+/// pre-attached, asks Claude "What attached project paths has Entry
+/// told you about for this session?", and Claude answers "Entry
 /// hasn't mentioned any attached project paths to me in this session"
 /// — even though the bridge was spawned with the right `--add-dir`
 /// values AND `state.json` on disk lists them.
@@ -1826,11 +1826,11 @@ async fn e2e_detach_then_resume_revokes_access() {
 ///
 /// The fix: re-inject the attached paths via `UserPromptSubmit` too,
 /// so every user message carries an up-to-date orientation block —
-/// the agent-mode equivalent of the old Terminal-mode `$HERMES` env
+/// the agent-mode equivalent of the old Terminal-mode `$ENTRY` env
 /// that was visible to every command.
 ///
 /// The test plants a fresh `state.json` with both attached paths,
-/// spawns the bridge with `--hermes-state-path` (production code path),
+/// spawns the bridge with `--entry-state-path` (production code path),
 /// and asks Claude to list the paths WITHOUT running any tools.  The
 /// answer must mention BOTH paths verbatim.
 #[ignore]
@@ -1841,7 +1841,7 @@ async fn e2e_orientation_includes_attached_paths_per_turn() {
     let (dir_b, _td_b) = isolated_workdir("orient-b");
 
     // Plant the state file the bridge will read on every hook fire.
-    // Same shape as `agent::ensure_hermes_state_file` writes in
+    // Same shape as `agent::ensure_entry_state_file` writes in
     // production.  Using a tempdir so cleanup is automatic.
     let state_dir = tempfile::Builder::new()
         .prefix("h-ide-orient-state-")
@@ -1874,11 +1874,11 @@ async fn e2e_orientation_includes_attached_paths_per_turn() {
     );
 
     // The prompt is shaped exactly like the user's manual reproduction:
-    // ask Claude what attached paths Hermes has mentioned, with an
+    // ask Claude what attached paths Entry has mentioned, with an
     // explicit "do not run any tools" so the answer reflects Claude's
     // injected orientation, not what it could discover via Glob/LS.
     let prompt = "Without running ANY tools, list the attached project paths \
-                  Hermes has informed you about for this session.  Reply with \
+                  Entry has informed you about for this session.  Reply with \
                   exactly the list of absolute paths, one per line, prefixed \
                   with `path: `.  If you have not been informed of any, reply \
                   literally `none`.";

@@ -4,7 +4,7 @@ These are the posture-level decisions. Everything downstream follows from
 them. If a token, component, or theme conflicts with one of these, the
 token/component/theme is wrong.
 
-## P0 · Hermes is an instrument
+## P0 · Entry is an instrument
 
 The product reads as a workshop instrument, not a panel of switches.
 This is the cardinal posture. Chrome is calm, peripheral, and reliable.
@@ -38,7 +38,7 @@ secondary or tertiary text colors and ordinary weights. Color and
 animation are reserved for **change of state** — a build became
 available, a tool started running, a permission was requested.
 
-**Implication:** A user scanning Hermes pre-attentively sees only what's
+**Implication:** A user scanning Entry pre-attentively sees only what's
 new or wrong. Everything else is calm.
 
 ## P3 · Density is a user choice, not a developer choice

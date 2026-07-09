@@ -58,7 +58,7 @@ import {
   loadNotesMap,
   serializeNotesMap,
 } from "../utils/workbenchLayout";
-import { spawnAgentSession, closeAgentSession, sendAgentInput, updateHermesState, setAgentPermissionMode } from "../api/agent";
+import { spawnAgentSession, closeAgentSession, sendAgentInput, updateEntryState, setAgentPermissionMode } from "../api/agent";
 import { reportAgentSpawnFailure } from "../utils/agentSpawnFailure";
 import { destroyAgentSessionStore } from "../agent/agentSessionStore";
 import { cleanupSessionRefs } from "../utils/sessionRefCleanup";
@@ -200,7 +200,7 @@ export async function restorePreservedWorktrees(
  *
  * Decision rule: fatal iff there was at least one error AND zero
  * successes.  Partial successes proceed (the surviving projects get
- * isolation; the rest are surfaced via the `hermes:worktree-errors`
+ * isolation; the rest are surfaced via the `entry:worktree-errors`
  * event).  Zero errors + zero successes is the legacy "no branch
  * selection" path and must NOT abort.
  *
@@ -434,7 +434,7 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         && existing.metrics.files_touched.length === action.session.metrics.files_touched.length
         && existing.metrics.memory_facts.length === action.session.metrics.memory_facts.length
         // Multi-folder bug fix: workspace_paths drives the agent's --add-dir
-        // sandbox AND the Hermes MCP `list_projects` view.  Compared as a
+        // sandbox AND the Entry MCP `list_projects` view.  Compared as a
         // SET — the SDK's additionalDirectories is order-insensitive, so a
         // pure reorder is a no-op state update (kept reference-equal so
         // React doesn't re-render unrelated subtrees).  Real adds/removes
@@ -1130,7 +1130,7 @@ interface SessionContextValue {
     attachments: AgentAttachment[],
   ) => Promise<void>;
   /** Send an arbitrary envelope (e.g. a `tool_result` for AskUserQuestion
-   *  or ExitPlanMode, or a `_hermes_perm_response` for canUseTool) to
+   *  or ExitPlanMode, or a `_entry_perm_response` for canUseTool) to
    *  the agent.  Wraps `send_agent_input` with a respawn-on-not-found
    *  retry so interactive tool replies aren't dropped between turns
    *  when the bridge subprocess has exited.  See M10. */
@@ -1206,7 +1206,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    *
    *    - `system/init` — emitted on spawn/resume.  Latches the canonical
    *      Claude-side session id so `--resume` works after exits.
-   *    - `_hermes_state_changed` — emitted by the bridge whenever the
+   *    - `_entry_state_changed` — emitted by the bridge whenever the
    *      live runtime model or permissionMode drifts (EnterPlanMode /
    *      ExitPlanMode / `/model`).  We mirror those into the per-session
    *      refs so the *next* respawn re-applies the new value rather than
@@ -1766,7 +1766,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           errorCount: worktreeErrors.length,
         })) {
           destroyTerminal(preSessionId);
-          window.dispatchEvent(new CustomEvent("hermes:worktree-errors", {
+          window.dispatchEvent(new CustomEvent("entry:worktree-errors", {
             detail: { errors: worktreeErrors, sessionLabel: opts?.label, fatal: true },
           }));
           return null;
@@ -1788,7 +1788,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // Notify the UI about worktree creation failures so the user knows
       // which projects lack branch isolation.  The session still proceeds.
       if (worktreeErrors.length > 0) {
-        window.dispatchEvent(new CustomEvent("hermes:worktree-errors", {
+        window.dispatchEvent(new CustomEvent("entry:worktree-errors", {
           detail: { errors: worktreeErrors, sessionLabel: opts?.label },
         }));
       }
@@ -1896,7 +1896,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       // Warn about shared worktrees via custom event (App.tsx listens for this)
       if (sharedBranches.length > 0) {
-        window.dispatchEvent(new CustomEvent("hermes:shared-worktree", {
+        window.dispatchEvent(new CustomEvent("entry:shared-worktree", {
           detail: { branches: sharedBranches, sessionLabel: session.label },
         }));
       }
@@ -2503,7 +2503,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
   }, [respawnAgent]);
 
-  /** Send an arbitrary envelope (tool_result, _hermes_perm_response,
+  /** Send an arbitrary envelope (tool_result, _entry_perm_response,
    *  etc.) with automatic respawn-on-not-found.  Used by the
    *  interactive cards (AskUserQuestion, ExitPlanMode, canUseTool).
    *  See `src/utils/sendAgentEnvelope.ts` for the retry contract. */
@@ -2530,7 +2530,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       .catch(() => { /* Setting not found — use default (false) */ });
   }, []);
 
-  // ─── Hermes IDE state → bridge sync ──────────────────────────────
+  // ─── Entry IDE state → bridge sync ──────────────────────────────
   //
   // Whenever an agent session's `workspace_paths` changes (or `phase` ticks
   // through `idle` etc.), push a fresh state file to the bridge so its MCP
@@ -2553,8 +2553,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const hash = JSON.stringify(payload);
       if (lastIdeStateHash.current.get(s.id) === hash) continue;
       lastIdeStateHash.current.set(s.id, hash);
-      updateHermesState(s.id, payload).catch((err) => {
-        console.warn("[SessionContext] updateHermesState failed:", err);
+      updateEntryState(s.id, payload).catch((err) => {
+        console.warn("[SessionContext] updateEntryState failed:", err);
       });
     }
   }, [state.sessions]);

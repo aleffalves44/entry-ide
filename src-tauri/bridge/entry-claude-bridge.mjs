@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Hermes Claude Bridge.
+ * Entry Claude Bridge.
  *
  * Drop-in replacement for `claude --print --output-format stream-json
  * --input-format stream-json` powered by `@anthropic-ai/claude-agent-sdk`.
@@ -9,9 +9,9 @@
  * — none available in a Tauri webview).  We want the SDK's superpowers
  * (`interrupt()`, `setModel()`, `setMcpServers()`, `rewindFiles()`,
  * `canUseTool`, in-process MCP via `createSdkMcpServer()`) without rewriting
- * Hermes.  This bridge runs as a per-session Node subprocess — Rust spawns
+ * Entry.  This bridge runs as a per-session Node subprocess — Rust spawns
  * it the same way it used to spawn `claude` — and translates between the
- * Hermes wire format on stdio and the SDK's in-process API.
+ * Entry wire format on stdio and the SDK's in-process API.
  *
  * **Wire contract (intentionally compatible with the previous `claude`
  * stream-json invocation so the Rust agent crate doesn't need to change):**
@@ -19,7 +19,7 @@
  *   stdin  : newline-delimited JSON.  Two shapes:
  *     1. SDK user message   — { type: "user", message: {...}, uuid?, ... }
  *        (forwarded to the SDK's prompt iterator unchanged)
- *     2. Bridge control op  — { type: "_hermes_control", op: <verb>, ... }
+ *     2. Bridge control op  — { type: "_entry_control", op: <verb>, ... }
  *        (interpreted by the bridge, NOT forwarded; verbs include
  *         "interrupt", "setModel", "setPermissionMode", "setMaxThinkingTokens".
  *         The Rust side issues these to drive mid-session state changes.)
@@ -50,12 +50,12 @@
  *   --max-budget-usd <n>          optional
  *   --max-turns <n>               optional
  *   --working-dir <path>          required (set as `cwd` on SDK options)
- *   --hermes-app-id <id>          optional, for the SDK User-Agent header
+ *   --entry-app-id <id>          optional, for the SDK User-Agent header
  *
  * Anything we don't recognize: ignored with a stderr warning.
  *
  * **Stability note:** the bridge's wire contract is purely internal to
- * Hermes.  The Rust agent crate and this file move together.  Outside
+ * Entry.  The Rust agent crate and this file move together.  Outside
  * consumers must not depend on this format.
  */
 
@@ -83,11 +83,11 @@ const flags = parseFlags(argv.slice(2));
 //   - FORK spawn     → --session-id <new> + --resume <prior> + --fork-session
 // The bridge MUST have at least one of (--session-id, --resume) to know which.
 if (!flags.sessionId && !flags.resume) {
-  stderr.write("[hermes-bridge] need --session-id or --resume\n");
+  stderr.write("[entry-bridge] need --session-id or --resume\n");
   exit(1);
 }
 if (!flags.workingDir) {
-  stderr.write("[hermes-bridge] missing required --working-dir\n");
+  stderr.write("[entry-bridge] missing required --working-dir\n");
   exit(1);
 }
 
@@ -147,7 +147,7 @@ async function safeStdoutWrite(line) {
 }
 
 /** Map of pending canUseTool requests keyed by request id.  When the
- *  host sends back a `_hermes_perm_response` with the matching id, the
+ *  host sends back a `_entry_perm_response` with the matching id, the
  *  promise is resolved and the SDK callback returns. */
 const permPending = new Map();
 let permIdSeq = 0;
@@ -167,22 +167,22 @@ rl.on("line", (line) => {
   try {
     parsed = JSON.parse(line);
   } catch {
-    stderr.write(`[hermes-bridge] ignoring malformed stdin line: ${line.slice(0, 200)}\n`);
+    stderr.write(`[entry-bridge] ignoring malformed stdin line: ${line.slice(0, 200)}\n`);
     return;
   }
   // Bridge control ops short-circuit and don't reach the SDK input stream.
   // Buffered until queryHandle is ready (microsecond window between
   // bridge startup and `query()` returning) so an op arriving early is
   // queued and drained instead of dropped.
-  if (parsed && parsed.type === "_hermes_control") {
+  if (parsed && parsed.type === "_entry_control") {
     controlOpBuffer.dispatch(parsed).catch((err) => {
-      stderr.write(`[hermes-bridge] control op '${parsed.op}' failed: ${err}\n`);
+      stderr.write(`[entry-bridge] control op '${parsed.op}' failed: ${err}\n`);
     });
     return;
   }
   // Permission decision from the host — resolves the canUseTool callback
   // promise that's currently awaiting this id.  See `canUseTool` below.
-  if (parsed && parsed.type === "_hermes_perm_response" && typeof parsed.id === "string") {
+  if (parsed && parsed.type === "_entry_perm_response" && typeof parsed.id === "string") {
     const pending = permPending.get(parsed.id);
     if (pending) {
       permPending.delete(parsed.id);
@@ -240,7 +240,7 @@ async function* userInputIterator() {
         stdinPaused = false;
         try { rl.resume(); } catch { /* readline may have closed */ }
       }
-      // Normalize to the SDKUserMessage shape the SDK expects.  Old Hermes
+      // Normalize to the SDKUserMessage shape the SDK expects.  Old Entry
       // envelopes lack `parent_tool_use_id`; the SDK wants null, not absent.
       // session_id falls back to whatever Rust gave us; the SDK fills it
       // in from the active session if absent.
@@ -260,40 +260,40 @@ async function* userInputIterator() {
   }
 }
 
-// ─── 2.5 Hermes MCP server + SessionStart hook ──────────────────────
+// ─── 2.5 Entry MCP server + SessionStart hook ──────────────────────
 //
-// The bridge exposes a tiny in-process MCP server named "hermes" that
+// The bridge exposes a tiny in-process MCP server named "entry" that
 // gives Claude first-class access to IDE state — without polluting any
 // user message.  Tools read from a shared JSON file at
-// `--hermes-state-path` that Rust writes when the user changes the
+// `--entry-state-path` that Rust writes when the user changes the
 // active file, attaches a project, etc.  Stale-by-up-to-one-write is
 // fine; the file is the same one whose content is the SessionStart hook
 // digest, so Claude sees consistent values across the two.
 //
 // **Design:** tools instead of resources because `createSdkMcpServer()`
 // exposes a tool-only ergonomic API.  Functionally equivalent — Claude
-// just calls `mcp__hermes__get_project_state` instead of reading a
+// just calls `mcp__entry__get_project_state` instead of reading a
 // resource URL.
 
 function readIdeState() {
-  if (!flags.hermesStatePath) return null;
-  if (!existsSync(flags.hermesStatePath)) return null;
+  if (!flags.entryStatePath) return null;
+  if (!existsSync(flags.entryStatePath)) return null;
   try {
-    return JSON.parse(readFileSync(flags.hermesStatePath, "utf8"));
+    return JSON.parse(readFileSync(flags.entryStatePath, "utf8"));
   } catch (err) {
-    stderr.write(`[hermes-bridge] failed to read ide state: ${err}\n`);
+    stderr.write(`[entry-bridge] failed to read ide state: ${err}\n`);
     return null;
   }
 }
 
-/** Build the MCP server.  Empty tool list when `--hermes-state-path` is
+/** Build the MCP server.  Empty tool list when `--entry-state-path` is
  *  unset (so older callers that don't pass the flag get a no-op MCP
  *  server, kept for forward-compat tests). */
-function buildHermesMcpServer() {
+function buildEntryMcpServer() {
   const tools = [
     tool(
       "get_project_state",
-      "Returns the current Hermes IDE state: cwd, current git branch, the active editor file (if any), the user's selection, and the list of attached project paths. Use this to orient yourself to what the user is working on without asking.",
+      "Returns the current Entry IDE state: cwd, current git branch, the active editor file (if any), the user's selection, and the list of attached project paths. Use this to orient yourself to what the user is working on without asking.",
       {},
       async () => {
         const state = readIdeState() ?? { cwd: flags.workingDir };
@@ -316,7 +316,7 @@ function buildHermesMcpServer() {
     ),
     tool(
       "get_session_memory",
-      "Returns user-pinned facts/notes the user attached to this Hermes session. These are short reminders the user wants Claude to keep in mind for the whole session (e.g. 'prefer rg over grep'). May be empty.",
+      "Returns user-pinned facts/notes the user attached to this Entry session. These are short reminders the user wants Claude to keep in mind for the whole session (e.g. 'prefer rg over grep'). May be empty.",
       {},
       async () => {
         const state = readIdeState() ?? {};
@@ -328,7 +328,7 @@ function buildHermesMcpServer() {
     ),
     tool(
       "open_file",
-      "Open a file in the Hermes IDE — focuses or opens a tab for the given path. Optionally jumps to a 1-indexed line. Use this when you want to *show* the user a file, not when you want to read its contents (use Read for that).",
+      "Open a file in the Entry IDE — focuses or opens a tab for the given path. Optionally jumps to a 1-indexed line. Use this when you want to *show* the user a file, not when you want to read its contents (use Read for that).",
       { path: z.string(), line: z.number().int().positive().optional() },
       async ({ path, line }) => {
         // The bridge can't reach into the React webview directly, so we
@@ -336,7 +336,7 @@ function buildHermesMcpServer() {
         // Format mirrors the SDKMessage envelope so the existing Tauri
         // event pipeline can carry it without a new IPC.
         const evt = {
-          type: "_hermes_event",
+          type: "_entry_event",
           subtype: "open_file",
           path,
           ...(line !== undefined ? { line } : {}),
@@ -349,7 +349,7 @@ function buildHermesMcpServer() {
     ),
   ];
   return createSdkMcpServer({
-    name: "hermes",
+    name: "entry",
     version: "1.0.0",
     tools,
   });
@@ -390,18 +390,18 @@ function buildRuntimeLine(hookInput) {
     ?? liveRuntime.permissionMode
     ?? "default";
   const e = liveRuntime.effort ?? "auto";
-  return `Hermes IDE runtime: model=${m}, permission_mode=${p}, effort=${e}. When asked about model/permission/effort, answer with these exact values — they are ground truth.`;
+  return `Entry IDE runtime: model=${m}, permission_mode=${p}, effort=${e}. When asked about model/permission/effort, answer with these exact values — they are ground truth.`;
 }
 
 /** Build the per-turn IDE digest re-injected via UserPromptSubmit so
  *  Claude's orientation never goes stale across `--resume`.  The
- *  agent-mode equivalent of the old Terminal-mode `$HERMES` env that
+ *  agent-mode equivalent of the old Terminal-mode `$ENTRY` env that
  *  was visible to every command.
  *
  *  Why this exists separately from `sessionStartHook()`: SessionStart
  *  fires once per spawn, but its `additionalContext` is not always
  *  faithfully re-surfaced to the model after a `--resume` — the
- *  visible bug was Claude saying "Hermes hasn't mentioned any attached
+ *  visible bug was Claude saying "Entry hasn't mentioned any attached
  *  project paths" while the runtime line came through fine (because
  *  UserPromptSubmit injects it every turn).  Re-injecting attached
  *  paths via UserPromptSubmit too guarantees Claude is oriented on
@@ -411,13 +411,13 @@ function buildOrientationDigest(hookInput) {
   const lines = [buildRuntimeLine(hookInput)];
   if (Array.isArray(state?.attachedPaths) && state.attachedPaths.length > 0) {
     lines.push(
-      `Hermes attached project paths (${state.attachedPaths.length}): ${state.attachedPaths.join(", ")}. ` +
+      `Entry attached project paths (${state.attachedPaths.length}): ${state.attachedPaths.join(", ")}. ` +
       `These are real directories the user has attached to this session — your file tools have read/write access to all of them in addition to cwd.  Treat them as part of "the project."`,
     );
   } else {
-    lines.push(`Hermes attached project paths: (none beyond cwd)`);
+    lines.push(`Entry attached project paths: (none beyond cwd)`);
   }
-  if (state?.cwd) lines.push(`Hermes session cwd: ${state.cwd}`);
+  if (state?.cwd) lines.push(`Entry session cwd: ${state.cwd}`);
   return lines.join("\n");
 }
 
@@ -428,7 +428,7 @@ function buildOrientationDigest(hookInput) {
 function sessionStartHook() {
   return async (input) => {
     const state = readIdeState();
-    const lines = ["You are running inside Hermes IDE.  IDE state:"];
+    const lines = ["You are running inside Entry IDE.  IDE state:"];
     lines.push(`- cwd: ${state?.cwd ?? flags.workingDir}`);
     if (state?.branch) lines.push(`- git branch: ${state.branch}`);
     if (state?.dirty) lines.push(`- working tree: dirty`);
@@ -499,12 +499,12 @@ const sdkOptions = {
   includeHookEvents: !!flags.includeHookEvents,
   ...(flags.maxBudgetUsd != null ? { maxBudgetUsd: flags.maxBudgetUsd } : {}),
   ...(flags.maxTurns != null ? { maxTurns: flags.maxTurns } : {}),
-  // Hermes MCP server — gives Claude first-class IDE access.  Wired
-  // unconditionally; tools no-op gracefully when no `--hermes-state-path`
+  // Entry MCP server — gives Claude first-class IDE access.  Wired
+  // unconditionally; tools no-op gracefully when no `--entry-state-path`
   // was passed (back-compat with tests / external callers).
-  mcpServers: { hermes: buildHermesMcpServer() },
+  mcpServers: { entry: buildEntryMcpServer() },
   // Auto-allow only tools that have NO interactive UI to render —
-  //   * mcp__hermes__*  : our IDE-context MCP tools, never destructive
+  //   * mcp__entry__*  : our IDE-context MCP tools, never destructive
   //   * TodoWrite       : produces a side-panel UI, no permission UX
   //
   // AskUserQuestion / ExitPlanMode / EnterPlanMode are intentionally
@@ -513,7 +513,7 @@ const sdkOptions = {
   // the user's answer/decision.  Auto-allowing these would cause Claude
   // to execute the tool with empty `answers` (the previous bug).
   allowedTools: [
-    "mcp__hermes__*",
+    "mcp__entry__*",
     "TodoWrite",
   ],
   // Inject IDE state on session start, resume, and after compactions.
@@ -528,11 +528,11 @@ const sdkOptions = {
       { matcher: ".*", hooks: [userPromptSubmitHook()] },
     ],
   },
-  // canUseTool — forwards permission requests to the host (Hermes
-  // frontend) via a `_hermes_perm_request` envelope on stdout.  Awaits
-  // a matching `_hermes_perm_response` on stdin.  The user's decision
+  // canUseTool — forwards permission requests to the host (Entry
+  // frontend) via a `_entry_perm_request` envelope on stdout.  Awaits
+  // a matching `_entry_perm_response` on stdin.  The user's decision
   // (allow / deny / edit input / approve-all) round-trips through
-  // Hermes' native React modal — no chat-string permission prompts.
+  // Entry' native React modal — no chat-string permission prompts.
   // Skipped under bypassPermissions; the SDK auto-allows there.
   //
   // Honours the SDK's abort signal (3rd-arg `options.signal`) so a
@@ -563,7 +563,7 @@ const sdkOptions = {
   stderr: (data) => stderr.write(data),
   env: {
     ...process.env,
-    CLAUDE_AGENT_SDK_CLIENT_APP: flags.hermesAppId ?? "hermes-ide/v1",
+    CLAUDE_AGENT_SDK_CLIENT_APP: flags.entryAppId ?? "entry-ide/v1",
   },
 };
 
@@ -578,7 +578,7 @@ async function main() {
       options: sdkOptions,
     });
   } catch (err) {
-    stderr.write(`[hermes-bridge] query() init failed: ${err && err.stack ? err.stack : err}\n`);
+    stderr.write(`[entry-bridge] query() init failed: ${err && err.stack ? err.stack : err}\n`);
     exit(1);
   }
 
@@ -586,7 +586,7 @@ async function main() {
   // and `query()` returning.  After this, every dispatch flows straight
   // through to handleControl.
   controlOpBuffer.markReady().catch((err) => {
-    stderr.write(`[hermes-bridge] control op buffer drain failed: ${err}\n`);
+    stderr.write(`[entry-bridge] control op buffer drain failed: ${err}\n`);
   });
 
   try {
@@ -623,7 +623,7 @@ async function main() {
           || liveRuntime.reportedPermissionMode !== before.permissionMode;
         if (changed) {
           await safeStdoutWrite(JSON.stringify({
-            type: "_hermes_state_changed",
+            type: "_entry_state_changed",
             session_id: canonicalSessionId,
             ...(liveRuntime.reportedModel
               ? { model: liveRuntime.reportedModel }
@@ -638,7 +638,7 @@ async function main() {
         initSeen.resolve();
 
         // Fire-and-forget — fetch the SDK's accountInfo and emit it to
-        // stdout as a hermes-side event the Usage panel can consume.
+        // stdout as a entry-side event the Usage panel can consume.
         // We only ask once per session; if it fails, the panel just
         // shows what it already has from rate_limit events.
         if (!liveRuntime.accountFetched) {
@@ -647,7 +647,7 @@ async function main() {
             try {
               const info = await queryHandle.accountInfo();
               const evt = {
-                type: "_hermes_event",
+                type: "_entry_event",
                 subtype: "account_info",
                 info,
                 uuid: globalThis.crypto?.randomUUID?.() ?? `evt-${Date.now()}`,
@@ -655,7 +655,7 @@ async function main() {
               };
               await safeStdoutWrite(JSON.stringify(evt) + "\n");
             } catch (err) {
-              stderr.write(`[hermes-bridge] accountInfo() failed: ${err}\n`);
+              stderr.write(`[entry-bridge] accountInfo() failed: ${err}\n`);
             }
           })();
         }
@@ -669,7 +669,7 @@ async function main() {
       await safeStdoutWrite(JSON.stringify(stamped) + "\n");
     }
   } catch (err) {
-    stderr.write(`[hermes-bridge] query iteration error: ${err && err.stack ? err.stack : err}\n`);
+    stderr.write(`[entry-bridge] query iteration error: ${err && err.stack ? err.stack : err}\n`);
     exit(1);
   }
 
@@ -711,7 +711,7 @@ async function handleControl(op) {
       await queryHandle.setMcpServers(op.servers ?? {});
       return;
     default:
-      stderr.write(`[hermes-bridge] unknown control op: ${op.op}\n`);
+      stderr.write(`[entry-bridge] unknown control op: ${op.op}\n`);
   }
 }
 
@@ -748,8 +748,8 @@ function parseFlags(args) {
     includeHookEvents: false,
     maxBudgetUsd: undefined,
     maxTurns: undefined,
-    hermesAppId: undefined,
-    hermesStatePath: undefined,
+    entryAppId: undefined,
+    entryStatePath: undefined,
   };
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
@@ -767,8 +767,8 @@ function parseFlags(args) {
       case "--include-hook-events":   out.includeHookEvents = true; break;
       case "--max-budget-usd":        out.maxBudgetUsd = Number(next()); break;
       case "--max-turns":             out.maxTurns = Number(next()); break;
-      case "--hermes-app-id":         out.hermesAppId = next(); break;
-      case "--hermes-state-path":     out.hermesStatePath = next(); break;
+      case "--entry-app-id":         out.entryAppId = next(); break;
+      case "--entry-state-path":     out.entryStatePath = next(); break;
       // Quietly accept legacy claude flags Rust may still pass:
       case "--print":
       case "--output-format":
@@ -778,7 +778,7 @@ function parseFlags(args) {
         if (a === "--output-format" || a === "--input-format") next();
         break;
       default:
-        stderr.write(`[hermes-bridge] ignoring unknown flag: ${a}\n`);
+        stderr.write(`[entry-bridge] ignoring unknown flag: ${a}\n`);
     }
   }
   return out;

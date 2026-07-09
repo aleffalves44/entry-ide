@@ -11,11 +11,11 @@ import "./styles/base.css";
 // behind `import.meta.env.DEV` so production builds never carry it.
 if (import.meta.env.DEV) {
   import("@tauri-apps/api/event").then(({ emit, listen }) => {
-    (window as unknown as { __hermes?: unknown }).__hermes = { emit, listen };
+    (window as unknown as { __entry?: unknown }).__entry = { emit, listen };
     // Console-discoverability: log once on boot so devs know it's there.
     // eslint-disable-next-line no-console
     console.info(
-      "[hermes-dev] window.__hermes = { emit, listen } available for console testing",
+      "[entry-dev] window.__entry = { emit, listen } available for console testing",
     );
   });
 }

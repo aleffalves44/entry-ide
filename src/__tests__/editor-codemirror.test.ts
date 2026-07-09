@@ -4,7 +4,7 @@
  * Covers:
  * 1. getLanguageSupport — returns LanguageSupport for all 14 languages, null for unsupported, caches results
  * 2. getLanguageForExtension — maps ALL extensions correctly, plaintext for unknown, leading dot, case insensitive
- * 3. exposeCodeMirror — sets window.__hermesCM correctly
+ * 3. exposeCodeMirror — sets window.__entryCM correctly
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -268,14 +268,14 @@ describe("exposeCodeMirror", () => {
 	beforeEach(() => {
 		vi.resetModules();
 		_global.window = _global.window ?? {};
-		delete (_global.window as Record<string, unknown>).__hermesCM;
+		delete (_global.window as Record<string, unknown>).__entryCM;
 	});
 
-	it("sets window.__hermesCM with state, view, language, highlight modules", async () => {
+	it("sets window.__entryCM with state, view, language, highlight modules", async () => {
 		const { exposeCodeMirror } = await import("../editor/codemirrorExports");
 		exposeCodeMirror();
 
-		const cm = (_global.window as Record<string, unknown>).__hermesCM as Record<string, unknown> | undefined;
+		const cm = (_global.window as Record<string, unknown>).__entryCM as Record<string, unknown> | undefined;
 		expect(cm).toBeDefined();
 		expect(cm).toHaveProperty("state");
 		expect(cm).toHaveProperty("view");
@@ -287,7 +287,7 @@ describe("exposeCodeMirror", () => {
 		const { exposeCodeMirror } = await import("../editor/codemirrorExports");
 		exposeCodeMirror();
 
-		const cm = (_global.window as Record<string, unknown>).__hermesCM as Record<string, unknown>;
+		const cm = (_global.window as Record<string, unknown>).__entryCM as Record<string, unknown>;
 		expect(cm.state).toBeDefined();
 		expect(typeof cm.state).toBe("object");
 		expect(cm.view).toBeDefined();
@@ -302,7 +302,7 @@ describe("exposeCodeMirror", () => {
 		const { exposeCodeMirror } = await import("../editor/codemirrorExports");
 		exposeCodeMirror();
 
-		const cm = (_global.window as Record<string, unknown>).__hermesCM as Record<string, unknown>;
+		const cm = (_global.window as Record<string, unknown>).__entryCM as Record<string, unknown>;
 		expect(cm.state).toHaveProperty("EditorState");
 	});
 
@@ -310,7 +310,7 @@ describe("exposeCodeMirror", () => {
 		const { exposeCodeMirror } = await import("../editor/codemirrorExports");
 		exposeCodeMirror();
 
-		const cm = (_global.window as Record<string, unknown>).__hermesCM as Record<string, unknown>;
+		const cm = (_global.window as Record<string, unknown>).__entryCM as Record<string, unknown>;
 		expect(cm.view).toHaveProperty("EditorView");
 	});
 
@@ -318,7 +318,7 @@ describe("exposeCodeMirror", () => {
 		const { exposeCodeMirror } = await import("../editor/codemirrorExports");
 		exposeCodeMirror();
 
-		const cm = (_global.window as Record<string, unknown>).__hermesCM as Record<string, unknown>;
+		const cm = (_global.window as Record<string, unknown>).__entryCM as Record<string, unknown>;
 		expect(cm.language).toHaveProperty("syntaxHighlighting");
 	});
 
@@ -326,12 +326,12 @@ describe("exposeCodeMirror", () => {
 		const { exposeCodeMirror } = await import("../editor/codemirrorExports");
 		exposeCodeMirror();
 
-		const cm = (_global.window as Record<string, unknown>).__hermesCM as Record<string, unknown>;
+		const cm = (_global.window as Record<string, unknown>).__entryCM as Record<string, unknown>;
 		expect(cm.highlight).toHaveProperty("tags");
 	});
 
-	it("window.__hermesCM is undefined before exposeCodeMirror is called", () => {
-		const cm = (_global.window as Record<string, unknown>).__hermesCM;
+	it("window.__entryCM is undefined before exposeCodeMirror is called", () => {
+		const cm = (_global.window as Record<string, unknown>).__entryCM;
 		expect(cm).toBeUndefined();
 	});
 
@@ -339,10 +339,10 @@ describe("exposeCodeMirror", () => {
 		const { exposeCodeMirror } = await import("../editor/codemirrorExports");
 
 		exposeCodeMirror();
-		const first = (_global.window as Record<string, unknown>).__hermesCM as Record<string, unknown>;
+		const first = (_global.window as Record<string, unknown>).__entryCM as Record<string, unknown>;
 
 		exposeCodeMirror();
-		const second = (_global.window as Record<string, unknown>).__hermesCM as Record<string, unknown>;
+		const second = (_global.window as Record<string, unknown>).__entryCM as Record<string, unknown>;
 
 		expect(first).toBeDefined();
 		expect(second).toBeDefined();

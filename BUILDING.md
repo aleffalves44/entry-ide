@@ -1,6 +1,6 @@
-# Building Hermes IDE
+# Building Entry IDE
 
-Instructions for building Hermes IDE from source.
+Instructions for building Entry IDE from source.
 
 ## Prerequisites
 
@@ -32,8 +32,8 @@ Install [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cp
 ## Clone and Setup
 
 ```bash
-git clone https://github.com/hermes-hq/hermes-ide.git
-cd hermes-ide
+git clone https://github.com/aleffalves44/entry-ide.git
+cd entry-ide
 npm ci
 ```
 
@@ -98,7 +98,7 @@ sha256sum -c SHA256SUMS.txt --ignore-missing
 To verify SLSA provenance attestations:
 
 ```bash
-gh attestation verify <artifact-file> --repo hermes-hq/hermes-ide
+gh attestation verify <artifact-file> --repo aleffalves44/entry-ide
 ```
 
 ### Note on Code Signing
@@ -107,4 +107,4 @@ Signed binaries (macOS) differ between builds because signatures are unique. To 
 
 ## License
 
-Hermes IDE is source-available under the [Business Source License 1.1](LICENSE). Contributions require signing the [CLA](CLA.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+Entry IDE is source-available under the [Business Source License 1.1](LICENSE). Contributions require signing the [CLA](CLA.md). See [CONTRIBUTING.md](CONTRIBUTING.md) for details.

@@ -1,5 +1,5 @@
 name: Bug Report
-description: Report a bug in Hermes IDE
+description: Report a bug in Entry IDE
 labels: [bug, needs-triage]
 body:
   - type: markdown
@@ -9,7 +9,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: Hermes IDE Version
+      label: Entry IDE Version
       placeholder: e.g., 0.3.37
     validations:
       required: true
@@ -42,7 +42,7 @@ body:
     attributes:
       label: Steps to Reproduce
       placeholder: |
-        1. Open Hermes IDE
+        1. Open Entry IDE
         2. ...
     validations:
       required: true

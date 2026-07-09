@@ -18,7 +18,7 @@
 # This script remains useful as a fallback for local builds and debugging.
 # ════════════════════════════════════════════════════════════════════════════
 # ────────────────────────────────────────────────────────────────────────────
-# release-local.sh — Build Hermes IDE locally and upload to GitHub Releases
+# release-local.sh — Build Entry IDE locally and upload to GitHub Releases
 #
 # Usage:
 #   ./scripts/release-local.sh              # build macOS + Linux (all local targets)
@@ -33,9 +33,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-RELEASES_REPO="hermes-hq/hermes-ide"
+RELEASES_REPO="aleffalves44/entry-ide"
 ARTIFACTS_DIR="$PROJECT_DIR/release-artifacts"
-DOCKER_IMAGE="hermes-linux-builder"
+DOCKER_IMAGE="entry-linux-builder"
 
 # ── Colors ──────────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -88,7 +88,7 @@ info "Version: $VERSION  Tag: $TAG"
 
 # ── Load updater signing key ────────────────────────────────────────────────
 if [[ -z "${TAURI_SIGNING_PRIVATE_KEY:-}" ]]; then
-  KEY_FILE="$HOME/.tauri/hermes-ide.key"
+  KEY_FILE="$HOME/.tauri/entry-ide.key"
   if [[ -f "$KEY_FILE" ]]; then
     export TAURI_SIGNING_PRIVATE_KEY
     TAURI_SIGNING_PRIVATE_KEY=$(cat "$KEY_FILE")
@@ -221,9 +221,9 @@ build_linux_target() {
   docker run --rm \
     --platform "$docker_platform" \
     -v "$PROJECT_DIR":/src:ro \
-    -v "hermes-cargo-registry-${platform_key}":/usr/local/cargo/registry \
-    -v "hermes-cargo-git-${platform_key}":/usr/local/cargo/git \
-    -v "hermes-target-${platform_key}":/build/src-tauri/target \
+    -v "entry-cargo-registry-${platform_key}":/usr/local/cargo/registry \
+    -v "entry-cargo-git-${platform_key}":/usr/local/cargo/git \
+    -v "entry-target-${platform_key}":/build/src-tauri/target \
     -v "$out_dir":/out \
     -e TAURI_SIGNING_PRIVATE_KEY \
     -e TAURI_SIGNING_PRIVATE_KEY_PASSWORD \
@@ -259,8 +259,8 @@ ensure_release_exists() {
     info "Creating release $TAG..."
     gh release create "$TAG" \
       --repo "$RELEASES_REPO" \
-      --title "Hermes IDE $TAG" \
-      --notes "Download the installer for your platform, or update in-app. Full changelog: https://hermes-ide.com/changelog"
+      --title "Entry IDE $TAG" \
+      --notes "Download the installer for your platform, or update in-app. Full changelog: https://entry-ide.dev/changelog"
     ok "Created release $TAG"
   fi
 }
@@ -346,7 +346,7 @@ regenerate_manifests() {
 
   jq -n \
     --arg version "$VERSION" \
-    --arg notes "See the full changelog at https://hermes-ide.com/changelog" \
+    --arg notes "See the full changelog at https://entry-ide.dev/changelog" \
     --arg pub_date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
     --argjson platforms "$platforms_json" \
     '{version: $version, notes: $notes, pub_date: $pub_date, platforms: $platforms}' \
@@ -368,7 +368,7 @@ regenerate_manifests() {
       --arg p "$platform" --arg a "$arch" --arg f "$format" --arg n "$filename" \
       '.[$p][$a][$f] = $n')
 
-    # Extract version from filename (e.g. HERMES-IDE_0.3.37_aarch64.dmg → 0.3.37)
+    # Extract version from filename (e.g. ENTRY-IDE_0.3.37_aarch64.dmg → 0.3.37)
     local file_version
     file_version=$(echo "$filename" | sed -E 's/^.*[_-]([0-9]+\.[0-9]+\.[0-9]+)[_\.].*/\1/')
     # Only store if we actually extracted a version (not the full filename)
@@ -462,7 +462,7 @@ regenerate_manifests() {
 # ═══════════════════════════════════════════════════════════════════════════
 
 echo
-echo "  Hermes IDE — Local Release Builder"
+echo "  Entry IDE — Local Release Builder"
 echo "  Version: $VERSION   Tag: $TAG"
 echo "  macOS: $BUILD_MACOS   Linux: $BUILD_LINUX   Manifests only: $MANIFESTS_ONLY"
 echo

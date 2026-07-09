@@ -4,7 +4,7 @@
  * Spec: docs/internal/v1-tui-parity-plan.md §2 (M1a) and §7.3.
  *
  * Claude calls AskUserQuestion when it wants the user to pick from a
- * structured set of options.  The host (Hermes) renders a card, captures
+ * structured set of options.  The host (Entry) renders a card, captures
  * the answers, and writes a `tool_result` envelope back on stdin so
  * Claude can continue the turn.  Without us writing back, the
  * conversation stalls indefinitely.

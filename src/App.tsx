@@ -302,8 +302,8 @@ function AppContent() {
         duration: 10000,
       });
     };
-    window.addEventListener("hermes:shared-worktree", handler);
-    return () => window.removeEventListener("hermes:shared-worktree", handler);
+    window.addEventListener("entry:shared-worktree", handler);
+    return () => window.removeEventListener("entry:shared-worktree", handler);
   }, []);
 
   const pluginRuntimeRef = useRef<PluginRuntime | null>(null);
@@ -502,7 +502,7 @@ function AppContent() {
           ta.focus();
         } else {
           // Composer is collapsed (no textarea mounted) — ask it to expand.
-          window.dispatchEvent(new CustomEvent("hermes:expand-composer", { detail: { sessionId: sid } }));
+          window.dispatchEvent(new CustomEvent("entry:expand-composer", { detail: { sessionId: sid } }));
         }
         return;
       }

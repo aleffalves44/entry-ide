@@ -14,27 +14,27 @@ import {
 import { PermissionRequestModal } from "../components/PermissionRequestModal";
 
 const SAMPLE_REQUEST = {
-  type: "_hermes_perm_request" as const,
+  type: "_entry_perm_request" as const,
   id: "req_1",
   toolName: "Bash",
   input: { command: "git status --short", description: "status check" },
 };
 
 describe("isPermRequest (pm-2)", () => {
-  it("recognises _hermes_perm_request envelopes", () => {
+  it("recognises _entry_perm_request envelopes", () => {
     expect(isPermRequest(SAMPLE_REQUEST)).toBe(true);
   });
   it("rejects malformed envelopes", () => {
     expect(isPermRequest({ type: "user", id: "x", toolName: "y" })).toBe(false);
     expect(isPermRequest(null)).toBe(false);
-    expect(isPermRequest({ type: "_hermes_perm_request", id: "x" } as never)).toBe(false);
+    expect(isPermRequest({ type: "_entry_perm_request", id: "x" } as never)).toBe(false);
   });
 });
 
 describe("buildPermResponse (pm-4, pm-5)", () => {
   it("pm-4: allow → behavior=allow + updatedInput", () => {
     expect(buildPermResponse("req_1", { kind: "allow" })).toEqual({
-      type: "_hermes_perm_response",
+      type: "_entry_perm_response",
       id: "req_1",
       decision: { behavior: "allow" },
     });
@@ -42,14 +42,14 @@ describe("buildPermResponse (pm-4, pm-5)", () => {
   it("pm-4-b: allow with edited input passes updatedInput through", () => {
     const edited = { command: "git status" };
     expect(buildPermResponse("req_1", { kind: "allow", updatedInput: edited })).toEqual({
-      type: "_hermes_perm_response",
+      type: "_entry_perm_response",
       id: "req_1",
       decision: { behavior: "allow", updatedInput: edited },
     });
   });
   it("pm-5: deny → behavior=deny + default message", () => {
     expect(buildPermResponse("req_1", { kind: "deny" })).toEqual({
-      type: "_hermes_perm_response",
+      type: "_entry_perm_response",
       id: "req_1",
       decision: { behavior: "deny", message: "user declined" },
     });
@@ -59,7 +59,7 @@ describe("buildPermResponse (pm-4, pm-5)", () => {
     expect(
       buildPermResponse("req_1", { kind: "deny", message: "rethink the migration step" }),
     ).toEqual({
-      type: "_hermes_perm_response",
+      type: "_entry_perm_response",
       id: "req_1",
       decision: { behavior: "deny", message: "rethink the migration step" },
     });
@@ -69,7 +69,7 @@ describe("buildPermResponse (pm-4, pm-5)", () => {
     expect(
       buildPermResponse("req_1", { kind: "deny", message: "   " }),
     ).toEqual({
-      type: "_hermes_perm_response",
+      type: "_entry_perm_response",
       id: "req_1",
       decision: { behavior: "deny", message: "user declined" },
     });
@@ -104,7 +104,7 @@ describe("buildPermResponse (pm-4, pm-5)", () => {
         persist: "Bash(git status:*)",
       }),
     ).toEqual({
-      type: "_hermes_perm_response",
+      type: "_entry_perm_response",
       id: "req_4",
       decision: { behavior: "allow", persist: "Bash(git status:*)" },
     });

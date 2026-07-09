@@ -1,10 +1,10 @@
-# Hermes IDE — Architecture Guide
+# Entry IDE — Architecture Guide
 
-This document describes the internal architecture of Hermes IDE for contributors who want to understand the codebase before diving into code. It covers the frontend and backend structure, data flow, and key design decisions.
+This document describes the internal architecture of Entry IDE for contributors who want to understand the codebase before diving into code. It covers the frontend and backend structure, data flow, and key design decisions.
 
 ## Overview
 
-Hermes IDE is a desktop application built on [Tauri 2](https://tauri.app). The frontend is a React + TypeScript single-page application rendered in a platform-native webview. The backend is a Rust process that manages PTY sessions, an embedded SQLite database, git operations, and project scanning.
+Entry IDE is a desktop application built on [Tauri 2](https://tauri.app). The frontend is a React + TypeScript single-page application rendered in a platform-native webview. The backend is a Rust process that manages PTY sessions, an embedded SQLite database, git operations, and project scanning.
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -339,7 +339,7 @@ When a project is created, a surface scan runs synchronously and a deep scan is 
 `src-tauri/src/project/attunement.rs` assembles the final context document:
 
 1. Collects all projects attached to the session
-2. Loads `.hermes/context.json` project configs (if present) for custom pins, memory, conventions, and token budget overrides
+2. Loads `.entry/context.json` project configs (if present) for custom pins, memory, conventions, and token budget overrides
 3. Gathers context pins (session-scoped and project-scoped) with file content
 4. Merges memory entries across scopes (project takes precedence over global)
 5. Estimates token usage per section (~4 chars = 1 token)
@@ -353,7 +353,7 @@ The output is a Markdown file at `{app_data_dir}/context/{session_id}.md` that A
 
 `src-tauri/src/process/mod.rs` uses the `sysinfo` crate to list system processes. It enriches each process with:
 - CPU and memory usage
-- Whether it belongs to a Hermes terminal session (`is_hermes_session`)
+- Whether it belongs to a Entry terminal session (`is_entry_session`)
 - Whether it is a protected system process (`is_protected`) — platform-specific lists prevent users from accidentally killing critical system processes
 - Zombie detection
 
@@ -490,7 +490,7 @@ The pool (`src/terminal/TerminalPool.ts`) solves this by managing terminals outs
 
 ### Why Provider Adapters
 
-Hermes IDE supports multiple AI CLI tools (Claude Code, Aider, Gemini CLI, Codex) running inside terminals. Each tool has different output formats for token usage, tool calls, cost information, and prompts. The adapter pattern allows:
+Entry IDE supports multiple AI CLI tools (Claude Code, Aider, Gemini CLI, Codex) running inside terminals. Each tool has different output formats for token usage, tool calls, cost information, and prompts. The adapter pattern allows:
 
 - **Independent parsing logic** — each adapter encapsulates its own regex patterns and parsing rules
 - **Auto-detection** — the `ProviderRegistry` iterates adapters to detect which agent is running, then gives that adapter priority

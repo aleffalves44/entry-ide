@@ -11,7 +11,7 @@ interface InstalledPluginInfo {
 
 declare global {
 	interface Window {
-		__hermesPlugins?: Record<string, {
+		__entryPlugins?: Record<string, {
 			activate: PluginActivateFn;
 			deactivate?: PluginDeactivateFn;
 		}>;
@@ -23,8 +23,8 @@ declare global {
  *
  * Plugin format:
  *   plugins/<plugin-id>/
- *     hermes-plugin.json   – manifest
- *     dist/index.js         – IIFE bundle (registers on window.__hermesPlugins)
+ *     entry-plugin.json   – manifest
+ *     dist/index.js         – IIFE bundle (registers on window.__entryPlugins)
  *
  * The IIFE bundle is loaded via a blob URL to satisfy CSP (script-src 'self' blob:).
  * React is provided as window.React so plugins can use JSX without bundling React.
@@ -102,18 +102,18 @@ export class PluginLoader {
 			throw new Error(`Failed to read bundle for "${info.id}": ${err}`);
 		}
 
-		// Snapshot existing __hermesPlugins keys before execution
-		const keysBefore = new Set(Object.keys(window.__hermesPlugins ?? {}));
+		// Snapshot existing __entryPlugins keys before execution
+		const keysBefore = new Set(Object.keys(window.__entryPlugins ?? {}));
 
 		// Load the bundle via blob URL
 		await this.executeBundle(bundleCode, info.id);
 
 		// Tamper protection: verify the plugin only registered under its own ID
-		const keysAfter = Object.keys(window.__hermesPlugins ?? {});
+		const keysAfter = Object.keys(window.__entryPlugins ?? {});
 		for (const key of keysAfter) {
 			if (!keysBefore.has(key) && key !== info.id) {
 				// Remove the rogue registration
-				delete window.__hermesPlugins![key];
+				delete window.__entryPlugins![key];
 				throw new Error(
 					`Plugin "${info.id}" attempted to register under foreign ID "${key}" — rejected.`
 				);
@@ -121,11 +121,11 @@ export class PluginLoader {
 		}
 
 		// Retrieve the registered plugin exports
-		const pluginExports = window.__hermesPlugins?.[info.id];
+		const pluginExports = window.__entryPlugins?.[info.id];
 		if (!pluginExports) {
 			throw new Error(
-				`Plugin "${info.id}" bundle did not register on window.__hermesPlugins. ` +
-				`Make sure the plugin's IIFE footer sets window.__hermesPlugins["${info.id}"].`
+				`Plugin "${info.id}" bundle did not register on window.__entryPlugins. ` +
+				`Make sure the plugin's IIFE footer sets window.__entryPlugins["${info.id}"].`
 			);
 		}
 
@@ -182,8 +182,8 @@ export class PluginLoader {
 		}
 
 		// Clean up global registration
-		if (window.__hermesPlugins?.[pluginId]) {
-			delete window.__hermesPlugins[pluginId];
+		if (window.__entryPlugins?.[pluginId]) {
+			delete window.__entryPlugins[pluginId];
 		}
 	}
 

@@ -23,7 +23,7 @@ pub struct ProcessInfo {
     pub status: String,
     pub start_time: u64,
     pub fd_count: Option<u32>,
-    pub is_hermes_session: bool,
+    pub is_entry_session: bool,
     pub is_zombie: bool,
     pub is_protected: bool,
 }
@@ -118,11 +118,11 @@ fn status_string(status: ProcessStatus) -> String {
     }
 }
 
-fn get_hermes_child_pids(sys: &System) -> HashSet<u32> {
+fn get_entry_child_pids(sys: &System) -> HashSet<u32> {
     // Find our own process and collect all descendant PIDs
     let our_pid = std::process::id();
-    let mut hermes_pids = HashSet::new();
-    hermes_pids.insert(our_pid);
+    let mut entry_pids = HashSet::new();
+    entry_pids.insert(our_pid);
 
     // Walk through all processes, iteratively finding children
     let mut changed = true;
@@ -131,16 +131,16 @@ fn get_hermes_child_pids(sys: &System) -> HashSet<u32> {
         for (pid, process) in sys.processes() {
             let ppid = process.parent().map(|p| p.as_u32()).unwrap_or(0);
             let p = pid.as_u32();
-            if hermes_pids.contains(&ppid) && !hermes_pids.contains(&p) {
-                hermes_pids.insert(p);
+            if entry_pids.contains(&ppid) && !entry_pids.contains(&p) {
+                entry_pids.insert(p);
                 changed = true;
             }
         }
     }
 
     // Remove our own PID — we only want children
-    hermes_pids.remove(&our_pid);
-    hermes_pids
+    entry_pids.remove(&our_pid);
+    entry_pids
 }
 
 fn get_uid_for_process(process: &sysinfo::Process) -> Option<u32> {
@@ -227,7 +227,7 @@ pub fn list_processes(state: State<'_, AppState>) -> Result<ProcessSnapshot, Str
     sys.refresh_all();
 
     let users = Users::new_with_refreshed_list();
-    let hermes_pids = get_hermes_child_pids(&sys);
+    let entry_pids = get_entry_child_pids(&sys);
     let total_memory = sys.total_memory();
 
     let mut processes = Vec::new();
@@ -274,7 +274,7 @@ pub fn list_processes(state: State<'_, AppState>) -> Result<ProcessSnapshot, Str
             status,
             start_time: process.start_time(),
             fd_count: None,
-            is_hermes_session: hermes_pids.contains(&p),
+            is_entry_session: entry_pids.contains(&p),
             is_zombie,
             is_protected: protected,
         });
@@ -438,7 +438,7 @@ pub fn get_process_detail(state: State<'_, AppState>, pid: u32) -> Result<Proces
     sys.refresh_all();
 
     let users = Users::new_with_refreshed_list();
-    let hermes_pids = get_hermes_child_pids(&sys);
+    let entry_pids = get_entry_child_pids(&sys);
     let total_memory = sys.total_memory();
 
     let process = sys
@@ -479,7 +479,7 @@ pub fn get_process_detail(state: State<'_, AppState>, pid: u32) -> Result<Proces
         status,
         start_time: process.start_time(),
         fd_count: get_fd_count(pid),
-        is_hermes_session: hermes_pids.contains(&pid),
+        is_entry_session: entry_pids.contains(&pid),
         is_zombie,
         is_protected: protected,
     })
@@ -550,7 +550,7 @@ mod tests {
             status: "running".to_string(),
             start_time: 1000000,
             fd_count: Some(10),
-            is_hermes_session: false,
+            is_entry_session: false,
             is_zombie: false,
             is_protected: false,
         };

@@ -8,17 +8,17 @@ use crate::AppState;
 /// Default token budget when no project config overrides it
 const DEFAULT_TOKEN_BUDGET: usize = 4000;
 
-// ─── .hermes/context.json Schema ─────────────────────────────────────
+// ─── .entry/context.json Schema ─────────────────────────────────────
 
-/// .hermes/context.json schema for project-level defaults
+/// .entry/context.json schema for project-level defaults
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct HermesProjectConfig {
+pub struct EntryProjectConfig {
     /// Default files to pin for this project
     #[serde(default)]
-    pub pins: Vec<HermesPin>,
+    pub pins: Vec<EntryPin>,
     /// Project-level memory facts (key-value)
     #[serde(default)]
-    pub memory: Vec<HermesMemory>,
+    pub memory: Vec<EntryMemory>,
     /// Human-authored conventions that override auto-detected
     #[serde(default)]
     pub conventions: Vec<String>,
@@ -28,7 +28,7 @@ pub struct HermesProjectConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HermesPin {
+pub struct EntryPin {
     pub kind: String,
     pub target: String,
     #[serde(default)]
@@ -36,14 +36,14 @@ pub struct HermesPin {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HermesMemory {
+pub struct EntryMemory {
     pub key: String,
     pub value: String,
 }
 
-/// Load .hermes/context.json from a project directory
-pub fn load_hermes_config(project_path: &str) -> Option<HermesProjectConfig> {
-    let config_path = Path::new(project_path).join(".hermes").join("context.json");
+/// Load .entry/context.json from a project directory
+pub fn load_entry_config(project_path: &str) -> Option<EntryProjectConfig> {
+    let config_path = Path::new(project_path).join(".entry").join("context.json");
     if !config_path.exists() {
         return None;
     }
@@ -167,7 +167,7 @@ pub struct SessionContext {
 
 /// Assemble a context blob for a session's attached projects.
 /// Includes: project info, pins (with file content), memory (project + global),
-/// error resolutions, and .hermes/context.json overrides.
+/// error resolutions, and .entry/context.json overrides.
 /// Token-aware: estimates tokens per section, trims to budget.
 pub fn assemble_context(
     db: &crate::db::Database,
@@ -181,18 +181,18 @@ pub fn assemble_context(
     let mut all_languages = Vec::new();
     let mut all_frameworks = Vec::new();
     let mut estimated_tokens: usize = 0;
-    let mut hermes_configs: Vec<HermesProjectConfig> = Vec::new();
+    let mut entry_configs: Vec<EntryProjectConfig> = Vec::new();
 
-    // Determine token budget (may be overridden by .hermes/context.json)
+    // Determine token budget (may be overridden by .entry/context.json)
     let mut token_budget = default_token_budget;
 
     for project in &projects {
-        // Load .hermes/context.json if present
-        if let Some(config) = load_hermes_config(&project.path) {
+        // Load .entry/context.json if present
+        if let Some(config) = load_entry_config(&project.path) {
             if let Some(budget) = config.token_budget {
                 token_budget = budget;
             }
-            hermes_configs.push(config);
+            entry_configs.push(config);
         }
 
         // Get conventions from the dedicated table (higher fidelity)
@@ -203,8 +203,8 @@ pub fn assemble_context(
             project.conventions.iter().map(|c| c.rule.clone()).collect()
         };
 
-        // Merge .hermes conventions (human-authored take priority)
-        for config in &hermes_configs {
+        // Merge .entry conventions (human-authored take priority)
+        for config in &entry_configs {
             for conv in &config.conventions {
                 if !conv_rules.contains(conv) {
                     conv_rules.insert(0, conv.clone()); // prepend (higher priority)
@@ -292,21 +292,21 @@ pub fn assemble_context(
         .get_context_pins(Some(session_id), primary_project_id.as_deref())
         .unwrap_or_default();
 
-    // Add pins from .hermes/context.json (project defaults)
-    for config in &hermes_configs {
-        for hermes_pin in &config.pins {
+    // Add pins from .entry/context.json (project defaults)
+    for config in &entry_configs {
+        for entry_pin in &config.pins {
             // Avoid duplicates
             if !pins_raw
                 .iter()
-                .any(|p| p.target == hermes_pin.target && p.kind == hermes_pin.kind)
+                .any(|p| p.target == entry_pin.target && p.kind == entry_pin.kind)
             {
                 pins_raw.push(crate::db::ContextPin {
                     id: 0, // synthetic
                     session_id: None,
                     project_id: primary_project_id.clone(),
-                    kind: hermes_pin.kind.clone(),
-                    target: hermes_pin.target.clone(),
-                    label: hermes_pin.label.clone(),
+                    kind: entry_pin.kind.clone(),
+                    target: entry_pin.target.clone(),
+                    label: entry_pin.label.clone(),
                     priority: 256, // higher than default
                     created_at: 0,
                 });
@@ -347,16 +347,16 @@ pub fn assemble_context(
         })
         .collect();
 
-    // Add memory from .hermes/context.json
+    // Add memory from .entry/context.json
     let mut seen_memory_keys: std::collections::HashSet<String> =
         memory.iter().map(|m| m.key.clone()).collect();
-    for config in &hermes_configs {
+    for config in &entry_configs {
         for hm in &config.memory {
             if seen_memory_keys.insert(hm.key.clone()) {
                 memory.push(MemoryContext {
                     key: hm.key.clone(),
                     value: hm.value.clone(),
-                    source: "hermes-config".to_string(),
+                    source: "entry-config".to_string(),
                     scope: "project".to_string(),
                 });
             }
@@ -629,15 +629,15 @@ pub fn fork_session_context(
     db.fork_context_pins(&source_session_id, &target_session_id)
 }
 
-/// Load and apply .hermes/context.json for a project, creating project-scoped
+/// Load and apply .entry/context.json for a project, creating project-scoped
 /// pins and memory entries in the database.
 #[tauri::command]
-pub fn load_hermes_project_config(
+pub fn load_entry_project_config(
     state: State<'_, AppState>,
     project_id: String,
     project_path: String,
-) -> Result<Option<HermesProjectConfig>, String> {
-    let config = match load_hermes_config(&project_path) {
+) -> Result<Option<EntryProjectConfig>, String> {
+    let config = match load_entry_config(&project_path) {
         Some(c) => c,
         None => return Ok(None),
     };
@@ -648,7 +648,7 @@ pub fn load_hermes_project_config(
     let db = state.db.lock().map_err(|e| e.to_string())?;
 
     // Check if config has changed since last load
-    if let Ok(Some((_, Some(existing_hash)))) = db.get_hermes_config(&project_id) {
+    if let Ok(Some((_, Some(existing_hash)))) = db.get_entry_config(&project_id) {
         if existing_hash == config_hash {
             return Ok(Some(config));
         }
@@ -673,14 +673,14 @@ pub fn load_hermes_project_config(
             &project_id,
             &mem.key,
             &mem.value,
-            "hermes-config",
+            "entry-config",
             "config",
             1.0,
         );
     }
 
     // Save config hash
-    let _ = db.save_hermes_config(&project_id, &config_json, &config_hash);
+    let _ = db.save_entry_config(&project_id, &config_json, &config_hash);
 
     Ok(Some(config))
 }

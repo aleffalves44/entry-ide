@@ -29,7 +29,7 @@ use tauri::{Emitter, Manager};
 /// we avoid the lock contention that triggers process::abort().
 fn install_crash_handler() {
     std::panic::set_hook(Box::new(|info| {
-        let crash_dir = dirs::home_dir().unwrap_or_default().join(".hermes");
+        let crash_dir = dirs::home_dir().unwrap_or_default().join(".entry");
         let _ = std::fs::create_dir_all(&crash_dir);
         let crash_log = crash_dir.join("crash.log");
 
@@ -74,7 +74,7 @@ static WORKSPACE_SAVED: AtomicBool = AtomicBool::new(false);
 /// Called once during app startup. For each `session_worktrees` record whose
 /// session is missing from the `sessions` table, we remove the git worktree
 /// from disk (if it is a linked worktree) and delete the DB record. We also
-/// scan `{app_data_dir}/hermes-worktrees/` directories for orphans that have
+/// scan `{app_data_dir}/entry-worktrees/` directories for orphans that have
 /// no DB record, and replay any incomplete journal operations from prior
 /// crashes. Finally, we run `git worktree prune` on every repo that had
 /// stale entries and emit a cleanup summary event to the frontend.
@@ -326,14 +326,14 @@ fn cleanup_stale_worktrees(app: &tauri::AppHandle, database: &db::Database) {
         }
     }
 
-    // Migration: clean up old .hermes/worktrees/ directories from previous versions.
+    // Migration: clean up old .entry/worktrees/ directories from previous versions.
     // These are no longer used since worktrees are now stored in the app data directory.
     if let Ok(projects) = database.get_all_projects() {
         for proj in &projects {
-            let old_worktree_dir = Path::new(&proj.path).join(".hermes").join("worktrees");
+            let old_worktree_dir = Path::new(&proj.path).join(".entry").join("worktrees");
             if old_worktree_dir.is_dir() {
                 log::info!(
-                    "Migration: removing old .hermes/worktrees/ from '{}'",
+                    "Migration: removing old .entry/worktrees/ from '{}'",
                     proj.path
                 );
                 // Prune git worktree metadata first
@@ -347,15 +347,15 @@ fn cleanup_stale_worktrees(app: &tauri::AppHandle, database: &db::Database) {
             }
             // Also clean up the old journal file
             let old_journal = Path::new(&proj.path)
-                .join(".hermes")
+                .join(".entry")
                 .join("worktree-journal.log");
             if old_journal.exists() {
                 let _ = std::fs::remove_file(&old_journal);
             }
-            // Remove .hermes/ directory if it's now empty
-            let hermes_dir = Path::new(&proj.path).join(".hermes");
-            if hermes_dir.is_dir() {
-                let _ = std::fs::remove_dir(&hermes_dir); // Only succeeds if empty
+            // Remove .entry/ directory if it's now empty
+            let entry_dir = Path::new(&proj.path).join(".entry");
+            if entry_dir.is_dir() {
+                let _ = std::fs::remove_dir(&entry_dir); // Only succeeds if empty
             }
         }
     }
@@ -494,7 +494,7 @@ pub fn run() {
 
             // Migrate old database name if needed
             let old_db_path = app_dir.join("axon_v3.db");
-            let db_path = app_dir.join("hermes_idea_v3.db");
+            let db_path = app_dir.join("entry_idea_v3.db");
             if old_db_path.exists() && !db_path.exists() {
                 let _ = std::fs::copy(&old_db_path, &db_path);
             }
@@ -668,7 +668,7 @@ pub fn run() {
             project::attunement::assemble_session_context,
             project::attunement::apply_context,
             project::attunement::fork_session_context,
-            project::attunement::load_hermes_project_config,
+            project::attunement::load_entry_project_config,
             // Process management
             process::list_processes,
             process::kill_process,
@@ -757,7 +757,7 @@ pub fn run() {
             agent::close_agent_session,
             agent::check_claude_cli,
             agent::read_image_for_attachment,
-            agent::update_hermes_state,
+            agent::update_entry_state,
             // Claude config (~/.claude.json + ~/.claude/settings.json)
             // — see claude_config/mod.rs for the v1.0 TUI parity surface.
             claude_config::write_mcp_server,
@@ -780,28 +780,28 @@ pub fn run() {
             inline_pty::kill_inline_pty,
         ])
         .build(tauri::generate_context!())
-        .expect("error while building HERMES-IDE")
+        .expect("error while building ENTRY-IDE")
         .run(|app, event| match &event {
             tauri::RunEvent::ExitRequested { .. } => {
-                log::info!("[hermes] ExitRequested — saving workspace");
+                log::info!("[entry] ExitRequested — saving workspace");
                 save_workspace_state(app);
             }
             tauri::RunEvent::Exit => {
-                log::info!("[hermes] Exit — saving workspace");
+                log::info!("[entry] Exit — saving workspace");
                 save_workspace_state(app);
             }
             tauri::RunEvent::WindowEvent {
                 event: tauri::WindowEvent::CloseRequested { .. },
                 ..
             } => {
-                log::info!("[hermes] WindowCloseRequested — saving workspace");
+                log::info!("[entry] WindowCloseRequested — saving workspace");
                 save_workspace_state(app);
             }
             tauri::RunEvent::WindowEvent {
                 event: tauri::WindowEvent::Destroyed,
                 ..
             } => {
-                log::info!("[hermes] WindowDestroyed — saving workspace");
+                log::info!("[entry] WindowDestroyed — saving workspace");
                 save_workspace_state(app);
             }
             _ => {}

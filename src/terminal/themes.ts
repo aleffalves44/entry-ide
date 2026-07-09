@@ -45,7 +45,7 @@ export const THEMES: Record<string, Record<string, string>> = {
     brightCyan: "#80d5c6", brightWhite: "#e8e0d4",
   },
 
-  // Observatory — deep navy + true brass; the strongest Hermes identity.
+  // Observatory — deep navy + true brass; the strongest Entry identity.
   observatory: {
     background: "#0a1018",
     foreground: "#c8b896",

@@ -28,7 +28,7 @@ The v1.1.3 patch was the right call for shipping the Agent-mode fix urgently. Th
 
 At build time, package `node_modules/@anthropic-ai/claude-agent-sdk` + transitive deps + the host-platform native binary into a single compressed tarball (`bridge-runtime-${platform}-${arch}.tar.zst`). Bundle that tarball as a Tauri resource (one ~70 MB file instead of 100 k+ files).
 
-At first launch (or whenever the bundled tarball's version differs from what's on disk), Rust extracts it to `~/.hermes-ide/runtime/v0.2.132/` and points the bridge spawn at that path's `node_modules`.
+At first launch (or whenever the bundled tarball's version differs from what's on disk), Rust extracts it to `~/.entry-ide/runtime/v0.2.132/` and points the bridge spawn at that path's `node_modules`.
 
 **Pros**
 
@@ -45,7 +45,7 @@ At first launch (or whenever the bundled tarball's version differs from what's o
 
 ### B. Bundle ESM JS, download native binary on first launch
 
-Inline the SDK's JS layer with esbuild (~6 MB), but download `@anthropic-ai/claude-agent-sdk-${platform}-${arch}/claude` from npm (or a CDN we control) on first launch. Stash under `~/.hermes-ide/runtime/`.
+Inline the SDK's JS layer with esbuild (~6 MB), but download `@anthropic-ai/claude-agent-sdk-${platform}-${arch}/claude` from npm (or a CDN we control) on first launch. Stash under `~/.entry-ide/runtime/`.
 
 **Pros**
 
@@ -87,7 +87,7 @@ Detect a user-installed `claude` CLI on PATH; bridge defers to it.
 
 ## Decision (proposed)
 
-Go with **Option A** (tarball extract on first launch). Best size reduction, restores AppImage, preserves out-of-the-box UX, no new failure modes that don't already exist (we already write to `~/.hermes-ide/`).
+Go with **Option A** (tarball extract on first launch). Best size reduction, restores AppImage, preserves out-of-the-box UX, no new failure modes that don't already exist (we already write to `~/.entry-ide/`).
 
 ## Implementation sketch
 
@@ -103,7 +103,7 @@ Go with **Option A** (tarball extract on first launch). Best size reduction, res
 - New module: `src-tauri/src/agent/runtime.rs`.
   - `ensure_runtime_extracted(app: &AppHandle) -> Result<PathBuf>`:
     1. Read the bundled `manifest.json` to get the expected SDK version.
-    2. Target dir: `${data_dir}/hermes-ide/runtime/${sdkVersion}/`.
+    2. Target dir: `${data_dir}/entry-ide/runtime/${sdkVersion}/`.
     3. If target exists and `manifest.json` inside matches, return the path.
     4. Otherwise extract the bundled `.tar.zst` to a temp dir, atomically rename into place.
     5. (Optional) GC older runtime versions, keeping the latest two.
@@ -119,13 +119,13 @@ Go with **Option A** (tarball extract on first launch). Best size reduction, res
 ### Migration
 
 - v1.1.3 → v1.2: on first launch of v1.2, the tarball is extracted alongside (not replacing) the legacy in-bundle runtime. The bridge spawn just points at the new location. Users of the v1.1.3 install can update without rolling back.
-- Rolling back: if v1.2 has a fatal bug and we ship a v1.2.1 that reverts to in-bundle, the extracted `~/.hermes-ide/runtime/` becomes dead weight. Add a `cargo run --bin gc-runtime` for diagnostics.
+- Rolling back: if v1.2 has a fatal bug and we ship a v1.2.1 that reverts to in-bundle, the extracted `~/.entry-ide/runtime/` becomes dead weight. Add a `cargo run --bin gc-runtime` for diagnostics.
 
 ### Tests
 
 - Unit (Rust): tarball extract is atomic; manifest-mismatch triggers re-extract; corrupt tarball reports a clear error.
 - Unit (TS / vitest): bridge spawn picks up the extracted location via `resolve_bridge_runtime_dir`.
-- Integration: end-to-end Agent session works on a clean `~/.hermes-ide/` (no extracted runtime).
+- Integration: end-to-end Agent session works on a clean `~/.entry-ide/` (no extracted runtime).
 - Bundle smoke: `tauri build` produces an AppImage on Linux x86_64 and aarch64.
 
 ### Estimated effort

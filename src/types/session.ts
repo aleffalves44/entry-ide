@@ -209,7 +209,7 @@ export interface SavedSessionInfo {
   agent_permission_mode?: string;
   /** Last-active --effort value. */
   agent_effort?: string;
-  /** Currently-attached additional directories (Hermes' projects). */
+  /** Currently-attached additional directories (Entry' projects). */
   agent_add_dirs?: string[];
 }
 

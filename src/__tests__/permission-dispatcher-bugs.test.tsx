@@ -10,7 +10,7 @@
  *
  * Bugs covered:
  *   B1 — bypass auto-allow useEffect double-fires for the SAME
- *        request id, sending DUPLICATE `_hermes_perm_response`
+ *        request id, sending DUPLICATE `_entry_perm_response`
  *        envelopes (observed: 3 sends for one request in this test).
  *        Root cause: the effect's `store.clearPendingPermRequest()` is
  *        called optimistically, but React's StrictMode + the snapshot
@@ -75,7 +75,7 @@ import type { AgentEvent } from "../agent/types";
 
 function bashRequest(id: string, command = "rm -rf /tmp/x"): PermRequest {
   return {
-    type: "_hermes_perm_request",
+    type: "_entry_perm_request",
     id,
     toolName: "Bash",
     input: { command },
@@ -84,7 +84,7 @@ function bashRequest(id: string, command = "rm -rf /tmp/x"): PermRequest {
 
 function askRequest(id: string): PermRequest {
   return {
-    type: "_hermes_perm_request",
+    type: "_entry_perm_request",
     id,
     toolName: "AskUserQuestion",
     input: {
@@ -115,7 +115,7 @@ afterEach(() => {
 // ────────────────────────────────────────────────────────────────────
 describe("InteractivePermissionDispatcher — bypass auto-allow double-fire (B1)", () => {
   it(
-    "FAILING: bypass auto-allow effect sends MULTIPLE `_hermes_perm_response` " +
+    "FAILING: bypass auto-allow effect sends MULTIPLE `_entry_perm_response` " +
       "envelopes for ONE request id — the bridge sees duplicates",
     async () => {
       const SESSION_ID = "test-bypass-dupes";
@@ -267,7 +267,7 @@ describe("InteractivePermissionDispatcher — bypass on AskUserQuestion (B2)", (
       // Exactly one envelope was sent (the bypass auto-allow).
       expect(sendCalls).toHaveLength(1);
       const env = sendCalls[0].envelope as PermResponse;
-      expect(env.type).toBe("_hermes_perm_response");
+      expect(env.type).toBe("_entry_perm_response");
 
       // The SDK's AskUserQuestion tool contract requires that when we
       // approve, updatedInput.answers MUST be present (even if empty)

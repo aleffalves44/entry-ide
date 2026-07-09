@@ -63,7 +63,7 @@ function formatWorktreeError(raw: string): string {
 
 /**
  * Extract a short, user-friendly label from a worktree path for use in tooltips.
- * Full paths like `/Users/.../hermes-worktrees/hash/session_branch` become
+ * Full paths like `/Users/.../entry-worktrees/hash/session_branch` become
  * just the branch + session info.
  */
 export function friendlyWorktreeTooltip(

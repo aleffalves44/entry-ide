@@ -369,7 +369,7 @@ export function useContextState(session: SessionData | null, executionMode?: str
   // ── Acknowledge injection (startup command already handled context) ──
   const acknowledgeInjection = useCallback(() => {
     // Mark context as clean WITHOUT calling the backend API.
-    // The backend startup command already includes $HERMES_CONTEXT, so the
+    // The backend startup command already includes $ENTRY_CONTEXT, so the
     // first auto-apply trigger is redundant. This updates version tracking
     // to prevent the redundant nudge.
     const ver = versionRef.current;

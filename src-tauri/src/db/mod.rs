@@ -457,7 +457,7 @@ impl Database {
             );
             CREATE INDEX IF NOT EXISTS idx_ctx_snap_session ON context_snapshots(session_id);
 
-            CREATE TABLE IF NOT EXISTS hermes_project_config (
+            CREATE TABLE IF NOT EXISTS entry_project_config (
                 realm_id TEXT PRIMARY KEY,
                 config_json TEXT NOT NULL,
                 config_hash TEXT,
@@ -1580,8 +1580,8 @@ impl Database {
         Ok(count)
     }
 
-    /// Save .hermes/context.json config for a project
-    pub fn save_hermes_config(
+    /// Save .entry/context.json config for a project
+    pub fn save_entry_config(
         &self,
         project_id: &str,
         config_json: &str,
@@ -1589,7 +1589,7 @@ impl Database {
     ) -> Result<(), String> {
         self.conn
             .execute(
-                "INSERT INTO hermes_project_config (realm_id, config_json, config_hash, loaded_at)
+                "INSERT INTO entry_project_config (realm_id, config_json, config_hash, loaded_at)
              VALUES (?1, ?2, ?3, datetime('now'))
              ON CONFLICT(realm_id) DO UPDATE SET
                 config_json = excluded.config_json,
@@ -1601,15 +1601,15 @@ impl Database {
         Ok(())
     }
 
-    /// Get .hermes/context.json config for a project
-    pub fn get_hermes_config(
+    /// Get .entry/context.json config for a project
+    pub fn get_entry_config(
         &self,
         project_id: &str,
     ) -> Result<Option<(String, Option<String>)>, String> {
         let mut stmt = self
             .conn
             .prepare(
-                "SELECT config_json, config_hash FROM hermes_project_config WHERE realm_id = ?1",
+                "SELECT config_json, config_hash FROM entry_project_config WHERE realm_id = ?1",
             )
             .map_err(|e| e.to_string())?;
         let result = stmt
@@ -2789,7 +2789,11 @@ mod tests {
         FrameworkUsageRow {
             session_id: "sess1".into(),
             turn_uuid: turn_uuid.map(String::from),
-            kind: if agent == "main" { "turn".into() } else { "agent".into() },
+            kind: if agent == "main" {
+                "turn".into()
+            } else {
+                "agent".into()
+            },
             provider: "claude".into(),
             model: "claude-sonnet-5".into(),
             command: Some("harness-cmd:task".into()),
@@ -2828,7 +2832,9 @@ mod tests {
         assert_eq!(n, 0, "replayed rows must be deduped by (turn_uuid, agent)");
 
         // Rows without turn_uuid always insert (no dedup key).
-        let n = db.record_framework_usage(&[usage_row(None, "main")]).unwrap();
+        let n = db
+            .record_framework_usage(&[usage_row(None, "main")])
+            .unwrap();
         assert_eq!(n, 1);
 
         let all = db.get_framework_usage(None, None).unwrap();
@@ -3509,9 +3515,9 @@ mod tests {
 //
 // Export format (v1):
 // {
-//   "_hermes_export_version": "1",
-//   "_hermes_app_version": "0.6.0",
-//   "_hermes_exported_at": "2026-03-22T...",
+//   "_entry_export_version": "1",
+//   "_entry_app_version": "0.6.0",
+//   "_entry_exported_at": "2026-03-22T...",
 //   "theme": "frosted-dark",
 //   ...
 // }
@@ -3540,7 +3546,7 @@ mod tests {
 //    the plugin_storage table, scoped by plugin ID. These are private
 //    to the plugin and may contain auth tokens or API keys.
 //
-// Future enhancement: Export could include a `_hermes_plugins` metadata
+// Future enhancement: Export could include a `_entry_plugins` metadata
 // field listing installed plugin IDs + versions (informational only).
 // On import, the IDE could prompt: "The following plugins were installed
 // when this file was exported. Would you like to install them?" and then
@@ -3633,13 +3639,13 @@ pub fn export_settings(state: State<'_, AppState>, path: String) -> Result<(), S
         .collect();
 
     // Add metadata so future versions can detect the format
-    export.insert("_hermes_export_version".to_string(), "1".to_string());
+    export.insert("_entry_export_version".to_string(), "1".to_string());
     export.insert(
-        "_hermes_app_version".to_string(),
+        "_entry_app_version".to_string(),
         env!("CARGO_PKG_VERSION").to_string(),
     );
     export.insert(
-        "_hermes_exported_at".to_string(),
+        "_entry_exported_at".to_string(),
         chrono::Utc::now().to_rfc3339(),
     );
 
@@ -3660,19 +3666,19 @@ pub fn import_settings(
     let imported: HashMap<String, String> =
         serde_json::from_str(&content).map_err(|e| format!("Invalid settings JSON: {}", e))?;
 
-    // Validate this looks like a Hermes settings file (at least one valid key)
+    // Validate this looks like a Entry settings file (at least one valid key)
     let has_valid_key = imported
         .keys()
-        .any(|k| k.starts_with("_hermes_") || VALID_SETTING_KEYS.contains(&k.as_str()));
+        .any(|k| k.starts_with("_entry_") || VALID_SETTING_KEYS.contains(&k.as_str()));
     if !has_valid_key {
-        return Err("This file does not appear to be a Hermes settings export".to_string());
+        return Err("This file does not appear to be a Entry settings export".to_string());
     }
 
     let db = state.db.lock().map_err(|e| e.to_string())?;
     let mut applied = 0u32;
     for (key, value) in &imported {
-        // Skip metadata keys (prefixed with _hermes_)
-        if key.starts_with("_hermes_") {
+        // Skip metadata keys (prefixed with _entry_)
+        if key.starts_with("_entry_") {
             continue;
         }
         if !VALID_SETTING_KEYS.contains(&key.as_str()) {
@@ -3692,10 +3698,10 @@ const MAX_BUNDLE_FILE_SIZE: u64 = 1_048_576; // 1 MB
 fn validate_bundle_path(path: &str, for_write: bool) -> Result<std::path::PathBuf, String> {
     let p = std::path::PathBuf::from(path);
 
-    // Must have .hermes-prompts extension
+    // Must have .entry-prompts extension
     match p.extension().and_then(|e| e.to_str()) {
-        Some(ext) if ext.eq_ignore_ascii_case("hermes-prompts") => {}
-        _ => return Err("Bundle file must have a .hermes-prompts extension".to_string()),
+        Some(ext) if ext.eq_ignore_ascii_case("entry-prompts") => {}
+        _ => return Err("Bundle file must have a .entry-prompts extension".to_string()),
     }
 
     if for_write {

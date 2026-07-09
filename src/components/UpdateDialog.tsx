@@ -74,7 +74,7 @@ export function UpdateDialog({ state, onDismiss, onDownload, onCancel, onInstall
         <div className="update-dialog-actions">
           <button
             className="update-dialog-btn"
-            onClick={() => open("https://hermes-ide.com/changelog")}
+            onClick={() => open("https://entry-ide.dev/changelog")}
           >
             Changelog
           </button>

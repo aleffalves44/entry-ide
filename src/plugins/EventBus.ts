@@ -1,9 +1,9 @@
-import type { HermesEvent, Disposable } from "./types";
+import type { EntryEvent, Disposable } from "./types";
 
 export class PluginEventBus {
-	private listeners = new Map<HermesEvent, Set<(...args: any[]) => void>>();
+	private listeners = new Map<EntryEvent, Set<(...args: any[]) => void>>();
 
-	on(event: HermesEvent, callback: (...args: any[]) => void): Disposable {
+	on(event: EntryEvent, callback: (...args: any[]) => void): Disposable {
 		if (!this.listeners.has(event)) {
 			this.listeners.set(event, new Set());
 		}
@@ -15,7 +15,7 @@ export class PluginEventBus {
 		};
 	}
 
-	emit(event: HermesEvent, ...args: any[]): void {
+	emit(event: EntryEvent, ...args: any[]): void {
 		const callbacks = this.listeners.get(event);
 		if (!callbacks) return;
 		for (const cb of callbacks) {
@@ -31,7 +31,7 @@ export class PluginEventBus {
 		this.listeners.clear();
 	}
 
-	listenerCount(event: HermesEvent): number {
+	listenerCount(event: EntryEvent): number {
 		return this.listeners.get(event)?.size ?? 0;
 	}
 }

@@ -12,7 +12,7 @@ import { useContextMenu, buildTerminalMenuItems, buildPaneHeaderMenuItems } from
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 
 // Use text/plain with a prefix so it works in all WebViews
-const DRAG_PREFIX = "hermes-session:";
+const DRAG_PREFIX = "entry-session:";
 
 export function encodeSessionDrag(sessionId: string): string {
   return DRAG_PREFIX + sessionId;

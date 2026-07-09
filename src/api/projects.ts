@@ -10,7 +10,7 @@ export function getProjects(): Promise<Project[]> {
 
 /** Detect both current and legacy worktree path formats. */
 export function isWorktreePath(path: string): boolean {
-  return path.includes("hermes-worktrees/") || path.includes(".hermes/worktrees/");
+  return path.includes("entry-worktrees/") || path.includes(".entry/worktrees/");
 }
 
 export function createProject(path: string, name: string | null): Promise<Project> {

@@ -1,8 +1,8 @@
-import type { PluginManifest, PluginCommandContribution, PluginPanelContribution, PluginStatusBarItem, PluginSessionActionContribution, HermesEvent, FileHandlerProps } from "./types";
-import { createPluginAPI, type HermesPluginAPI, type PluginPanelProps, type PluginAPICallbacks } from "./PluginAPI";
+import type { PluginManifest, PluginCommandContribution, PluginPanelContribution, PluginStatusBarItem, PluginSessionActionContribution, EntryEvent, FileHandlerProps } from "./types";
+import { createPluginAPI, type EntryPluginAPI, type PluginPanelProps, type PluginAPICallbacks } from "./PluginAPI";
 import { invoke } from "@tauri-apps/api/core";
 
-export type PluginActivateFn = (api: HermesPluginAPI) => void | Promise<void>;
+export type PluginActivateFn = (api: EntryPluginAPI) => void | Promise<void>;
 export type PluginDeactivateFn = () => void | Promise<void>;
 
 export interface PluginModule {
@@ -16,7 +16,7 @@ export type PluginStatus = "registered" | "activating" | "active" | "error" | "i
 interface PluginEntry {
 	module: PluginModule;
 	status: PluginStatus;
-	api: HermesPluginAPI | null;
+	api: EntryPluginAPI | null;
 	error?: Error;
 }
 
@@ -33,7 +33,7 @@ export class PluginRuntime {
 	private statusBarOverrides = new Map<string, { text?: string; tooltip?: string; visible?: boolean }>();
 	private sessionActionBadges = new Map<string, { text?: string; count?: number }>();
 	private changeListeners = new Set<() => void>();
-	private eventListeners = new Map<HermesEvent, Set<(...args: unknown[]) => void>>();
+	private eventListeners = new Map<EntryEvent, Set<(...args: unknown[]) => void>>();
 	private callbacks: PluginAPICallbacks;
 
 	constructor(callbacks: PluginAPICallbacks) {
@@ -89,7 +89,7 @@ export class PluginRuntime {
 				onSettingChanged: (pid: string, key: string, value: string | number | boolean) => {
 					this.notifySettingChanged(pid, key, value);
 				},
-				onEventSubscribe: (event: HermesEvent, callback: (...args: unknown[]) => void) => {
+				onEventSubscribe: (event: EntryEvent, callback: (...args: unknown[]) => void) => {
 					return this.subscribeEvent(event, callback);
 				},
 				onFileHandlerRegistered: () => {
@@ -197,7 +197,7 @@ export class PluginRuntime {
 		entry.api._notifySettingChanged(key, value);
 	}
 
-	private subscribeEvent(event: HermesEvent, callback: (...args: unknown[]) => void): { dispose(): void } {
+	private subscribeEvent(event: EntryEvent, callback: (...args: unknown[]) => void): { dispose(): void } {
 		let listeners = this.eventListeners.get(event);
 		if (!listeners) {
 			listeners = new Set();
@@ -214,7 +214,7 @@ export class PluginRuntime {
 		};
 	}
 
-	emitEvent(event: HermesEvent, ...args: unknown[]): void {
+	emitEvent(event: EntryEvent, ...args: unknown[]): void {
 		const listeners = this.eventListeners.get(event);
 		if (!listeners) return;
 		for (const cb of listeners) {

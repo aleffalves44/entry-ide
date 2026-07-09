@@ -2,10 +2,10 @@
 /**
  * Agent composer — Enter sends, Shift+Enter inserts a newline.
  *
- * Hermes previously used the email-composer convention (Cmd/Ctrl+Enter
+ * Entry previously used the email-composer convention (Cmd/Ctrl+Enter
  * sends, naked Enter inserts a newline).  Agent mode is a direct
  * competitor to Claude.ai / ChatGPT / Cursor, all of which use the
- * chat convention (Enter sends, Shift+Enter newline) — Hermes users
+ * chat convention (Enter sends, Shift+Enter newline) — Entry users
  * coming from those tools were Enter-firing reflexively and getting
  * stray newlines instead of sends.
  *

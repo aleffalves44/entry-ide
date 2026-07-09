@@ -3,6 +3,6 @@
 <plist version="1.0">
 <dict>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Hermes IDE needs microphone access for voice input features in AI coding assistants.</string>
+	<string>Entry IDE needs microphone access for voice input features in AI coding assistants.</string>
 </dict>
 </plist>

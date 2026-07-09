@@ -23,7 +23,7 @@ pub struct WorktreePathDeleted {
 
 // ─── WorktreeWatcher ────────────────────────────────────────────────
 
-/// Watches the `hermes-worktrees/` directory for deletions.
+/// Watches the `entry-worktrees/` directory for deletions.
 ///
 /// When a worktree directory is removed externally, the watcher looks up
 /// the DB record and emits a `"worktree-path-deleted"` event so the
@@ -43,12 +43,12 @@ impl WorktreeWatcher {
     }
 }
 
-/// Start watching `{base_dir}/hermes-worktrees/` recursively.
+/// Start watching `{base_dir}/entry-worktrees/` recursively.
 ///
 /// Returns `None` if the directory does not exist or the watcher fails to
 /// initialise.  Errors are logged but never cause a panic.
 pub fn start_watching(app: AppHandle, base_dir: PathBuf) -> Option<WorktreeWatcher> {
-    let worktrees_dir = base_dir.join(super::worktree::HERMES_WORKTREE_MARKER);
+    let worktrees_dir = base_dir.join(super::worktree::ENTRY_WORKTREE_MARKER);
 
     // Only start if the directory already exists (it may not exist for brand-new users)
     if !worktrees_dir.is_dir() {
@@ -97,8 +97,8 @@ pub fn start_watching(app: AppHandle, base_dir: PathBuf) -> Option<WorktreeWatch
             for path in &event.paths {
                 let path_str = path.to_string_lossy().to_string();
 
-                // Only consider paths inside hermes-worktrees/
-                if !super::worktree::is_hermes_worktree_path(&path_str) {
+                // Only consider paths inside entry-worktrees/
+                if !super::worktree::is_entry_worktree_path(&path_str) {
                     continue;
                 }
 
@@ -202,7 +202,7 @@ mod tests {
     fn watcher_start_stop_no_panic() {
         let tmp = TempDir::new().unwrap();
         let base = tmp.path().to_path_buf();
-        let wt_dir = base.join(super::super::worktree::HERMES_WORKTREE_MARKER);
+        let wt_dir = base.join(super::super::worktree::ENTRY_WORKTREE_MARKER);
         fs::create_dir_all(&wt_dir).unwrap();
 
         let stopped = Arc::new(AtomicBool::new(false));
@@ -231,7 +231,7 @@ mod tests {
     fn create_delete_directories_no_panic() {
         let tmp = TempDir::new().unwrap();
         let base = tmp.path().to_path_buf();
-        let wt_dir = base.join(super::super::worktree::HERMES_WORKTREE_MARKER);
+        let wt_dir = base.join(super::super::worktree::ENTRY_WORKTREE_MARKER);
         fs::create_dir_all(&wt_dir).unwrap();
 
         let stopped = Arc::new(AtomicBool::new(false));
@@ -282,17 +282,17 @@ mod tests {
         // is that no panic occurred.
     }
 
-    /// start_watching returns None when the hermes-worktrees directory
+    /// start_watching returns None when the entry-worktrees directory
     /// does not exist.
     #[test]
     fn start_watching_returns_none_when_dir_missing() {
         let tmp = TempDir::new().unwrap();
         let base = tmp.path().to_path_buf();
-        // Do NOT create hermes-worktrees/ — it should return None
+        // Do NOT create entry-worktrees/ — it should return None
 
         // We cannot call start_watching here because it requires an
         // AppHandle, but we can verify the directory check logic directly.
-        let worktrees_dir = base.join(super::super::worktree::HERMES_WORKTREE_MARKER);
+        let worktrees_dir = base.join(super::super::worktree::ENTRY_WORKTREE_MARKER);
         assert!(!worktrees_dir.is_dir());
     }
 }

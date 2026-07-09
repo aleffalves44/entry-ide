@@ -83,7 +83,7 @@ async function simulateWorktreeCreation(
   }
 
   // This mirrors the production code:
-  //   window.dispatchEvent(new CustomEvent("hermes:worktree-errors", {
+  //   window.dispatchEvent(new CustomEvent("entry:worktree-errors", {
   //     detail: { errors: worktreeErrors, sessionLabel: opts?.label },
   //   }));
   if (worktreeErrors.length > 0) {

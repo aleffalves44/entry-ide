@@ -34,7 +34,7 @@
     "targets": "all",
     "createUpdaterArtifacts": false,
     "resources": [
-      "bridge/hermes-claude-bridge.mjs",
+      "bridge/entry-claude-bridge.mjs",
       "bridge/canUseToolHelpers.mjs",
       "bridge/bridgeRuntimeHelpers.mjs",
       "bridge/package.json",

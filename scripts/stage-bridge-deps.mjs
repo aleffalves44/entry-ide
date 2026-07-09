@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Stage the runtime deps that `src-tauri/bridge/hermes-claude-bridge.mjs`
+// Stage the runtime deps that `src-tauri/bridge/entry-claude-bridge.mjs`
 // imports (the Claude Agent SDK + zod + transitive deps + the host-platform
 // native `claude` binary) into `src-tauri/bridge/node_modules/`, where Tauri's
 // `bundle.resources` glob picks them up and ships them inside the .app's

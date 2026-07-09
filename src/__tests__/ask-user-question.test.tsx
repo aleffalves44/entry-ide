@@ -6,7 +6,7 @@
  * Visual: §8.2.
  *
  * AskUserQuestion is the SDK's interactive-prompt tool.  Claude calls it
- * with a `questions` array; the host (Hermes) renders UI, captures the
+ * with a `questions` array; the host (Entry) renders UI, captures the
  * user's selection, and answers the SDK's `canUseTool` callback with an
  * `updatedInput` that carries the user's `answers` (and optional
  * `annotations`).  The SDK then formats its own `tool_result` block.

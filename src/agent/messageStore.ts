@@ -124,7 +124,7 @@ export interface AgentSessionState {
   /** Same idea for output tokens — quick "how much have I gotten back?" */
   cumulativeOutputTokens: number;
   /** Account info from the SDK's `query.accountInfo()`.  Captured once
-   *  per session via the bridge's `_hermes_event/account_info` envelope.
+   *  per session via the bridge's `_entry_event/account_info` envelope.
    *  Populates the Usage panel's "Account" section. */
   accountInfo: {
     email?: string;
@@ -961,11 +961,11 @@ export function reduceEvent(
     };
   }
 
-  // 6b. Hermes side-channel event — `account_info` from the bridge's
+  // 6b. Entry side-channel event — `account_info` from the bridge's
   // SDK accountInfo() probe.  Not a Claude-protocol event, but it
   // arrives on the same stdout stream so we handle it inline here.
   const ev = event as { type?: string; subtype?: string; info?: unknown };
-  if (ev.type === "_hermes_event" && ev.subtype === "account_info") {
+  if (ev.type === "_entry_event" && ev.subtype === "account_info") {
     const info = ev.info as AgentSessionState["accountInfo"];
     if (info && typeof info === "object") {
       return { ...state, accountInfo: info };

@@ -4,7 +4,7 @@
 //! per-platform override files (`tauri.linux.conf.json`, `tauri.windows.conf.json`)
 //! redefine the `app.windows` array without carrying over the `title` field from
 //! the base `tauri.conf.json`. Tauri's merger treats those arrays as replace,
-//! not deep-merge by index — so the base `title: "HERMES-IDE"` is lost and the
+//! not deep-merge by index — so the base `title: "ENTRY-IDE"` is lost and the
 //! OS falls back to the Tauri default window title.
 //!
 //! This test locks in the fix: any per-platform override file that defines

@@ -411,8 +411,8 @@ export function EditorPane({ content, language, onContentChange, onSave, onCurso
         });
       });
     };
-    window.addEventListener("hermes:theme-changed", handler);
-    return () => window.removeEventListener("hermes:theme-changed", handler);
+    window.addEventListener("entry:theme-changed", handler);
+    return () => window.removeEventListener("entry:theme-changed", handler);
   }, []);
 
   const showMinimap = minimap && editorView;

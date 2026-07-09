@@ -2,7 +2,7 @@
  * Tests for worktree utility functions:
  * - formatBytes (edge cases)
  * - truncatePath (cross-platform home directory replacement)
- * - isHermesWorktreePath (worktree path detection)
+ * - isEntryWorktreePath (worktree path detection)
  */
 import { describe, it, expect, vi } from "vitest";
 
@@ -57,10 +57,10 @@ function truncatePath(fullPath: string, maxLen = 50): string {
 }
 
 /**
- * Mirrors isHermesWorktreePath() from utils/worktree.ts.
+ * Mirrors isEntryWorktreePath() from utils/worktree.ts.
  */
-function isHermesWorktreePath(path: string): boolean {
-  return path.includes("hermes-worktrees/");
+function isEntryWorktreePath(path: string): boolean {
+  return path.includes("entry-worktrees/");
 }
 
 // =====================================================================
@@ -152,36 +152,36 @@ describe("truncatePath — cross-platform", () => {
 });
 
 // =====================================================================
-// isHermesWorktreePath
+// isEntryWorktreePath
 // =====================================================================
 
-describe("isHermesWorktreePath", () => {
+describe("isEntryWorktreePath", () => {
   it("returns true for worktree path", () => {
-    expect(isHermesWorktreePath("/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc_feature")).toBe(true);
+    expect(isEntryWorktreePath("/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc_feature")).toBe(true);
   });
 
   it("returns true for deeply nested worktree path", () => {
-    expect(isHermesWorktreePath("/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc_feature/src/index.ts")).toBe(true);
+    expect(isEntryWorktreePath("/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc_feature/src/index.ts")).toBe(true);
   });
 
   it("returns false for non-worktree path", () => {
-    expect(isHermesWorktreePath("/Users/dev/project/src")).toBe(false);
+    expect(isEntryWorktreePath("/Users/dev/project/src")).toBe(false);
   });
 
   it("returns false for empty string", () => {
-    expect(isHermesWorktreePath("")).toBe(false);
+    expect(isEntryWorktreePath("")).toBe(false);
   });
 
-  it("returns false for path with hermes but no worktrees segment", () => {
-    expect(isHermesWorktreePath("/app/data/hermes-config/something")).toBe(false);
+  it("returns false for path with entry but no worktrees segment", () => {
+    expect(isEntryWorktreePath("/app/data/entry-config/something")).toBe(false);
   });
 
-  it("returns false for path with worktrees but no hermes-worktrees", () => {
-    expect(isHermesWorktreePath("/Users/dev/worktrees/something")).toBe(false);
+  it("returns false for path with worktrees but no entry-worktrees", () => {
+    expect(isEntryWorktreePath("/Users/dev/worktrees/something")).toBe(false);
   });
 
-  it("returns true for Windows-style path with hermes-worktrees/", () => {
+  it("returns true for Windows-style path with entry-worktrees/", () => {
     // The function uses includes() which works with any path format
-    expect(isHermesWorktreePath("C:\\dev\\data\\hermes-worktrees/a1b2c3d4e5f6a7b8/abc_feature")).toBe(true);
+    expect(isEntryWorktreePath("C:\\dev\\data\\entry-worktrees/a1b2c3d4e5f6a7b8/abc_feature")).toBe(true);
   });
 });

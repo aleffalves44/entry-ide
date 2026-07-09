@@ -140,9 +140,9 @@ describe("useNativeMenuEvents action mapping", () => {
     expect(src).toContain("TOGGLE_PALETTE");
   });
 
-  it("handles hermes.settings", () => {
+  it("handles entry.settings", () => {
     const src = readSrc("hooks/useNativeMenuEvents.ts");
-    expect(src).toContain('"hermes.settings"');
+    expect(src).toContain('"entry.settings"');
   });
 
   it("handles session.copy-context", () => {

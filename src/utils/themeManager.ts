@@ -3,7 +3,7 @@ import { updateSettings } from "../terminal/TerminalPool";
 /**
  * Theme catalog (1.1.15).
  *
- * Hermes shipped 30 themes through 1.1.14.  v1.1.15 consolidates that
+ * Entry shipped 30 themes through 1.1.14.  v1.1.15 consolidates that
  * to **eight** — four dark, four light — with one shared identity:
  * triple-font system (Inter Tight UI · JetBrains Mono code · Newsreader
  * serif), brass-rail accent placement, editorial layout grammar.
@@ -257,7 +257,7 @@ export function applyTheme(
   // Sync terminal colors
   updateSettings({ ...allSettings, theme: normalized });
   // Notify editor to refresh syntax highlight colours
-  window.dispatchEvent(new CustomEvent("hermes:theme-changed"));
+  window.dispatchEvent(new CustomEvent("entry:theme-changed"));
 }
 
 /** Persist the migrated id back to the settings table.  Imported

@@ -42,7 +42,9 @@ fn find_doc(root: &Path, candidates: &[&str]) -> Option<String> {
 fn find_spike_doc(root: &Path) -> Option<String> {
     let mut best: Option<(std::time::SystemTime, String)> = None;
     for dir in [root.to_path_buf(), root.join("docs")] {
-        let Ok(entries) = std::fs::read_dir(&dir) else { continue };
+        let Ok(entries) = std::fs::read_dir(&dir) else {
+            continue;
+        };
         for entry in entries.flatten() {
             let name = entry.file_name().to_string_lossy().into_owned();
             let lower = name.to_lowercase();
@@ -76,14 +78,18 @@ fn git_facts(root: &Path) -> (Option<String>, Option<u32>) {
     };
 
     // Default branch: origin/HEAD if resolvable, else main/master.
-    let default_oid = ["refs/remotes/origin/HEAD", "refs/heads/main", "refs/heads/master"]
-        .iter()
-        .find_map(|name| {
-            repo.find_reference(name)
-                .ok()
-                .and_then(|r| r.resolve().ok())
-                .and_then(|r| r.target())
-        });
+    let default_oid = [
+        "refs/remotes/origin/HEAD",
+        "refs/heads/main",
+        "refs/heads/master",
+    ]
+    .iter()
+    .find_map(|name| {
+        repo.find_reference(name)
+            .ok()
+            .and_then(|r| r.resolve().ok())
+            .and_then(|r| r.target())
+    });
     let Some(default_oid) = default_oid else {
         return (branch, None);
     };
@@ -104,7 +110,9 @@ fn pr_facts(root: &Path) -> (Option<u64>, Option<String>, Option<String>) {
         .args(["pr", "view", "--json", "number,url,state"])
         .current_dir(root)
         .output();
-    let Ok(out) = out else { return (None, None, None) };
+    let Ok(out) = out else {
+        return (None, None, None);
+    };
     if !out.status.success() {
         return (None, None, None);
     }

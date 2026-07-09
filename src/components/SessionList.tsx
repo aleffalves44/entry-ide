@@ -9,7 +9,7 @@ import { encodeSessionDrag, setDraggedSession, getDraggedSession } from "./Split
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useContextMenu, buildSessionMenuItems, buildEmptyAreaMenuItems } from "../hooks/useContextMenu";
 import { fmt } from "../utils/platform";
-import { isHermesWorktreePath } from "../utils/worktree";
+import { isEntryWorktreePath } from "../utils/worktree";
 import { useSessionGitSummary } from "../hooks/useSessionGitSummary";
 import { useRemoteSshInfo } from "../hooks/useRemoteSshInfo";
 import { PortForwardsPanel } from "./PortForwardsPanel";
@@ -138,7 +138,7 @@ function SessionItemGitInfo({ sessionId, isDestroyed, workingDirectory, isSsh }:
   const { allBranches } = localGit;
   if (allBranches.length === 0) return null;
 
-  const isLinkedWorktree = isHermesWorktreePath(workingDirectory);
+  const isLinkedWorktree = isEntryWorktreePath(workingDirectory);
   const showProjectNames = allBranches.length > 1;
 
   return (
@@ -854,7 +854,7 @@ export function SessionList({ sessions, activeSessionId, onSelect, onClose, onNe
   const renderSession = (session: SessionData) => {
     const isActive = session.id === activeSessionId;
     const shouldTriggerRename = renameSessionId === session.id;
-    const isLinkedWorktree = isHermesWorktreePath(session.working_directory);
+    const isLinkedWorktree = isEntryWorktreePath(session.working_directory);
     return (
       <div key={session.id} className={`session-item-wrapper${isActive ? " session-item-wrapper-active" : ""}`}>
         <SessionItemBranchAccent sessionId={session.id} isDestroyed={session.phase === "destroyed"} workingDirectory={session.working_directory} />

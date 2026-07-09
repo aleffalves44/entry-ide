@@ -8,7 +8,7 @@ import { PermissionRequestModal } from "../components/PermissionRequestModal";
 import type { PermRequest } from "../utils/permissionRequest";
 
 const REQ: PermRequest = {
-  type: "_hermes_perm_request",
+  type: "_entry_perm_request",
   id: "perm-1",
   toolName: "Bash",
   input: { command: "rm -rf /" },

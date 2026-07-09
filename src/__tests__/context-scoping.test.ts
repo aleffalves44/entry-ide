@@ -8,7 +8,7 @@
  * 5. Pin scope indicators in formatContextMarkdown
  * 6. Project path matching (exact match with trailing separator)
  * 7. Memory dedup with project-scoped memory
- * 8. HermesProjectConfig type validation
+ * 8. EntryProjectConfig type validation
  */
 import { describe, it, expect, vi } from "vitest";
 
@@ -44,7 +44,7 @@ import {
 
 import type {
   ContextPin,
-  HermesProjectConfig,
+  EntryProjectConfig,
   ApplyContextResult,
 } from "../types/context";
 
@@ -361,12 +361,12 @@ describe("Suite 5: Project Path Matching", () => {
 });
 
 // =====================================================================
-// Suite 6: HermesProjectConfig Type Validation
+// Suite 6: EntryProjectConfig Type Validation
 // =====================================================================
 
-describe("Suite 6: HermesProjectConfig Schema", () => {
+describe("Suite 6: EntryProjectConfig Schema", () => {
   it("minimal config is valid", () => {
-    const config: HermesProjectConfig = {
+    const config: EntryProjectConfig = {
       pins: [],
       memory: [],
       conventions: [],
@@ -378,7 +378,7 @@ describe("Suite 6: HermesProjectConfig Schema", () => {
   });
 
   it("full config with all fields is valid", () => {
-    const config: HermesProjectConfig = {
+    const config: EntryProjectConfig = {
       pins: [
         { kind: "file", target: "/src/main.ts", label: "Main entry" },
         { kind: "text", target: "Always use TypeScript strict mode" },
@@ -400,7 +400,7 @@ describe("Suite 6: HermesProjectConfig Schema", () => {
   });
 
   it("pins without label are valid", () => {
-    const config: HermesProjectConfig = {
+    const config: EntryProjectConfig = {
       pins: [{ kind: "file", target: "/src/index.ts" }],
       memory: [],
       conventions: [],
@@ -467,7 +467,7 @@ describe("Suite 8: Full Scoped Context Lifecycle", () => {
       ],
       persistedMemory: [
         { key: "api_url", value: "https://api.prod.com", source: "user" },
-        { key: "deploy_env", value: "staging", source: "hermes-config" },
+        { key: "deploy_env", value: "staging", source: "entry-config" },
       ],
       memoryFacts: [
         { key: "api_url", value: "https://api.dev.com", source: "agent", confidence: 0.5 },

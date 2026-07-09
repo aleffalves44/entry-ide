@@ -29,7 +29,7 @@ const OTHER_LABEL = "Other";
 interface Props {
   /** The original AskUserQuestion tool input — questions + options. */
   input: AskUserQuestionInput;
-  /** Caller will turn this into a `_hermes_perm_response` with
+  /** Caller will turn this into a `_entry_perm_response` with
    *  decision `{ behavior: "allow", updatedInput }`.  The SDK then
    *  formats the user-facing tool_result message itself. */
   onAllow: (updatedInput: Record<string, unknown>) => void;

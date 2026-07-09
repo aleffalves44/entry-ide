@@ -1,12 +1,12 @@
-//! Shell integration scripts for Hermes IDE.
+//! Shell integration scripts for Entry IDE.
 //!
-//! At PTY creation time, Hermes injects lightweight shell-specific integration
+//! At PTY creation time, Entry injects lightweight shell-specific integration
 //! that transparently disables conflicting autosuggestion plugins (zsh-autosuggestions,
-//! zsh-autocomplete, fish built-in, ble.sh) and exports `HERMES_TERMINAL=1`.
+//! zsh-autocomplete, fish built-in, ble.sh) and exports `ENTRY_TERMINAL=1`.
 //!
 //! The mechanism varies by shell:
 //! - **zsh**: `ZDOTDIR` is pointed at a temp directory whose rc files source
-//!   the user's real config and then apply Hermes overrides.
+//!   the user's real config and then apply Entry overrides.
 //! - **bash**: `--rcfile` replaces `-l`; the init file sources the user's
 //!   profile/rc files and then applies overrides.
 //! - **fish**: `-C` (init-command) runs after config.fish loads.
@@ -41,39 +41,39 @@ impl ShellIntegration {
 /// CRITICAL: ZDOTDIR must stay pointing at our temp dir so zsh finds
 /// our .zprofile/.zshrc/.zlogin next.  We only swap ZDOTDIR temporarily
 /// when sourcing the user's file.
-const ZSH_ZSHENV: &str = r#"# Hermes IDE shell integration — do not edit
-_hermes_user="${HERMES_ORIGINAL_ZDOTDIR:-$HOME}"
+const ZSH_ZSHENV: &str = r#"# Entry IDE shell integration — do not edit
+_entry_user="${ENTRY_ORIGINAL_ZDOTDIR:-$HOME}"
 # Temporarily point ZDOTDIR at the user's dir while sourcing their .zshenv
-ZDOTDIR="$_hermes_user"
-[[ -f "$_hermes_user/.zshenv" ]] && source "$_hermes_user/.zshenv"
-# Re-point ZDOTDIR to Hermes temp dir so zsh finds our .zprofile next
-ZDOTDIR="$_HERMES_ZDOTDIR"
+ZDOTDIR="$_entry_user"
+[[ -f "$_entry_user/.zshenv" ]] && source "$_entry_user/.zshenv"
+# Re-point ZDOTDIR to Entry temp dir so zsh finds our .zprofile next
+ZDOTDIR="$_ENTRY_ZDOTDIR"
 "#;
 
 /// Zsh .zprofile — sources user's .zprofile, keeps ZDOTDIR as temp dir.
-const ZSH_ZPROFILE: &str = r#"# Hermes IDE shell integration — do not edit
-_hermes_user="${HERMES_ORIGINAL_ZDOTDIR:-$HOME}"
-ZDOTDIR="$_hermes_user"
-[[ -f "$_hermes_user/.zprofile" ]] && source "$_hermes_user/.zprofile"
-ZDOTDIR="$_HERMES_ZDOTDIR"
+const ZSH_ZPROFILE: &str = r#"# Entry IDE shell integration — do not edit
+_entry_user="${ENTRY_ORIGINAL_ZDOTDIR:-$HOME}"
+ZDOTDIR="$_entry_user"
+[[ -f "$_entry_user/.zprofile" ]] && source "$_entry_user/.zprofile"
+ZDOTDIR="$_ENTRY_ZDOTDIR"
 "#;
 
-/// Zsh .zshrc — sources user's .zshrc then applies Hermes overrides.
+/// Zsh .zshrc — sources user's .zshrc then applies Entry overrides.
 /// Runs AFTER user config, so all plugins are loaded when we disable them.
 /// ZDOTDIR is swapped to temp dir between user files so zsh finds .zlogin.
-const ZSH_ZSHRC: &str = r#"# Hermes IDE shell integration — do not edit
-_hermes_user="${HERMES_ORIGINAL_ZDOTDIR:-$HOME}"
-ZDOTDIR="$_hermes_user"
-[[ -f "$_hermes_user/.zshrc" ]] && source "$_hermes_user/.zshrc"
+const ZSH_ZSHRC: &str = r#"# Entry IDE shell integration — do not edit
+_entry_user="${ENTRY_ORIGINAL_ZDOTDIR:-$HOME}"
+ZDOTDIR="$_entry_user"
+[[ -f "$_entry_user/.zshrc" ]] && source "$_entry_user/.zshrc"
 # Re-point so zsh finds our .zlogin next
-ZDOTDIR="$_HERMES_ZDOTDIR"
+ZDOTDIR="$_ENTRY_ZDOTDIR"
 
-# ── Hermes overrides (run after all user plugins have loaded) ──
+# ── Entry overrides (run after all user plugins have loaded) ──
 
 # Disable zsh-autosuggestions — nuclear approach.
 # The plugin may be loaded now or deferred (zinit, zsh-defer, etc.),
 # so we use multiple layers:
-_hermes_nuke_autosuggest() {
+_entry_nuke_autosuggest() {
   (( $+functions[_zsh_autosuggest_disable] )) && _zsh_autosuggest_disable
   # Override the core suggest function to be a no-op
   _zsh_autosuggest_suggest() { unset POSTDISPLAY 2>/dev/null; }
@@ -84,37 +84,37 @@ _hermes_nuke_autosuggest() {
   unset POSTDISPLAY 2>/dev/null
 }
 # Run immediately (works if plugin is already loaded)
-_hermes_nuke_autosuggest
+_entry_nuke_autosuggest
 # Precmd hook catches deferred loading
-_hermes_autosuggest_precmd() {
+_entry_autosuggest_precmd() {
   if (( $+functions[_zsh_autosuggest_start] )); then
-    _hermes_nuke_autosuggest
-    add-zsh-hook -d precmd _hermes_autosuggest_precmd
+    _entry_nuke_autosuggest
+    add-zsh-hook -d precmd _entry_autosuggest_precmd
   fi
 }
 autoload -Uz add-zsh-hook
-add-zsh-hook precmd _hermes_autosuggest_precmd
+add-zsh-hook precmd _entry_autosuggest_precmd
 
 # Disable zsh-autocomplete real-time completion menu
 zstyle ':autocomplete:*' min-input 9999 2>/dev/null
 
 # Prevent space-prefixed commands from entering history.
-# Hermes uses this to keep auto-injected commands out of the user's history.
+# Entry uses this to keep auto-injected commands out of the user's history.
 setopt HIST_IGNORE_SPACE 2>/dev/null
 
-export HERMES_TERMINAL=1
+export ENTRY_TERMINAL=1
 "#;
 
 /// Zsh .zlogin — last startup file.  Sources user's .zlogin then
 /// permanently restores ZDOTDIR, cleans up internal env vars, and
 /// forces a terminal size re-read (fixes SIGWINCH race on startup).
-const ZSH_ZLOGIN: &str = r#"# Hermes IDE shell integration — do not edit
-_hermes_user="${HERMES_ORIGINAL_ZDOTDIR:-$HOME}"
-ZDOTDIR="$_hermes_user"
-[[ -f "$_hermes_user/.zlogin" ]] && source "$_hermes_user/.zlogin"
+const ZSH_ZLOGIN: &str = r#"# Entry IDE shell integration — do not edit
+_entry_user="${ENTRY_ORIGINAL_ZDOTDIR:-$HOME}"
+ZDOTDIR="$_entry_user"
+[[ -f "$_entry_user/.zlogin" ]] && source "$_entry_user/.zlogin"
 # Startup complete — permanently restore ZDOTDIR for interactive use
-export ZDOTDIR="$_hermes_user"
-unset _HERMES_ZDOTDIR HERMES_ORIGINAL_ZDOTDIR _hermes_user 2>/dev/null
+export ZDOTDIR="$_entry_user"
+unset _ENTRY_ZDOTDIR ENTRY_ORIGINAL_ZDOTDIR _entry_user 2>/dev/null
 # Force zsh to re-read actual terminal dimensions from the PTY.
 # During startup the PTY resize (SIGWINCH) can arrive before zsh's
 # signal handler is installed, leaving COLUMNS/LINES stale at 80x24.
@@ -123,8 +123,8 @@ kill -WINCH $$ 2>/dev/null
 
 /// Bash init script — used with `bash --rcfile`.
 /// Sources the user's profile/rc files manually (since --rcfile replaces the
-/// default sourcing of .bashrc), then applies Hermes overrides.
-const BASH_INIT: &str = r#"# Hermes IDE shell integration — do not edit
+/// default sourcing of .bashrc), then applies Entry overrides.
+const BASH_INIT: &str = r#"# Entry IDE shell integration — do not edit
 # Source system profile
 [ -f /etc/profile ] && source /etc/profile
 
@@ -140,14 +140,14 @@ fi
 # Source .bashrc (many .bash_profile files do this, but not all)
 [ -f "$HOME/.bashrc" ] && source "$HOME/.bashrc"
 
-# ── Hermes overrides ──
+# ── Entry overrides ──
 
 # Disable ble.sh auto-complete if loaded
 if type ble-bind &>/dev/null 2>&1; then
   ble-bind -m auto_complete -f '' auto_complete/cancel 2>/dev/null
 fi
 
-export HERMES_TERMINAL=1
+export ENTRY_TERMINAL=1
 
 # Force terminal size re-read (fixes SIGWINCH race during startup)
 kill -WINCH $$ 2>/dev/null
@@ -156,7 +156,7 @@ kill -WINCH $$ 2>/dev/null
 /// Fish init-command — passed via `fish -C "..."`.
 /// Runs after config.fish, so built-in autosuggestions are already active.
 const FISH_INIT_CMD: &str =
-    "set -g fish_autosuggestion_enabled 0 2>/dev/null; set -gx HERMES_TERMINAL 1";
+    "set -g fish_autosuggestion_enabled 0 2>/dev/null; set -gx ENTRY_TERMINAL 1";
 
 // ─── Setup Functions ─────────────────────────────────────────────────
 
@@ -164,7 +164,7 @@ const FISH_INIT_CMD: &str =
 /// and (for zsh/bash) the temp path that was created.
 ///
 /// The caller must apply the returned integration to the `CommandBuilder`:
-/// - `Zsh`: set `HERMES_ORIGINAL_ZDOTDIR` and `ZDOTDIR` env vars
+/// - `Zsh`: set `ENTRY_ORIGINAL_ZDOTDIR` and `ZDOTDIR` env vars
 /// - `Bash`: replace `-l` with `--rcfile <path>`
 /// - `Fish`: add `-C <command>` argument
 pub fn setup(shell: &str, session_id: &str) -> ShellIntegration {
@@ -195,7 +195,7 @@ pub fn fish_init_command() -> &'static str {
 }
 
 fn setup_zsh(session_id: &str) -> ShellIntegration {
-    let dir = std::env::temp_dir().join(format!("hermes-zsh-{}", session_id));
+    let dir = std::env::temp_dir().join(format!("entry-zsh-{}", session_id));
     log::info!("[SHELL-INTEGRATION] Creating ZDOTDIR at {:?}", dir);
     if let Err(e) = std::fs::create_dir_all(&dir) {
         log::warn!("Failed to create ZDOTDIR for session {}: {}", session_id, e);
@@ -222,7 +222,7 @@ fn setup_zsh(session_id: &str) -> ShellIntegration {
 }
 
 fn setup_bash(session_id: &str) -> ShellIntegration {
-    let path = std::env::temp_dir().join(format!("hermes-bash-{}.sh", session_id));
+    let path = std::env::temp_dir().join(format!("entry-bash-{}.sh", session_id));
     if let Err(e) = std::fs::write(&path, BASH_INIT) {
         log::warn!(
             "Failed to write bash init for session {}: {}",
@@ -259,13 +259,13 @@ pub fn cleanup(integration: &ShellIntegration) {
 pub fn cleanup_stale() {
     let tmp = std::env::temp_dir();
 
-    // Clean up hermes-zsh-* directories
+    // Clean up entry-zsh-* directories
     if let Ok(entries) = std::fs::read_dir(&tmp) {
         for entry in entries.flatten() {
             let name = entry.file_name();
             let name_str = name.to_string_lossy();
-            if (name_str.starts_with("hermes-zsh-") && entry.path().is_dir())
-                || (name_str.starts_with("hermes-bash-") && name_str.ends_with(".sh"))
+            if (name_str.starts_with("entry-zsh-") && entry.path().is_dir())
+                || (name_str.starts_with("entry-bash-") && name_str.ends_with(".sh"))
             {
                 if entry.path().is_dir() {
                     std::fs::remove_dir_all(entry.path()).ok();
@@ -297,10 +297,10 @@ mod tests {
                 let zshrc = std::fs::read_to_string(zdotdir.join(".zshrc")).unwrap();
                 assert!(zshrc.contains("ZSH_AUTOSUGGEST_STRATEGY"));
                 assert!(zshrc.contains("zsh-autocomplete"));
-                assert!(zshrc.contains("HERMES_TERMINAL=1"));
+                assert!(zshrc.contains("ENTRY_TERMINAL=1"));
 
                 let zshenv = std::fs::read_to_string(zdotdir.join(".zshenv")).unwrap();
-                assert!(zshenv.contains("HERMES_ORIGINAL_ZDOTDIR"));
+                assert!(zshenv.contains("ENTRY_ORIGINAL_ZDOTDIR"));
                 assert!(zshenv.contains("source"));
             }
             _ => panic!("Expected Zsh integration"),
@@ -315,7 +315,7 @@ mod tests {
             ShellIntegration::Bash { rcfile } => {
                 assert!(rcfile.exists());
                 let content = std::fs::read_to_string(rcfile).unwrap();
-                assert!(content.contains("HERMES_TERMINAL=1"));
+                assert!(content.contains("ENTRY_TERMINAL=1"));
                 assert!(content.contains(".bash_profile"));
                 assert!(content.contains(".bashrc"));
                 assert!(content.contains("ble-bind"));
@@ -367,7 +367,7 @@ mod tests {
     fn fish_init_command_content() {
         let cmd = fish_init_command();
         assert!(cmd.contains("fish_autosuggestion_enabled"));
-        assert!(cmd.contains("HERMES_TERMINAL"));
+        assert!(cmd.contains("ENTRY_TERMINAL"));
     }
 
     #[test]
@@ -391,9 +391,9 @@ mod tests {
         let lines: Vec<&str> = ZSH_ZSHENV.lines().collect();
         let swap_line = lines
             .iter()
-            .position(|l| l.contains("ZDOTDIR=\"$_hermes_user\""));
+            .position(|l| l.contains("ZDOTDIR=\"$_entry_user\""));
         let source_line = lines.iter().position(|l| l.contains("source"));
-        let restore_line = lines.iter().position(|l| l.contains("_HERMES_ZDOTDIR"));
+        let restore_line = lines.iter().position(|l| l.contains("_ENTRY_ZDOTDIR"));
         assert!(
             swap_line.is_some() && source_line.is_some() && restore_line.is_some(),
             "Must swap ZDOTDIR, source user file, and restore temp dir"
@@ -415,7 +415,7 @@ mod tests {
         let lines: Vec<&str> = ZSH_ZSHRC.lines().collect();
         let source_line = lines
             .iter()
-            .position(|l| l.contains("source \"$_hermes_user/.zshrc\""));
+            .position(|l| l.contains("source \"$_entry_user/.zshrc\""));
         let override_line = lines
             .iter()
             .position(|l| l.contains("ZSH_AUTOSUGGEST_STRATEGY"));
@@ -434,16 +434,16 @@ mod tests {
         // .zlogin is the last startup file — it must permanently restore
         // ZDOTDIR and clean up internal env vars.
         assert!(ZSH_ZLOGIN.contains("export ZDOTDIR="));
-        assert!(ZSH_ZLOGIN.contains("unset _HERMES_ZDOTDIR"));
-        assert!(ZSH_ZLOGIN.contains("unset") && ZSH_ZLOGIN.contains("HERMES_ORIGINAL_ZDOTDIR"));
+        assert!(ZSH_ZLOGIN.contains("unset _ENTRY_ZDOTDIR"));
+        assert!(ZSH_ZLOGIN.contains("unset") && ZSH_ZLOGIN.contains("ENTRY_ORIGINAL_ZDOTDIR"));
     }
 
     #[test]
     fn all_zsh_scripts_repoint_zdotdir_to_temp() {
         // Every file except .zlogin must re-point ZDOTDIR to the temp dir
-        // so zsh finds the NEXT Hermes wrapper file.
-        assert!(ZSH_ZSHENV.contains("ZDOTDIR=\"$_HERMES_ZDOTDIR\""));
-        assert!(ZSH_ZPROFILE.contains("ZDOTDIR=\"$_HERMES_ZDOTDIR\""));
-        assert!(ZSH_ZSHRC.contains("ZDOTDIR=\"$_HERMES_ZDOTDIR\""));
+        // so zsh finds the NEXT Entry wrapper file.
+        assert!(ZSH_ZSHENV.contains("ZDOTDIR=\"$_ENTRY_ZDOTDIR\""));
+        assert!(ZSH_ZPROFILE.contains("ZDOTDIR=\"$_ENTRY_ZDOTDIR\""));
+        assert!(ZSH_ZSHRC.contains("ZDOTDIR=\"$_ENTRY_ZDOTDIR\""));
     }
 }

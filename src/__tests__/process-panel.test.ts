@@ -56,7 +56,7 @@ function makeProcess(overrides?: Partial<ProcessInfo>): ProcessInfo {
     status: "running",
     start_time: Math.floor(Date.now() / 1000) - 3600,
     fd_count: null,
-    is_hermes_session: false,
+    is_entry_session: false,
     is_zombie: false,
     is_protected: false,
     ...overrides,
@@ -68,7 +68,7 @@ function defaultFilter(overrides?: Partial<ProcessFilter>): ProcessFilter {
     search: "",
     cpuThreshold: 0,
     memThreshold: 0,
-    showHermesOnly: false,
+    showEntryOnly: false,
     showZombiesOnly: false,
     ...overrides,
   };
@@ -150,9 +150,9 @@ describe("sortProcesses", () => {
 
 describe("filterProcesses", () => {
   const procs = [
-    makeProcess({ pid: 100, name: "node", cpu_percent: 25, memory_percent: 5, is_hermes_session: true, is_zombie: false }),
-    makeProcess({ pid: 200, name: "python", cpu_percent: 60, memory_percent: 40, is_hermes_session: false, is_zombie: false }),
-    makeProcess({ pid: 300, name: "zombie-proc", cpu_percent: 0, memory_percent: 0, is_hermes_session: false, is_zombie: true }),
+    makeProcess({ pid: 100, name: "node", cpu_percent: 25, memory_percent: 5, is_entry_session: true, is_zombie: false }),
+    makeProcess({ pid: 200, name: "python", cpu_percent: 60, memory_percent: 40, is_entry_session: false, is_zombie: false }),
+    makeProcess({ pid: 300, name: "zombie-proc", cpu_percent: 0, memory_percent: 0, is_entry_session: false, is_zombie: true }),
   ];
 
   it("search by name filters correctly", () => {
@@ -179,8 +179,8 @@ describe("filterProcesses", () => {
     expect(result[0].name).toBe("python");
   });
 
-  it("Hermes Only shows only is_hermes_session=true", () => {
-    const result = filterProcesses(procs, defaultFilter({ showHermesOnly: true }));
+  it("Entry Only shows only is_entry_session=true", () => {
+    const result = filterProcesses(procs, defaultFilter({ showEntryOnly: true }));
     expect(result.length).toBe(1);
     expect(result[0].name).toBe("node");
   });

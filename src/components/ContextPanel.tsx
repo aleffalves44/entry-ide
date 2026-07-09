@@ -566,7 +566,7 @@ export function ContextPanel({ session }: ContextPanelProps) {
     if (shouldApply) {
       autoAppliedRef.current = true;
       if (contextManager.injectedVersion === 0) {
-        // The backend startup command already includes $HERMES_CONTEXT —
+        // The backend startup command already includes $ENTRY_CONTEXT —
         // the agent has already read the context file. Acknowledge the
         // injection without sending a redundant nudge.
         contextManager.acknowledgeInjection();

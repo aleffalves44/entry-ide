@@ -1,4 +1,4 @@
-//! Direct read/write helpers for the Claude config files Hermes manages
+//! Direct read/write helpers for the Claude config files Entry manages
 //! on the user's behalf:
 //!
 //!   - `~/.claude.json`              MCP servers
@@ -7,7 +7,7 @@
 //!   - `~/.claude/CLAUDE.md` + project CLAUDE.md  memory files
 //!
 //! Per locked decision §0.2 of `docs/internal/v1-tui-parity-plan.md`, all
-//! writes go to the same files Claude Code (TUI) reads — so a Hermes
+//! writes go to the same files Claude Code (TUI) reads — so a Entry
 //! edit applies in standalone Claude Code without round-trips.
 //!
 //! Every JSON write goes through `atomic_json_write` (read → mutate →
@@ -244,7 +244,7 @@ fn validate_server_name(name: &str) -> Result<&str, String> {
     }
     // Real MCP server names from the Claude Code ecosystem include
     // dots and colons — e.g. "claude.ai Gmail", "plugin:telegram:telegram",
-    // "hermes-hq.kanban-board".  The previous tighter whitelist rejected
+    // "entry-ide.kanban-board".  The previous tighter whitelist rejected
     // those, breaking remove / read-spec on legitimate entries.
     //
     // Names are stored as JSON object keys and used only for HashMap
@@ -502,7 +502,7 @@ mod tests {
         assert!(validate_server_name("claude.ai Google Drive").is_ok());
         assert!(validate_server_name("claude.ai Google Calendar").is_ok());
         assert!(validate_server_name("plugin:telegram:telegram").is_ok());
-        assert!(validate_server_name("hermes-hq.kanban-board").is_ok());
+        assert!(validate_server_name("entry-ide.kanban-board").is_ok());
         assert!(validate_server_name("context7").is_ok());
         assert!(validate_server_name("Sanity").is_ok());
         assert!(validate_server_name("mcp_server.v2").is_ok());

@@ -1,7 +1,7 @@
 /**
  * Archetype paint tokens — v1.1.15 consolidated catalogue (8 themes).
  *
- * Hermes shipped 30 themes through 1.1.14.  v1.1.15 collapses that to
+ * Entry shipped 30 themes through 1.1.14.  v1.1.15 collapses that to
  * **eight**: four dark, four light.  Each theme has a distinguishing
  * fingerprint — an accent hue, a background tone, and (for two of
  * them) an archetype-level CSS feature like CRT scanlines or sharp
@@ -157,7 +157,7 @@ describe("themes.css — dark theme fingerprints", () => {
     expect(block).toMatch(/--bg-0:\s*#1a1714/i);
   });
 
-  it("observatory has the brass accent (the Hermes signature hue)", () => {
+  it("observatory has the brass accent (the Entry signature hue)", () => {
     const block = extractBlock(themesCss, "observatory");
     expect(block).toMatch(/--accent:\s*#d4a86a/i);
   });

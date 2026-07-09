@@ -88,7 +88,7 @@ describe("validateAddMcpForm (mcp-8, mcp-9, mcp-20, mcp-21, mcp-22)", () => {
       "claude.ai Gmail",
       "claude.ai Google Drive",
       "plugin:telegram:telegram",
-      "hermes-hq.kanban-board",
+      "entry-ide.kanban-board",
       "name.with.many.dots",
     ]) {
       expect(

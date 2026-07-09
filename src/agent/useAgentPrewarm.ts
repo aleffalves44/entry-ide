@@ -1,5 +1,5 @@
 /**
- * useAgentPrewarm — fetches the on-disk static data Hermes can show
+ * useAgentPrewarm — fetches the on-disk static data Entry can show
  * BEFORE the SDK init event lands.  Spec: §8.12 of v1-tui-parity-plan.md.
  *
  * In stream-json mode the SDK only emits `init` after the first user

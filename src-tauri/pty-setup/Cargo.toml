@@ -1,5 +1,5 @@
 [package]
-name = "hermes-pty-setup"
+name = "entry-pty-setup"
 version = "0.1.0"
 edition = "2021"
 

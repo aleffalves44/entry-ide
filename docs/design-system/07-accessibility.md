@@ -88,7 +88,7 @@ The global default in `base.css` honors `prefers-reduced-motion`:
 }
 ```
 
-Critical motion utilities (`.hermes-progress`, `.hermes-skel`,
+Critical motion utilities (`.entry-progress`, `.entry-skel`,
 `.agent-cursor`, `.status-capsule-pulse`) provide an explicit
 reduced-motion fallback that retains a useful static state — they
 should not vanish entirely.

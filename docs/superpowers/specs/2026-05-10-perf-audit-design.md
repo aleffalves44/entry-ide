@@ -6,7 +6,7 @@
 
 ## Goal
 
-Make Hermes IDE faster on two surfaces without introducing regressions. Every fix must be gated behind a test that captures the observable behavior so we can prove the optimization is safe.
+Make Entry IDE faster on two surfaces without introducing regressions. Every fix must be gated behind a test that captures the observable behavior so we can prove the optimization is safe.
 
 ## Non-Goals
 

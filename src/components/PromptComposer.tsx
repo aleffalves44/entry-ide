@@ -353,8 +353,8 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
       const json = JSON.stringify(bundle, null, 2);
       const safeName = tpl.name.replace(/[^a-zA-Z0-9_-]/g, "_").toLowerCase();
       const path = await save({
-        defaultPath: `${safeName}.hermes-prompts`,
-        filters: [{ name: "Entry Prompts", extensions: ["hermes-prompts"] }],
+        defaultPath: `${safeName}.entry-prompts`,
+        filters: [{ name: "Entry Prompts", extensions: ["entry-prompts"] }],
       });
       if (!path) return;
       await exportPromptBundle(path, json);
@@ -372,8 +372,8 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
       const bundle = createBundle(userTemplates, customRoles, customStyles, builtInRoleIds, builtInStyleIds, appVersion);
       const json = JSON.stringify(bundle, null, 2);
       const path = await save({
-        defaultPath: "my-prompts.hermes-prompts",
-        filters: [{ name: "Entry Prompts", extensions: ["hermes-prompts"] }],
+        defaultPath: "my-prompts.entry-prompts",
+        filters: [{ name: "Entry Prompts", extensions: ["entry-prompts"] }],
       });
       if (!path) return;
       await exportPromptBundle(path, json);
@@ -387,7 +387,7 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
   const handleImportBundle = useCallback(async () => {
     try {
       const path = await open({
-        filters: [{ name: "Entry Prompts", extensions: ["hermes-prompts"] }],
+        filters: [{ name: "Entry Prompts", extensions: ["entry-prompts"] }],
         multiple: false,
         directory: false,
       });
@@ -406,8 +406,8 @@ export function PromptComposer({ sessionId, onClose, addToast }: PromptComposerP
         return;
       }
       // Derive a default group name from the bundle
-      const bundleName = validation.bundle._hermes_bundle_name
-        ?? (path as string).split("/").pop()?.replace(/\.hermes-prompts$/i, "")
+      const bundleName = validation.bundle._entry_bundle_name
+        ?? (path as string).split("/").pop()?.replace(/\.entry-prompts$/i, "")
         ?? undefined;
 
       const { templates: newTemplates, roles: newRoles, styles: newStyles, result } = importBundle(

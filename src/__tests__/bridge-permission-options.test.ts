@@ -7,7 +7,7 @@
  * refuses to bypass — surfacing as "permission denied" errors the host
  * UI cannot explain.
  *
- * Hermes' UI exposes the permission-mode chip as flippable to ANY mode
+ * Entry' UI exposes the permission-mode chip as flippable to ANY mode
  * mid-session. The SDK's runtime `setPermissionMode` control op refuses
  * to enter `bypassPermissions` unless the session was spawned with
  * `allowDangerouslySkipPermissions: true`. We therefore grant the

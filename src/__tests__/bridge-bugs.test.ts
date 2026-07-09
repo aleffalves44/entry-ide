@@ -1,5 +1,5 @@
 /**
- * Audit-found bug coverage for the Hermes Claude Bridge.
+ * Audit-found bug coverage for the Entry Claude Bridge.
  *
  * Each test in this file is intentionally written to FAIL against the
  * current bridge implementation — they document concrete bugs (not

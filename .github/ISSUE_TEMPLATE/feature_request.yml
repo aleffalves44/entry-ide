@@ -1,11 +1,11 @@
 name: Feature Request
-description: Suggest a new feature for Hermes IDE
+description: Suggest a new feature for Entry IDE
 labels: [feature-request, needs-triage]
 body:
   - type: markdown
     attributes:
       value: |
-        Hermes IDE is intentionally minimal. Please read our [Design Principles](https://github.com/hermes-hq/hermes-ide/blob/main/DESIGN_PRINCIPLES.md) before submitting.
+        Entry IDE is intentionally minimal. Please read our [Design Principles](https://github.com/aleffalves44/entry-ide/blob/main/DESIGN_PRINCIPLES.md) before submitting.
   - type: textarea
     id: problem
     attributes:

@@ -1,10 +1,10 @@
-# Contributing to Hermes IDE
+# Contributing to Entry IDE
 
-Thank you for considering contributing to Hermes IDE! This guide will help you get started.
+Thank you for considering contributing to Entry IDE! This guide will help you get started.
 
 ## Before You Start
 
-**Read the [Design Principles](DESIGN_PRINCIPLES.md).** Hermes IDE is intentionally minimal. We say "no" to most feature requests. Understanding these principles will save you time.
+**Read the [Design Principles](DESIGN_PRINCIPLES.md).** Entry IDE is intentionally minimal. We say "no" to most feature requests. Understanding these principles will save you time.
 
 **Read the [Architecture Guide](ARCHITECTURE.md)** to understand the codebase structure before diving into code. It covers the frontend/backend split, state management, terminal rendering, and all the domain-specific concepts you will encounter.
 
@@ -46,8 +46,8 @@ All contributors must sign the [Contributor License Agreement](CLA.md) before th
 ### Getting Running
 
 ```bash
-git clone https://github.com/hermes-hq/hermes-ide.git
-cd hermes-ide
+git clone https://github.com/aleffalves44/entry-ide.git
+cd entry-ide
 npm install
 npm run tauri dev
 ```
@@ -82,7 +82,7 @@ cd src-tauri && cargo test   # Run Rust tests
 
 ## Finding Good First Issues
 
-If you are new to the project, look for issues labeled [`good-first-issue`](https://github.com/hermes-hq/hermes-ide/labels/good-first-issue). These are intentionally scoped to be approachable for newcomers and usually include enough context to get started without deep codebase knowledge.
+If you are new to the project, look for issues labeled [`good-first-issue`](https://github.com/aleffalves44/entry-ide/labels/good-first-issue). These are intentionally scoped to be approachable for newcomers and usually include enough context to get started without deep codebase knowledge.
 
 ## Commit Message Convention
 
@@ -131,8 +131,8 @@ Keep the description concise (under 72 characters). Use the commit body for addi
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](https://github.com/hermes-hq/.github/blob/main/CODE_OF_CONDUCT.md). Please be respectful.
+This project follows the [Contributor Covenant Code of Conduct](https://github.com/aleffalves44/entry-ide/blob/main/CODE_OF_CONDUCT.md). Please be respectful.
 
 ## Questions?
 
-Open a thread in [GitHub Discussions](https://github.com/hermes-hq/hermes-ide/discussions).
+Open a thread in [GitHub Discussions](https://github.com/aleffalves44/entry-ide/discussions).

@@ -40,34 +40,34 @@ Use a token.
 One canonical loader replaces the three rotating-border CSS spinners:
 
 ```css
-.hermes-progress {
+.entry-progress {
   position: relative;
   height: 2px;
   background: color-mix(in srgb, var(--voice-user) 14%, transparent);
   border-radius: 1px;
   overflow: hidden;
 }
-.hermes-progress::after {
+.entry-progress::after {
   content: "";
   position: absolute;
   inset: 0;
   width: 33%;
   background: linear-gradient(90deg, transparent, var(--voice-user) 50%, transparent);
-  animation: hermes-progress-sweep 1.2s var(--ease-out-soft) infinite;
+  animation: entry-progress-sweep 1.2s var(--ease-out-soft) infinite;
 }
-@keyframes hermes-progress-sweep {
+@keyframes entry-progress-sweep {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .hermes-progress::after { animation: none; opacity: 0.6; }
+  .entry-progress::after { animation: none; opacity: 0.6; }
 }
 ```
 
 ## Skeleton loaders
 
 ```css
-.hermes-skel {
+.entry-skel {
   background: linear-gradient(
     90deg,
     var(--bg-2) 0%,
@@ -75,16 +75,16 @@ One canonical loader replaces the three rotating-border CSS spinners:
     var(--bg-2) 100%
   );
   background-size: 200% 100%;
-  animation: hermes-skel-shimmer 1.6s ease-in-out infinite;
+  animation: entry-skel-shimmer 1.6s ease-in-out infinite;
   border-radius: 4px;
   color: transparent;
   user-select: none;
 }
-@keyframes hermes-skel-shimmer {
+@keyframes entry-skel-shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
 }
-@media (prefers-reduced-motion: reduce) { .hermes-skel { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .entry-skel { animation: none; } }
 ```
 
 ## Message entry stagger
@@ -186,7 +186,7 @@ static useful state rather than disappearing entirely.
 }
 
 /* ✓ Brass sweep */
-<div class="hermes-progress" />
+<div class="entry-progress" />
 
 /* ✗ Hardcoded easing/duration */
 .button { transition: background 0.15s ease; }

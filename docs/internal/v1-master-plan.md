@@ -1,4 +1,4 @@
-# Hermes IDE — v1.0 Agent Mode Master Plan
+# Entry IDE — v1.0 Agent Mode Master Plan
 
 > **Status: DRAFT — awaiting user sign-off.**
 > No code is written against this document until the user approves and we agree on milestone ordering.
@@ -31,12 +31,12 @@ Three concrete consequences for the user:
 
 Four integration planes we now use as a peer to Claude:
 
-1. **In-process MCP server** via `createSdkMcpServer()` — JS handlers share memory with the Tauri webview's IDE state. Resources expose live state on demand (`hermes://project/state`, `hermes://git/status`, `hermes://session/memory`, `hermes://session/transcript`). Tools let Claude drive the IDE (`hermes__open_file`, `hermes__show_diff`, `hermes__attach_project`).
+1. **In-process MCP server** via `createSdkMcpServer()` — JS handlers share memory with the Tauri webview's IDE state. Resources expose live state on demand (`entry://project/state`, `entry://git/status`, `entry://session/memory`, `entry://session/transcript`). Tools let Claude drive the IDE (`entry__open_file`, `entry__show_diff`, `entry__attach_project`).
 2. **`SessionStart` hook with `additionalContext`** — invisible per-session orientation. Claude knows its model · permission · effort · cwd · branch · open file on every spawn and after every compaction. No transcript pollution.
 3. **`canUseTool` callback** — permission UX rendered in our own React modal. Slides up from the bottom of the conversation, shows file path + diff + `[Approve / Approve All / Deny / Edit]`.
 4. **Settings injection at spawn time** — `--settings <literal-json>` composes hooks, status line, file-suggestion backend per-spawn. No files written to disk.
 
-The headline mental model: **Claude is a coworker that runs inside Hermes**, with native access to the IDE state, full ability to act on it, and a first-class undo on its actions. Conductor scrapes a TUI; Cursor relays through extensions; we co-host.
+The headline mental model: **Claude is a coworker that runs inside Entry**, with native access to the IDE state, full ability to act on it, and a first-class undo on its actions. Conductor scrapes a TUI; Cursor relays through extensions; we co-host.
 
 ---
 
@@ -44,38 +44,38 @@ The headline mental model: **Claude is a coworker that runs inside Hermes**, wit
 
 Every feature lives in one of these. Treat them as the architecture root.
 
-### Pillar A — The Hermes MCP server (`hermes://`) — IN-PROCESS
+### Pillar A — The Entry MCP server (`entry://`) — IN-PROCESS
 
 Built with the SDK's `createSdkMcpServer()` factory. Lives in the Tauri webview's JS context. Tool handlers are plain JS functions; resource handlers return live snapshots from the React state / Tauri IPC. Zero serialization across processes.
 
 **What it exposes:**
 
 *Resources (Claude reads on demand, no token cost when unused):*
-- `hermes://project/state` — `{ cwd, branch, dirty, openFile, selection, openTabs[], recentEdits[] }`
-- `hermes://git/status` — output of `git status --short` (or structured equivalent)
-- `hermes://git/diff` — current uncommitted diff
-- `hermes://git/log` — last 20 commits
-- `hermes://projects` — `[ { id, name, path, branch, attachedAt } ]` for all projects attached to this session
-- `hermes://session/memory` — user-pinned facts, notes, links (scoped per session)
-- `hermes://session/pins` — pinned files for the session
-- `hermes://session/transcript` — past turns as JSONL (Claude can search its own prior conversation — effectively infinite memory across compactions)
+- `entry://project/state` — `{ cwd, branch, dirty, openFile, selection, openTabs[], recentEdits[] }`
+- `entry://git/status` — output of `git status --short` (or structured equivalent)
+- `entry://git/diff` — current uncommitted diff
+- `entry://git/log` — last 20 commits
+- `entry://projects` — `[ { id, name, path, branch, attachedAt } ]` for all projects attached to this session
+- `entry://session/memory` — user-pinned facts, notes, links (scoped per session)
+- `entry://session/pins` — pinned files for the session
+- `entry://session/transcript` — past turns as JSONL (Claude can search its own prior conversation — effectively infinite memory across compactions)
 
 *Tools (Claude calls when it wants to act on the IDE):*
-- `hermes__open_file(path, line?)` — opens a tab, optionally jumps to line
-- `hermes__show_diff(path, original, proposed)` — renders our native diff viewer with `[Apply / Reject / Modify]`. Approval flow lives in the IDE, not in chat.
-- `hermes__reveal_in_explorer(path)` — Finder/Explorer reveal
-- `hermes__run_in_terminal(sessionId?, command)` — runs in a PTY pane (terminal mode)
-- `hermes__attach_project(path)`, `hermes__detach_project(projectId)`
-- `hermes__pin_file(path)`, `hermes__unpin_file(path)`
-- `hermes__remember(key, value)` — session memory write
+- `entry__open_file(path, line?)` — opens a tab, optionally jumps to line
+- `entry__show_diff(path, original, proposed)` — renders our native diff viewer with `[Apply / Reject / Modify]`. Approval flow lives in the IDE, not in chat.
+- `entry__reveal_in_explorer(path)` — Finder/Explorer reveal
+- `entry__run_in_terminal(sessionId?, command)` — runs in a PTY pane (terminal mode)
+- `entry__attach_project(path)`, `entry__detach_project(projectId)`
+- `entry__pin_file(path)`, `entry__unpin_file(path)`
+- `entry__remember(key, value)` — session memory write
 
-*Prompts (slash-callable from the composer via `/mcp__hermes__*`):*
-- `/mcp__hermes__diff_active_file` — generate a diff against HEAD for the currently-open file
-- `/mcp__hermes__summarize_session` — structured handoff summary
-- `/mcp__hermes__explain_selection` — uses current editor selection
+*Prompts (slash-callable from the composer via `/mcp__entry__*`):*
+- `/mcp__entry__diff_active_file` — generate a diff against HEAD for the currently-open file
+- `/mcp__entry__summarize_session` — structured handoff summary
+- `/mcp__entry__explain_selection` — uses current editor selection
 
 **Spawn-time wiring:**
-SDK's `query()` accepts `mcpServers: { hermes: createSdkMcpServer({ tools, resources, prompts }) }`. No `--mcp-config` flag, no subprocess, no socket. We also pass `allowedTools: ["mcp__hermes__*"]` so Claude can call them without per-tool approval friction.
+SDK's `query()` accepts `mcpServers: { entry: createSdkMcpServer({ tools, resources, prompts }) }`. No `--mcp-config` flag, no subprocess, no socket. We also pass `allowedTools: ["mcp__entry__*"]` so Claude can call them without per-tool approval friction.
 
 ### Pillar B — Hooks + permission UX via the SDK
 
@@ -85,8 +85,8 @@ We don't run an HTTP server. The SDK accepts `hooks: Partial<Record<HookEvent, H
 const result = query({
   prompt: userInput,
   options: {
-    mcpServers: { hermes: createSdkMcpServer({ /* … */ }) },
-    allowedTools: ["mcp__hermes__*"],
+    mcpServers: { entry: createSdkMcpServer({ /* … */ }) },
+    allowedTools: ["mcp__entry__*"],
     hooks: {
       SessionStart: [{
         matcher: "startup|resume|compact",
@@ -177,7 +177,7 @@ The visible conversation. Every UI affordance lives here. Specified per-componen
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
-│ ●  AGENT · sonnet · my-project · +2 paths · MCP·hermes      14:32 [≡]│
+│ ●  AGENT · sonnet · my-project · +2 paths · MCP·entry      14:32 [≡]│
 └──────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -196,7 +196,7 @@ The visible conversation. Every UI affordance lives here. Specified per-componen
 **Sub-spec — "+N paths" indicator:**
 Hover reveals a popover with the full list of attached project paths. Click → opens the projects sidebar. Pulses brass for 2s after a project attach/detach.
 
-**Sub-spec — `MCP·hermes` lozenge:**
+**Sub-spec — `MCP·entry` lozenge:**
 Reflects `init.mcp_servers` status. Green when our MCP server is `connected`, red+pulse when `failed`, hidden when no MCP server is configured for that session.
 
 ### 3.2 Conversation column
@@ -237,7 +237,7 @@ Centered. Max-width 920px (current). Each turn:
 - Brass focus ring on the slate.
 
 **Slash commands:**
-- `/` opens a dropdown of available slash commands (from `init.slash_commands`) plus our MCP-prompts (`/mcp__hermes__*`).
+- `/` opens a dropdown of available slash commands (from `init.slash_commands`) plus our MCP-prompts (`/mcp__entry__*`).
 - Tab to accept, Enter to insert, Esc to dismiss.
 
 **Image paste / drop:**
@@ -278,8 +278,8 @@ Today the Context Panel is hidden behind a toggle. **For agent mode, it's always
 **Spec:**
 
 - **Projects section** — `attachedProjects` list with toggle-detach checkboxes. `+ add project…` opens the project picker.
-- **Session memory** — list of pinned facts. Each is `{key, value, ts}`. Add via input. Remove via ✕. Stored per-session, exposed to Claude via `hermes://session/memory`.
-- **Pinned files** — files Claude should always have access to. Exposed via `hermes://session/pins` (planned new resource) or just `--add-dir <parent>`.
+- **Session memory** — list of pinned facts. Each is `{key, value, ts}`. Add via input. Remove via ✕. Stored per-session, exposed to Claude via `entry://session/memory`.
+- **Pinned files** — files Claude should always have access to. Exposed via `entry://session/pins` (planned new resource) or just `--add-dir <parent>`.
 - **Cost & tokens** — per-session `metrics.token_usage`. Sparkline of recent turns. Progress bar against any `--max-budget-usd` set.
 
 The current `ContextPanel` has most of this; we're rewiring it to ALWAYS render in agent mode and surfacing it through the MCP server so Claude can read the same data.
@@ -385,8 +385,8 @@ From the audit, here's what the agent surface MUST support, with priority. Items
 | Feature | Status today | Plan |
 |---|---|---|
 | Context Panel always visible | hidden by default in agent mode | M5 — rewire to always-visible right sidebar in agent mode |
-| Memory facts (CLAUDE.md memory) | hidden | M5 — sidebar section + MCP resource `hermes://session/memory` |
-| Pinned files | hidden | M5 — sidebar section + MCP resource `hermes://session/pins` |
+| Memory facts (CLAUDE.md memory) | hidden | M5 — sidebar section + MCP resource `entry://session/memory` |
+| Pinned files | hidden | M5 — sidebar section + MCP resource `entry://session/pins` |
 | Token metrics per-session | only global in status bar | M5 — sidebar section + cost-tracking against `--max-budget-usd` |
 | Provider Actions Bar in agent | hidden by design | leave hidden; the composer is the agent input. ✅ |
 | Execution-mode cycle button | hidden by design | leave hidden in agent mode. ✅ |
@@ -423,7 +423,7 @@ From the audit, here's what the agent surface MUST support, with priority. Items
 
 | Feature | Why it matters |
 |---|---|
-| Hermes MCP server | Claude has first-class access to IDE state without polluting messages |
+| Entry MCP server | Claude has first-class access to IDE state without polluting messages |
 | `SessionStart` hook with IDE digest | Claude is *oriented* every session start, post-compaction |
 | Native permission UX via `canUseTool` / `defer` | Permission prompts render in our React, not as a Claude prompt |
 | `rewindFiles()` checkpointing | Undo-an-edit affordance after Claude makes a change you don't like |
@@ -459,9 +459,9 @@ Every behavior in §3 maps to a test. The columns: spec, test name, level (unit 
 | 3.7 | "No conversation found" surfaces with Start-Fresh CTA | `failure-no-conversation.test.tsx` | component | M8 |
 | 3.7 | Subprocess crash shows stderr + retry | `failure-crash.test.tsx` | component | M8 |
 | 3.7 | Rate limit banner with countdown | `failure-rate-limit.test.tsx` | component | M8 |
-| 4.4 | MCP server registers under `~/.claude/ide/<port>.lock` | `e2e_hermes_mcp_handshake.rs` | e2e | M4 |
-| 4.4 | MCP `hermes://project/state` returns live IDE state | `e2e_hermes_mcp_resource.rs` | e2e | M4 |
-| 4.4 | MCP `hermes__open_file` opens a tab in the IDE | `e2e_hermes_mcp_open_file.rs` | e2e | M4 |
+| 4.4 | MCP server registers under `~/.claude/ide/<port>.lock` | `e2e_entry_mcp_handshake.rs` | e2e | M4 |
+| 4.4 | MCP `entry://project/state` returns live IDE state | `e2e_entry_mcp_resource.rs` | e2e | M4 |
+| 4.4 | MCP `entry__open_file` opens a tab in the IDE | `e2e_entry_mcp_open_file.rs` | e2e | M4 |
 | 4.4 | `SessionStart` hook injects IDE digest | `e2e_session_start_hook.rs::additionalContext lands in claude` | e2e | M4 |
 | 4.4 | `--add-dir` grants Claude access to attached project | `e2e_add_dir_grants_extra_project_access` | e2e | M1 ✅ |
 
@@ -548,23 +548,23 @@ Parallel agents pick up M2…M10 once M1 is green. Each agent owns its milestone
 
 **Gate:** preflight + new tests.
 
-### M4 — Hermes MCP server + Hook bridge
+### M4 — Entry MCP server + Hook bridge
 
 **Goal:** Claude has first-class IDE awareness via MCP + `SessionStart` hook, without polluting messages.
 
 **Pre-conditions:** M1.
 
 **Deliverables:**
-- New crate `src-tauri/src/mcp/` — Hermes MCP server stdio binary (or in-process behind a stdio adapter).
+- New crate `src-tauri/src/mcp/` — Entry MCP server stdio binary (or in-process behind a stdio adapter).
 - New module `src-tauri/src/hook_bridge/` — HTTP server bound to 127.0.0.1, fresh token, hook endpoints.
 - `--mcp-config` and `--settings` composed at spawn time in `build_spawn_args` (extend it).
 - IDE state shared between Tauri main process, MCP server, and hook bridge via a `tokio::sync::watch::Receiver<IdeState>`.
-- Resources: `hermes://project/state`, `hermes://git/status`, `hermes://projects`, `hermes://session/memory`, `hermes://session/pins`.
-- Tools: `hermes__open_file`, `hermes__show_diff`, `hermes__attach_project`, `hermes__pin_file`.
+- Resources: `entry://project/state`, `entry://git/status`, `entry://projects`, `entry://session/memory`, `entry://session/pins`.
+- Tools: `entry__open_file`, `entry__show_diff`, `entry__attach_project`, `entry__pin_file`.
 - New tests:
-  - `e2e_hermes_mcp_handshake` — claude lists `hermes` in `init.mcp_servers` as connected.
-  - `e2e_hermes_mcp_resource` — claude can read `hermes://project/state` and the JSON matches the live state.
-  - `e2e_hermes_mcp_open_file` — claude calls `hermes__open_file`, IDE responds, file opens.
+  - `e2e_entry_mcp_handshake` — claude lists `entry` in `init.mcp_servers` as connected.
+  - `e2e_entry_mcp_resource` — claude can read `entry://project/state` and the JSON matches the live state.
+  - `e2e_entry_mcp_open_file` — claude calls `entry__open_file`, IDE responds, file opens.
   - `e2e_session_start_hook` — `additionalContext` from `SessionStart` lands in claude (verify by asking claude to repeat it).
   - `e2e_pretooluse_defer` — `PreToolUse` returning `defer` does NOT auto-execute the tool.
 
@@ -574,12 +574,12 @@ Parallel agents pick up M2…M10 once M1 is green. Each agent owns its milestone
 
 **Goal:** the right-sidebar context panel is always visible in agent mode and integrates with the MCP server.
 
-**Pre-conditions:** M4 (depends on `hermes://session/memory`).
+**Pre-conditions:** M4 (depends on `entry://session/memory`).
 
 **Deliverables:**
 - `ContextPanel` is always rendered in agent mode (no toggle).
-- Memory pin/unpin UI → writes to per-session memory store → exposed via `hermes://session/memory`.
-- Pinned files UI → writes to per-session pins → exposed via `hermes://session/pins`.
+- Memory pin/unpin UI → writes to per-session memory store → exposed via `entry://session/memory`.
+- Pinned files UI → writes to per-session pins → exposed via `entry://session/pins`.
 - Cost & tokens section: aggregates `metrics.token_usage` from result events, shows sparkline, shows `--max-budget-usd` progress.
 - New tests:
   - `agent-context-panel.test.tsx::always rendered in agent mode`
@@ -628,9 +628,9 @@ Parallel agents pick up M2…M10 once M1 is green. Each agent owns its milestone
 
 **Deliverables:**
 - Project picker UI in Context Panel.
-- Attach updates `session.workspace_paths` AND triggers an immediate re-snapshot of MCP `hermes://project/state`.
+- Attach updates `session.workspace_paths` AND triggers an immediate re-snapshot of MCP `entry://project/state`.
 - Detach mirrors.
-- Frontend integration test: attach → submit → IPC call carries new `addDirs` AND `hermes://project/state` reflects new path.
+- Frontend integration test: attach → submit → IPC call carries new `addDirs` AND `entry://project/state` reflects new path.
 - New tests:
   - `attach-project-flow.test.tsx`
   - `e2e_attach_project_propagates_to_mcp_resource`
@@ -741,13 +741,13 @@ The user explicitly chose maximum-quality outcomes regardless of implementation 
 |---|---|---|---|
 | Q1 | Adopt the Claude Agent SDK? | **YES — adopt fully.** Replace raw `tokio::process::Command::new("claude")` + stream-json with `@anthropic-ai/claude-agent-sdk`'s `query()`. | Unlocks `interrupt()`, `setModel()`, `setMcpServers()`, `rewindFiles()` (= file checkpointing), `canUseTool` (= permission UX in our React). Eliminates the fork-empty-stdin class of bugs entirely — we stop forking subprocesses. |
 | Q2 | MCP server transport | **In-process via `createSdkMcpServer()`.** | No subprocess, no socket, no auth token. JS handlers share memory with the Tauri webview's IDE state. Zero IPC latency. |
-| Q3 | Bundle the `claude` binary? | **YES — bundle.** SDK's optional dep ships the binary; we include it. | Zero-install. User downloads Hermes, opens it, works. |
+| Q3 | Bundle the `claude` binary? | **YES — bundle.** SDK's optional dep ships the binary; we include it. | Zero-install. User downloads Entry, opens it, works. |
 | Q4 | Bypass-permission confirmation | **YES — explicit confirm modal.** Type "bypass" to confirm. Red chip stays red afterwards so it's never invisible. | Friction proportional to risk. No accidental "Claude can do anything" toggles. |
 | Q5 | Idle subprocess timeout | **20 minutes.** SDK's `query()` lifecycle handles teardown; auto-respawn on next message is invisible. | Frees memory; no zombie procs. |
 | Q6 | Mid-conversation IDE→Claude orientation | **YES — inject `[system: model X · perm Y · effort Z · cwd … · branch …]` via `SessionStart` hook on every spawn AND after every compaction.** | Claude self-reports its own model wrong. We fix that with hook-injected `additionalContext`, invisible to the transcript. |
 | Q7 | Project-attach apply timing | **EAGER via `setMcpServers()`.** | Click "attach" → Claude has access *that second*. Mid-conversation, no fork, no respawn. Only possible because of Q1. |
 | Q8 | Cost meter | **Always-on lozenge in masthead** (`$0.42 · 12k tokens`). Soft warn at 80% of `--max-budget-usd` if user opted into a cap. Hard cap is opt-in per session. | Real-time visibility is the feature; surprise budget kills are not. |
-| Q9 | Publish as Claude Code plugin | **v1.0: IDE-only. v1.1: ALSO publish the same MCP server as a plugin** so users running claude outside Hermes still get our IDE-aware tools. | Network effect once Hermes is stable. |
+| Q9 | Publish as Claude Code plugin | **v1.0: IDE-only. v1.1: ALSO publish the same MCP server as a plugin** so users running claude outside Entry still get our IDE-aware tools. | Network effect once Entry is stable. |
 | Q10 | Migration / rename | **Preserve every UI convention from v0.6.** | No muscle-memory break. Workspace restore handles schema bump silently. |
 
 ## 8.1 Implicit decisions also locked (user delegated "best UX")
@@ -760,9 +760,9 @@ Locked now so no agent has to ask:
 | I2 | **File checkpointing** | Every `FileToolBlock` exposes "Undo this edit" on hover. Calls `rewindFiles({ userMessageId })`. Cmd+Z keyboard shortcut from anywhere in the conversation reverts the latest tool-driven file change. |
 | I3 | **Live tool stdout** | Bash blocks render stdout as it streams (we already receive partial messages; render them progressively). |
 | I4 | **Conversation forking** | Right-click any user message → "Fork from here" → spawns a sibling conversation in a new pane via SDK's `resumeSessionAt`. |
-| I5 | **History search** | New MCP resource `hermes://session/transcript` — Claude can read its own past turns. Effectively infinite memory across compactions. |
+| I5 | **History search** | New MCP resource `entry://session/transcript` — Claude can read its own past turns. Effectively infinite memory across compactions. |
 | I6 | **@-mention autocomplete** | Pulls files from all attached projects via Settings `fileSuggestion`. Inline file path inserted on select. |
-| I7 | **Slash dropdown** | Single dropdown shows built-ins + our MCP prompts (`/mcp__hermes__diff_active_file`, `/mcp__hermes__summarize_session`, etc.). |
+| I7 | **Slash dropdown** | Single dropdown shows built-ins + our MCP prompts (`/mcp__entry__diff_active_file`, `/mcp__entry__summarize_session`, etc.). |
 | I8 | **Always-visible Context Panel in agent mode** | 280px right sidebar. Sections: Projects · Memory · Pinned Files · Cost & Tokens. No discoverability gap. |
 | I9 | **Crash recovery** | App restart shows partial transcript + `[Resume from here]` CTA wiring `--resume <claudeUuid>`. |
 | I10 | **Streaming markdown render** | Assistant prose renders progressively as bytes arrive, not in one block at turn end. |
@@ -770,7 +770,7 @@ Locked now so no agent has to ask:
 | I12 | **Inline image rendering** | Paste/drop image → preview thumbnail in the user message after submit (not just an attachment chip). |
 | I13 | **Conversation export** | Right-click session → "Export as Markdown" / "Export as JSON". |
 | I14 | **Right-click everywhere** | Files (reveal/open/diff), tool blocks (re-run/copy/inspect), messages (fork-from-here/copy-as-markdown). |
-| I15 | **Inline diff acceptance** | When Claude proposes an edit via `hermes__show_diff`, we render a native diff viewer with `[Apply · Reject · Modify]` — the entire approval happens without sending a chat message. |
+| I15 | **Inline diff acceptance** | When Claude proposes an edit via `entry__show_diff`, we render a native diff viewer with `[Apply · Reject · Modify]` — the entire approval happens without sending a chat message. |
 
 ---
 

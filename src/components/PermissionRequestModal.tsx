@@ -1,8 +1,8 @@
 /**
  * Permission request modal.  Rendered when the bridge forwards a
- * canUseTool request as a `_hermes_perm_request` envelope.  The user's
+ * canUseTool request as a `_entry_perm_request` envelope.  The user's
  * decision (approve, approve-all, deny, edit) is sent back via the
- * caller's `onDecision` handler — which writes a `_hermes_perm_response`
+ * caller's `onDecision` handler — which writes a `_entry_perm_response`
  * to the bridge's stdin.
  *
  * Visual: docs/internal/v1-tui-parity-plan.md §8.4.

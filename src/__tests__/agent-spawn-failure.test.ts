@@ -23,8 +23,8 @@ describe("formatSpawnError", () => {
     expect(formatSpawnError(new Error("boom"))).toBe("boom");
   });
   it("passes through string errors verbatim", () => {
-    expect(formatSpawnError("could not locate hermes-claude-bridge.mjs")).toBe(
-      "could not locate hermes-claude-bridge.mjs",
+    expect(formatSpawnError("could not locate entry-claude-bridge.mjs")).toBe(
+      "could not locate entry-claude-bridge.mjs",
     );
   });
   it("JSON-encodes object errors", () => {
@@ -49,7 +49,7 @@ describe("reportAgentSpawnFailure", () => {
     await reportAgentSpawnFailure(
       {
         sessionId: "abc-123",
-        error: new Error("could not locate hermes-claude-bridge.mjs"),
+        error: new Error("could not locate entry-claude-bridge.mjs"),
         context: "create",
       },
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -62,7 +62,7 @@ describe("reportAgentSpawnFailure", () => {
     expect(stderrEvent).toBeDefined();
     expect(exitEvent).toBeDefined();
     expect(stderrEvent!.payload).toMatch(
-      /\[spawn:create\] could not locate hermes-claude-bridge\.mjs/,
+      /\[spawn:create\] could not locate entry-claude-bridge\.mjs/,
     );
     // Trailing newline so concatenated chunks render line-per-failure.
     expect(stderrEvent!.payload).toMatch(/\n$/);

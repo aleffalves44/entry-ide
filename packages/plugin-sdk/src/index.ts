@@ -1,5 +1,5 @@
 export type {
-	HermesPluginAPI,
+	EntryPluginAPI,
 	PluginPanelProps,
 	Disposable,
 	PluginManifest,
@@ -15,13 +15,13 @@ export type {
 	PluginSettingBoolean,
 	PluginSettingSelect,
 	PluginPermission,
-	HermesEvent,
+	EntryEvent,
 	ActivationEvent,
 } from "./api";
 
 /** Helper to create a typed plugin module with full type inference. */
 export function definePlugin(plugin: {
-	activate: (api: HermesPluginAPI) => void | Promise<void>;
+	activate: (api: EntryPluginAPI) => void | Promise<void>;
 	deactivate?: () => void | Promise<void>;
 }): typeof plugin {
 	return plugin;

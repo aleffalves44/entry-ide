@@ -6,7 +6,7 @@
 
 ## Context
 
-Through 0.x, Hermes IDE has been a polished terminal emulator that bolts AI features onto whatever TUI the user runs (Claude Code, Aider, Codex, Gemini, Copilot, Kiro). We detect the running agent by parsing terminal output, scrape `claude --help` to discover capabilities, and — most awkwardly — write to the TUI's stdin via bracketed paste to simulate a chat experience for Claude users.
+Through 0.x, Entry IDE has been a polished terminal emulator that bolts AI features onto whatever TUI the user runs (Claude Code, Aider, Codex, Gemini, Copilot, Kiro). We detect the running agent by parsing terminal output, scrape `claude --help` to discover capabilities, and — most awkwardly — write to the TUI's stdin via bracketed paste to simulate a chat experience for Claude users.
 
 This approach has hit its ceiling. The composer chat surface we built (`feat/composer-mentions`, PR #246) goes as far as TUI scraping reasonably can: `@`-mentions, `/`-autocomplete, image attachments via `Ctrl+V` injection, dynamic capability discovery. But the underlying mechanism — typing into a UI that wasn't designed for us — is fundamentally a hack that breaks subtly whenever Claude's TUI evolves, and it cannot deliver the experience users actually want (rich tool-call rendering, diff cards, thinking visualization, true image input).
 
@@ -14,7 +14,7 @@ Anthropic ships a clean alternative: `claude --print --output-format stream-json
 
 ## Decision
 
-For v1.0.0, Hermes IDE adds a new **Agent mode** for Claude sessions, alongside the existing **Terminal mode**.
+For v1.0.0, Entry IDE adds a new **Agent mode** for Claude sessions, alongside the existing **Terminal mode**.
 
 - **Agent mode (Claude only)** — spawns `claude --print --output-format stream-json --input-format stream-json` as a child process per session. The pane renders a rich message stream (text, thinking, tool-use, tool-result, result-summary) as React components. The composer is the only input surface and writes JSON `user` events to the subprocess's stdin.
 - **Terminal mode (any provider, any shell)** — unchanged from 0.6.16. xterm hosts a TUI subprocess. No composer, no chat puppetry.

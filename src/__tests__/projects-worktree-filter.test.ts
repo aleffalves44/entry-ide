@@ -1,6 +1,6 @@
 /**
  * Tests that getProjects() filters out worktree paths
- * (both current `hermes-worktrees/` and legacy `.hermes/worktrees/` formats).
+ * (both current `entry-worktrees/` and legacy `.entry/worktrees/` formats).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -21,15 +21,15 @@ beforeEach(() => {
 // ─── isWorktreePath ──────────────────────────────────────────────────
 
 describe("isWorktreePath", () => {
-  it("detects current hermes-worktrees/ format", () => {
+  it("detects current entry-worktrees/ format", () => {
     expect(
-      isWorktreePath("/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc_feature"),
+      isWorktreePath("/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc_feature"),
     ).toBe(true);
   });
 
-  it("detects legacy .hermes/worktrees/ format", () => {
+  it("detects legacy .entry/worktrees/ format", () => {
     expect(
-      isWorktreePath("/Users/dev/playground/.hermes/worktrees/c372d349_feature-123"),
+      isWorktreePath("/Users/dev/playground/.entry/worktrees/c372d349_feature-123"),
     ).toBe(true);
   });
 
@@ -37,13 +37,13 @@ describe("isWorktreePath", () => {
     expect(isWorktreePath("/Users/dev/WebstormProjects/my-app")).toBe(false);
   });
 
-  it("returns false for paths containing 'worktrees' outside hermes context", () => {
+  it("returns false for paths containing 'worktrees' outside entry context", () => {
     expect(isWorktreePath("/Users/dev/git-worktrees/my-project")).toBe(false);
   });
 
   it("detects nested worktree paths (subdirectories)", () => {
     expect(
-      isWorktreePath("/app/data/hermes-worktrees/hash/abc_main/src/index.ts"),
+      isWorktreePath("/app/data/entry-worktrees/hash/abc_main/src/index.ts"),
     ).toBe(true);
   });
 });
@@ -68,14 +68,14 @@ describe("getProjects", () => {
   const currentWorktreeProject = {
     ...normalProject,
     id: "2",
-    path: "/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc12345_feature-login",
+    path: "/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc12345_feature-login",
     name: "abc12345_feature-login",
   };
 
   const legacyWorktreeProject = {
     ...normalProject,
     id: "3",
-    path: "/Users/dev/playground/.hermes/worktrees/c372d349_feature-123",
+    path: "/Users/dev/playground/.entry/worktrees/c372d349_feature-123",
     name: "c372d349_feature-123",
   };
 

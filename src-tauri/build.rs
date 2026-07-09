@@ -49,22 +49,22 @@ fn build_pty_setup_helper() {
 
         match status {
             Ok(s) if s.success() => {
-                let built = helper_target_dir.join(profile_dir).join("hermes-pty-setup");
-                let dest = main_target_dir.join("hermes-pty-setup");
+                let built = helper_target_dir.join(profile_dir).join("entry-pty-setup");
+                let dest = main_target_dir.join("entry-pty-setup");
                 if built.exists() {
                     if let Err(e) = std::fs::copy(&built, &dest) {
-                        println!("cargo:warning=Failed to copy hermes-pty-setup: {}", e);
+                        println!("cargo:warning=Failed to copy entry-pty-setup: {}", e);
                     }
                 }
             }
             Ok(s) => {
                 println!(
-                    "cargo:warning=Failed to build hermes-pty-setup (exit code: {:?})",
+                    "cargo:warning=Failed to build entry-pty-setup (exit code: {:?})",
                     s.code()
                 );
             }
             Err(e) => {
-                println!("cargo:warning=Failed to build hermes-pty-setup: {}", e);
+                println!("cargo:warning=Failed to build entry-pty-setup: {}", e);
             }
         }
 

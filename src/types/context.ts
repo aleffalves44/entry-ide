@@ -82,8 +82,8 @@ export interface ApplyContextResult {
   token_budget: number;
 }
 
-/** .hermes/context.json schema as returned from the backend */
-export interface HermesProjectConfig {
+/** .entry/context.json schema as returned from the backend */
+export interface EntryProjectConfig {
   pins: { kind: string; target: string; label?: string }[];
   memory: { key: string; value: string }[];
   conventions: string[];

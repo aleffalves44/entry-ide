@@ -7,20 +7,20 @@
  *
  * Wire shape:
  *   bridge → frontend (stdout NDJSON):
- *     { type: "_hermes_perm_request", id, toolName, input }
+ *     { type: "_entry_perm_request", id, toolName, input }
  *   frontend → bridge (stdin NDJSON):
- *     { type: "_hermes_perm_response", id, decision: { behavior, ... } }
+ *     { type: "_entry_perm_response", id, decision: { behavior, ... } }
  */
 
 export interface PermRequest {
-  type: "_hermes_perm_request";
+  type: "_entry_perm_request";
   id: string;
   toolName: string;
   input: Record<string, unknown>;
 }
 
 export interface PermResponse {
-  type: "_hermes_perm_response";
+  type: "_entry_perm_response";
   id: string;
   decision:
     | { behavior: "allow"; updatedInput?: Record<string, unknown>; persist?: string }
@@ -35,7 +35,7 @@ export function isPermRequest(v: unknown): v is PermRequest {
   if (!v || typeof v !== "object") return false;
   const o = v as Record<string, unknown>;
   return (
-    o.type === "_hermes_perm_request"
+    o.type === "_entry_perm_request"
     && typeof o.id === "string"
     && typeof o.toolName === "string"
     && o.input !== null
@@ -57,13 +57,13 @@ export function buildPermResponse(id: string, decision: PermissionDecision): Per
     if (decision.updatedInput) allow.updatedInput = decision.updatedInput;
     if (decision.persist) allow.persist = decision.persist;
     return {
-      type: "_hermes_perm_response",
+      type: "_entry_perm_response",
       id,
       decision: allow,
     };
   }
   return {
-    type: "_hermes_perm_response",
+    type: "_entry_perm_response",
     id,
     decision: {
       behavior: "deny",
@@ -76,7 +76,7 @@ export function buildPermResponse(id: string, decision: PermissionDecision): Per
 
 /** Build a settings.json `permissions.allow` rule string from the
  *  request's tool name + input.  Same syntax the TUI emits, so the
- *  rule applies in both Hermes and standalone Claude Code. */
+ *  rule applies in both Entry and standalone Claude Code. */
 export function buildApproveAllAllowRule(
   toolName: string,
   input: Record<string, unknown>,

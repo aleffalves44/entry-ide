@@ -31,8 +31,8 @@ describe("PluginLoader", () => {
 		mockInvoke.mockReset();
 
 		// Clean up global state
-		if ((globalThis as any).__hermesPlugins) {
-			delete (globalThis as any).__hermesPlugins;
+		if ((globalThis as any).__entryPlugins) {
+			delete (globalThis as any).__entryPlugins;
 		}
 	});
 

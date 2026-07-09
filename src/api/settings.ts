@@ -5,7 +5,7 @@
 //
 // Export/Import:
 //   - exportSettings() writes a JSON file with all non-machine-specific
-//     settings plus metadata (_hermes_export_version, _hermes_app_version).
+//     settings plus metadata (_entry_export_version, _entry_app_version).
 //   - importSettings() reads the file, skips unknown/metadata keys, and
 //     returns the merged settings map.
 //   - Machine-specific keys (window geometry, workspace layout, etc.) are

@@ -331,17 +331,17 @@ jobs:
         run: |
           cd src-tauri/pty-setup
           cargo build --release --target ${{ matrix.target }} --target-dir ../target
-          HELPER="../target/${{ matrix.target }}/release/hermes-pty-setup"
+          HELPER="../target/${{ matrix.target }}/release/entry-pty-setup"
           APP_DIR=$(find ../target/${{ matrix.target }}/release/bundle/macos -path "*/Contents/MacOS" -type d | head -1)
           if [ -f "$HELPER" ] && [ -n "$APP_DIR" ]; then
-            cp "$HELPER" "$APP_DIR/hermes-pty-setup"
+            cp "$HELPER" "$APP_DIR/entry-pty-setup"
             if [ -n "$APPLE_SIGNING_IDENTITY" ]; then
-              codesign --force -s "$APPLE_SIGNING_IDENTITY" "$APP_DIR/hermes-pty-setup"
+              codesign --force -s "$APPLE_SIGNING_IDENTITY" "$APP_DIR/entry-pty-setup"
               codesign --force --deep -s "$APPLE_SIGNING_IDENTITY" "$APP_DIR/../.."
             fi
-            echo "Bundled and signed hermes-pty-setup"
+            echo "Bundled and signed entry-pty-setup"
 
-            # Rebuild the updater .app.tar.gz so it includes hermes-pty-setup.
+            # Rebuild the updater .app.tar.gz so it includes entry-pty-setup.
             # Tauri creates this archive during `tauri build`, before the helper
             # is injected, so the auto-updater would otherwise ship without it.
             APP_BUNDLE=$(dirname "$APP_DIR")/..
@@ -431,7 +431,7 @@ jobs:
         if: steps.check.outputs.enabled == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: hermes-ide-${{ matrix.platform_key }}-installer
+          name: entry-ide-${{ matrix.platform_key }}-installer
           path: installer-artifacts/
           retention-days: 7
 
@@ -469,7 +469,7 @@ jobs:
         if: steps.check.outputs.enabled == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: hermes-ide-${{ matrix.platform_key }}-updater
+          name: entry-ide-${{ matrix.platform_key }}-updater
           path: updater-artifacts/
           retention-days: 7
 
@@ -505,16 +505,16 @@ jobs:
           find artifacts/ -type f | sort
 
           # Copy all installer files
-          for dir in artifacts/hermes-ide-*-installer; do
+          for dir in artifacts/entry-ide-*-installer; do
             if [ -d "$dir" ]; then
               cp "$dir"/* "$RELEASE_DIR/" 2>/dev/null || true
             fi
           done
 
           # Copy updater bundles with platform prefix to avoid name collisions
-          for dir in artifacts/hermes-ide-*-updater; do
+          for dir in artifacts/entry-ide-*-updater; do
             if [ -d "$dir" ]; then
-              PLATFORM_KEY=$(basename "$dir" | sed 's/hermes-ide-//' | sed 's/-updater//')
+              PLATFORM_KEY=$(basename "$dir" | sed 's/entry-ide-//' | sed 's/-updater//')
               for file in "$dir"/*; do
                 if [ -f "$file" ]; then
                   BASENAME=$(basename "$file")
@@ -550,7 +550,7 @@ jobs:
           ## New
           - Release v${{ needs.config.outputs.version }}
 
-          See the full changelog at https://hermes-ide.com/changelog
+          See the full changelog at https://entry-ide.dev/changelog
           NOTES
           fi
 
@@ -562,7 +562,7 @@ jobs:
             echo "Release $TAG already exists — will upload new assets"
           else
             gh release create "$TAG" \
-              --title "Hermes IDE $TAG" \
+              --title "Entry IDE $TAG" \
               --notes-file release-notes.txt
             # Give GitHub a moment to propagate the new release before uploading assets
             sleep 5
@@ -643,7 +643,7 @@ jobs:
 
           jq -n \
             --arg version "$VERSION" \
-            --arg notes "See the full changelog at https://hermes-ide.com/changelog" \
+            --arg notes "See the full changelog at https://entry-ide.dev/changelog" \
             --arg pub_date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             --argjson platforms "$PLATFORMS_JSON" \
             '{version: $version, notes: $notes, pub_date: $pub_date, platforms: $platforms}' \

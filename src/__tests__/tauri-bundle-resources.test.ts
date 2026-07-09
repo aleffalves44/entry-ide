@@ -1,6 +1,6 @@
 /**
  * Smoke test for the Agent-mode shipping invariant:
- *   the Hermes bridge files AND its npm runtime deps MUST be declared as
+ *   the Entry bridge files AND its npm runtime deps MUST be declared as
  *   Tauri bundle resources, otherwise production .app builds ship without
  *   them and every Agent session silently fails to spawn (v1.1.0 / v1.1.2
  *   regression — see the v1.1.3 hotfix that added bridge/node_modules to
@@ -21,11 +21,11 @@ const TAURI_CONF = "src-tauri/tauri.conf.json";
 describe("tauri.conf.json bundle resources", () => {
   const conf = JSON.parse(readFileSync(TAURI_CONF, "utf-8"));
 
-  it("declares hermes-claude-bridge.mjs as a bundle resource", () => {
+  it("declares entry-claude-bridge.mjs as a bundle resource", () => {
     const resources: string[] = conf?.bundle?.resources ?? [];
     expect(Array.isArray(resources)).toBe(true);
     const hasBridge = resources.some((r) =>
-      r.includes("hermes-claude-bridge.mjs"),
+      r.includes("entry-claude-bridge.mjs"),
     );
     expect(hasBridge).toBe(true);
   });
@@ -55,7 +55,7 @@ describe("tauri.conf.json bundle resources", () => {
   // file the bridge imports gets caught at unit-test time.
   it("every relative .mjs import in the bridge is declared as a bundle resource", () => {
     const bridgeSource = readFileSync(
-      "src-tauri/bridge/hermes-claude-bridge.mjs",
+      "src-tauri/bridge/entry-claude-bridge.mjs",
       "utf-8",
     );
     // Match `from "./X.mjs"` or `from './X.mjs'`

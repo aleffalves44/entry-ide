@@ -1,5 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { ContextPin, ApplyContextResult, HermesProjectConfig } from "../types";
+import type { ContextPin, ApplyContextResult, EntryProjectConfig } from "../types";
 
 export function getContextPins(sessionId: string, projectId: string | null): Promise<ContextPin[]> {
   return invoke<ContextPin[]>("get_context_pins", { sessionId, projectId });
@@ -28,6 +28,6 @@ export function forkSessionContext(sourceSessionId: string, targetSessionId: str
   return invoke<number>("fork_session_context", { sourceSessionId, targetSessionId });
 }
 
-export function loadHermesProjectConfig(projectId: string, projectPath: string): Promise<HermesProjectConfig | null> {
-  return invoke<HermesProjectConfig | null>("load_hermes_project_config", { projectId, projectPath });
+export function loadEntryProjectConfig(projectId: string, projectPath: string): Promise<EntryProjectConfig | null> {
+  return invoke<EntryProjectConfig | null>("load_entry_project_config", { projectId, projectPath });
 }

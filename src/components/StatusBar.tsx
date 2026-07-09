@@ -232,7 +232,7 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
               os,
               "os-version": OS_VERSION,
             });
-            open(`https://github.com/hermes-hq/hermes-ide/issues/new?${params}`);
+            open(`https://github.com/aleffalves44/entry-ide/issues/new?${params}`);
           }}
           title="Report a Bug"
         >

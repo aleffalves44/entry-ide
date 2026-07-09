@@ -4,7 +4,7 @@
 
 Entry IDE is a desktop terminal emulator with deep AI integration for command-line workflows. It scans your projects to build context, suggests commands in real time, tracks errors and resolutions, and can execute tasks autonomously — all without leaving the terminal.
 
-Fork of [Hermes IDE](https://github.com/hermes-hq/hermes-ide), rebranded and maintained independently. Licensed under the [Business Source License 1.1](LICENSE).
+Fork of [Entry IDE](https://github.com/aleffalves44/entry-ide), rebranded and maintained independently. Licensed under the [Business Source License 1.1](LICENSE).
 
 **Platforms:** macOS, Windows, Linux
 
@@ -126,4 +126,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for the detailed technical overview.
 
 ## License
 
-Source-available under the **[Business Source License 1.1](LICENSE)** (BSL 1.1), inherited from the upstream Hermes IDE project. Each release converts to **Apache License 2.0** three years after publication.
+Source-available under the **[Business Source License 1.1](LICENSE)** (BSL 1.1), inherited from the upstream Entry IDE project. Each release converts to **Apache License 2.0** three years after publication.

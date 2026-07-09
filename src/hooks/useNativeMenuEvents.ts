@@ -8,7 +8,7 @@ import { clearTerminal } from "../terminal/TerminalPool";
 const TRACKED_ACTIONS: Record<string, string> = {
   "view.git-panel": "git_panel",
   "view.prompt-composer": "prompt_composer",
-  "hermes.settings": "settings",
+  "entry.settings": "settings",
   "view.command-palette": "command_palette",
   "view.flow-mode": "flow_mode",
   "view.cost-dashboard": "cost_dashboard",
@@ -145,7 +145,7 @@ export function useNativeMenuEvents(handlers: MenuEventHandlers): void {
           break;
 
         // ── Settings ──
-        case "hermes.settings":
+        case "entry.settings":
           dispatch({ type: "CLOSE_PALETTE" });
           setSettingsOpen("general");
           break;

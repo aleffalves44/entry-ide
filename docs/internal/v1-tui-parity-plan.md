@@ -11,7 +11,7 @@
 ## 0. Locked decisions (do not re-negotiate without sign-off)
 
 1. **Right Context Panel: always-on**, 280px, agent-mode only.  Resizable [200, 480]px.  Persisted in saved_workspace JSON.
-2. **All edits write directly to Claude config files** (`~/.claude.json`, `~/.claude/settings.json`, project / user `CLAUDE.md`).  TUI-compatible — same edits affect non-Hermes Claude sessions.
+2. **All edits write directly to Claude config files** (`~/.claude.json`, `~/.claude/settings.json`, project / user `CLAUDE.md`).  TUI-compatible — same edits affect non-Entry Claude sessions.
 3. **v1.0 ships with M-context-panel-shell + M-interactive-tools + M-mcp + M-todos + M-memory + M-permissions.**  Anything else is post-1.0.
 4. **ExitPlanMode**: Approve / Reject only.  No Modify (TUI parity).
 5. **Permission Approve-all**: persists to `~/.claude/settings.json` `permissions.allow`.  TUI parity.
@@ -74,14 +74,14 @@ Surfaces three tool-driven interactions and one banner.  All share the same arch
 
 **Architectural seam (shared by all sub-features)**
 
-The bridge already exposes `_hermes_control` envelopes for soft-interrupt.  Extend with two new event classes:
+The bridge already exposes `_entry_control` envelopes for soft-interrupt.  Extend with two new event classes:
 
 ```jsonc
 // bridge → frontend (stdout):
-{ "type": "_hermes_perm_request", "id": "<uuid>", "toolName": "Bash", "input": {...} }
+{ "type": "_entry_perm_request", "id": "<uuid>", "toolName": "Bash", "input": {...} }
 
 // frontend → bridge (stdin):
-{ "type": "_hermes_perm_response", "id": "<uuid>",
+{ "type": "_entry_perm_response", "id": "<uuid>",
   "decision": { "behavior": "allow" | "deny", "updatedInput"?: {...}, "message"?: "..." } }
 ```
 
@@ -141,7 +141,7 @@ For Claude tools that already return their result via `tool_result` (AskUserQues
 
 **Spec**
 - Bridge wires `canUseTool` callback in SDK config.
-- Callback emits `_hermes_perm_request` to stdout, awaits `_hermes_perm_response` on stdin.
+- Callback emits `_entry_perm_request` to stdout, awaits `_entry_perm_response` on stdin.
 - Frontend modal: tool name, input (JSON pretty), diff preview if it's a Write/Edit tool.
 - Buttons: **Approve · Approve all (toolName) · Deny · Edit input**.
 - "Approve all" persists a `permissions.allow` rule to `~/.claude/settings.json` AND adds toolName to session ref so subsequent calls bypass the modal.
@@ -155,15 +155,15 @@ For Claude tools that already return their result via `tool_result` (AskUserQues
 | ID | Test | Level |
 |---|---|---|
 | pm-1 | bridge: SDK config includes canUseTool callback | unit |
-| pm-2 | bridge: canUseTool writes _hermes_perm_request to stdout | unit |
-| pm-3 | bridge: blocks until matching _hermes_perm_response arrives | unit |
+| pm-2 | bridge: canUseTool writes _entry_perm_request to stdout | unit |
+| pm-3 | bridge: blocks until matching _entry_perm_response arrives | unit |
 | pm-4 | bridge: returns `{behavior:"allow", updatedInput}` on approve | unit |
 | pm-5 | bridge: returns `{behavior:"deny", message}` on deny | unit |
-| pm-6 | frontend: NDJSON _hermes_perm_request opens modal with toolName + input + diff (when applicable) | RTL |
+| pm-6 | frontend: NDJSON _entry_perm_request opens modal with toolName + input + diff (when applicable) | RTL |
 | pm-7 | frontend: Approve / Approve all / Deny / Edit buttons present | RTL |
 | pm-8 | "Approve all" writes a permissions.allow rule to ~/.claude/settings.json AND adds to session ref | rust unit + frontend |
 | pm-9 | "Edit" opens JSON-editable form; revalidate before approve | RTL |
-| pm-10 | response IPC writes _hermes_perm_response to bridge stdin | integration mock |
+| pm-10 | response IPC writes _entry_perm_response to bridge stdin | integration mock |
 | pm-11 | modal stays open indefinitely (no auto-deny) on user idle | RTL |
 | pm-12 | mode=bypassPermissions: modal NEVER renders; auto-allow | unit |
 | pm-13 | mode=plan: edit-tool requests render plan-mode mock-allow | unit |
@@ -324,7 +324,7 @@ For Claude tools that already return their result via `tool_result` (AskUserQues
 
 1. **`atomic_json_write`** Rust helper.  Read → mutate → write `<file>.tmp` → fs::rename.  Used by M3, M5.  Tested in `pty/commands.rs::tests`.
 2. **`safe_memory_write`** Rust helper.  Path-canonicalize against allowlist of known memory_paths.  Used by M4.
-3. **NDJSON control envelopes** (`_hermes_perm_request`, `_hermes_perm_response`).  Bridge ⇄ frontend.  Used by M1c.  Pattern reusable for any future "ask host before deciding" flow.
+3. **NDJSON control envelopes** (`_entry_perm_request`, `_entry_perm_response`).  Bridge ⇄ frontend.  Used by M1c.  Pattern reusable for any future "ask host before deciding" flow.
 4. **Mtime watcher** (`tokio::sync::watch`).  Single watch per file, broadcasts `session-config-changed-{file}`.  Used by M4 + M5.
 5. **`ContextPanelSection` shared layout component**.  Header + collapse + slot.  Used by every sidebar section.
 
@@ -400,7 +400,7 @@ Plus 8 e2e tests already written for the multi-folder fix; this plan adds ~6 mor
 
 | ID | Test | Failure it catches |
 |---|---|---|
-| ce-1 | malformed `_hermes_perm_response` JSON on stdin → bridge logs & ignores, doesn't crash | host injecting bad input |
+| ce-1 | malformed `_entry_perm_response` JSON on stdin → bridge logs & ignores, doesn't crash | host injecting bad input |
 | ce-2 | response with unknown id → ignored | stale modal response |
 | ce-3 | duplicate response for same id → first wins, second ignored | double-click race |
 | ce-4 | bridge stdin closed mid-await → canUseTool resolves with deny + diagnostic | host died |
@@ -517,7 +517,7 @@ Plus 8 e2e tests already written for the multi-folder fix; this plan adds ~6 mor
 | perm-13 | duplicate rule add: dedupe (no-op write) | bloated file |
 | perm-14 | rule with regex special chars (e.g. `Bash(grep -E "*":*)`): stored verbatim, displayed escaped | render breakage |
 | perm-15 | "Test pattern" with unparseable input: shows "no match" verdict, never throws | crash on bad input |
-| perm-16 | settings file under git, user edits via TUI mid-Hermes-edit: mtime watcher fires, conflict UI | overwrite |
+| perm-16 | settings file under git, user edits via TUI mid-Entry-edit: mtime watcher fires, conflict UI | overwrite |
 | perm-17 | rule for non-existent tool name (e.g. `FooBar(...)`): allowed (forward-compat) but UI hints "tool not found" | over-strict UI |
 | perm-18 | bypassPermissions mode active: rules list shows "currently bypassed" banner | confusing state |
 
@@ -539,13 +539,13 @@ Plus 8 e2e tests already written for the multi-folder fix; this plan adds ~6 mor
 - **Typography:** chrome → `Inter Tight` 9px UPPERCASE letter-spacing 0.08em, color `--ink-tertiary`.  Content → `JetBrains Mono` 11–13px.  Never mix Inter Tight inside the conversation column.
 - **Workshop palette discipline:** `--brass` is reserved for ACTIVE / yours-here / waiting-for-you signals.  Status colors stay semantic: `--green` = connected/done, `--red` = failed/deny, `--yellow` = running/searching, `--violet` = file ops, `--accent` = web ops.
 - **Motion:** respiration (existing) for in-flight states; heartbeat-cursor (existing) for streaming; new motion only via CSS keyframes.  No JS-driven animation libraries.
-- **All inputs use Hermes' input style:** `background: var(--bg-paper)`, `border: 1px solid var(--rule)`, `padding: 4px 8px`, `font: 12px var(--font-mono)`.  Focus: `border-color: var(--brass)`.  Refused: rounded ≥3px, drop shadow, gradient.
+- **All inputs use Entry' input style:** `background: var(--bg-paper)`, `border: 1px solid var(--rule)`, `padding: 4px 8px`, `font: 12px var(--font-mono)`.  Focus: `border-color: var(--brass)`.  Refused: rounded ≥3px, drop shadow, gradient.
 
 ### 8.1 M0  Right Context Panel — shell
 
 ```
 ┌────────────────────────────────────────┐
-│ ▔▔▔▔▔ HERMES · CONTEXT ▔▔▔▔▔▔▔▔▔▔▔▔▔▔ │ ← Inter Tight 9px ↑↑ tracked, --ink-tertiary
+│ ▔▔▔▔▔ ENTRY · CONTEXT ▔▔▔▔▔▔▔▔▔▔▔▔▔▔ │ ← Inter Tight 9px ↑↑ tracked, --ink-tertiary
 ├────────────────────────────────────────┤    1px hairline (var(--rule)), full width
 │                                        │
 │ ▾ MCP                          (3)     │ ← section header, Inter Tight 10px tracked
@@ -591,7 +591,7 @@ Plus 8 e2e tests already written for the multi-folder fix; this plan adds ~6 mor
 ```
 └──────── conversation ends here ─────────┘
 ┌──────────────────────────────────────────┐ ← respiration (1.5s) on the brass left bar
-│ ┃ HERMES IS WAITING FOR YOU              │   left bar: 2px --brass, full card height
+│ ┃ ENTRY IS WAITING FOR YOU              │   left bar: 2px --brass, full card height
 │ ┃                                        │   header: Inter Tight 9px ↑↑ tracked, --brass
 │ ┃ Q1.  Which option?                     │   question: JetBrains Mono 13px italic
 │ ┃                                        │
@@ -636,7 +636,7 @@ Plus 8 e2e tests already written for the multi-folder fix; this plan adds ~6 mor
 
 Single-tool case (Bash):
 ```
-▸ HERMES IS REQUESTING PERMISSION TO RUN A TOOL          ← Inter Tight 9px ↑↑ tracked, --brass
+▸ ENTRY IS REQUESTING PERMISSION TO RUN A TOOL          ← Inter Tight 9px ↑↑ tracked, --brass
                                                             ▸ glyph --tool-exec (green)
   Tool        Bash                                        ← labels: 9px ↑↑ tracked --ink-tertiary
   Command     git status --short                             values: 12px JetBrains Mono --ink-primary

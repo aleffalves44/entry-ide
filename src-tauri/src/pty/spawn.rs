@@ -15,7 +15,7 @@
 //! **Controlling terminal (issue #214):** `posix_spawn` file actions do not trigger
 //! the kernel's automatic controlling terminal (CTT) assignment on macOS, which
 //! breaks `/dev/tty` access (needed by sudo, ssh, gpg, etc.). To work around this,
-//! `posix_spawn_in_pty` spawns the Hermes binary itself with `--pty-setup` as a
+//! `posix_spawn_in_pty` spawns the Entry binary itself with `--pty-setup` as a
 //! trampoline that calls `ioctl(TIOCSCTTY)` before exec'ing the real command.
 
 #[cfg(target_os = "macos")]
@@ -176,7 +176,7 @@ mod macos {
         }
     }
 
-    /// Locate the `hermes-pty-setup` helper binary.
+    /// Locate the `entry-pty-setup` helper binary.
     ///
     /// Checks two locations:
     /// 1. Next to the current executable (production: `Contents/MacOS/`)
@@ -189,21 +189,21 @@ mod macos {
             .ok_or_else(|| anyhow::anyhow!("current executable has no parent directory"))?;
 
         // Production / dev: next to the main binary
-        let candidate = dir.join("hermes-pty-setup");
+        let candidate = dir.join("entry-pty-setup");
         if candidate.exists() {
             return Ok(candidate);
         }
 
         // Test runner: binary is in target/debug/deps/, helper in target/debug/
         if let Some(parent) = dir.parent() {
-            let candidate = parent.join("hermes-pty-setup");
+            let candidate = parent.join("entry-pty-setup");
             if candidate.exists() {
                 return Ok(candidate);
             }
         }
 
         anyhow::bail!(
-            "hermes-pty-setup not found near {:?} — required for controlling terminal setup (issue #214)",
+            "entry-pty-setup not found near {:?} — required for controlling terminal setup (issue #214)",
             exe
         );
     }
@@ -237,7 +237,7 @@ mod macos {
             }
             Err(e) => {
                 eprintln!(
-                    "[hermes] WARNING: {} — /dev/tty access (sudo, ssh, gpg) may not work",
+                    "[entry] WARNING: {} — /dev/tty access (sudo, ssh, gpg) may not work",
                     e
                 );
             }

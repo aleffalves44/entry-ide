@@ -5,7 +5,7 @@ import * as lezerHighlight from "@lezer/highlight";
 
 declare global {
   interface Window {
-    __hermesCM?: {
+    __entryCM?: {
       state: typeof cmState;
       view: typeof cmView;
       language: typeof cmLanguage;
@@ -15,13 +15,13 @@ declare global {
 }
 
 /**
- * Exposes CodeMirror core modules on `window.__hermesCM` so that
+ * Exposes CodeMirror core modules on `window.__entryCM` so that
  * plugins can access them without bundling their own copies.
  *
  * Call once at app startup.
  */
 export function exposeCodeMirror(): void {
-  window.__hermesCM = {
+  window.__entryCM = {
     state: cmState,
     view: cmView,
     language: cmLanguage,

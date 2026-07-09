@@ -9,7 +9,7 @@
  * reset, side-effecting side-channels), not a conversational reply.
  *
  * Without intervention, the conversation timeline ends up looking
- * broken: `You: /compact` followed by `Hermes: (no content)`.  The
+ * broken: `You: /compact` followed by `Entry: (no content)`.  The
  * user has no idea whether the command worked.
  *
  * This module recognises that exact pattern and lets the timeline

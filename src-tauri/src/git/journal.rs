@@ -7,7 +7,7 @@ use super::worktree;
 const JOURNAL_FILENAME: &str = "worktree-journal.log";
 
 /// Build the path to the journal file for a given repo.
-/// Stored in `{app_data_dir}/hermes-worktrees/{repo_hash}/worktree-journal.log`.
+/// Stored in `{app_data_dir}/entry-worktrees/{repo_hash}/worktree-journal.log`.
 pub fn journal_path(app_data_dir: &Path, repo_path: &str) -> std::path::PathBuf {
     let dir = worktree::worktree_dir(app_data_dir, repo_path);
     dir.join(JOURNAL_FILENAME)

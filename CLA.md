@@ -1,18 +1,18 @@
-# Hermes IDE — Individual Contributor License Agreement (CLA)
+# Entry IDE — Individual Contributor License Agreement (CLA)
 
-Thank you for your interest in contributing to Hermes IDE. To clarify the intellectual property rights granted with contributions, we require all contributors to sign this Contributor License Agreement ("Agreement").
+Thank you for your interest in contributing to Entry IDE. To clarify the intellectual property rights granted with contributions, we require all contributors to sign this Contributor License Agreement ("Agreement").
 
 This Agreement is based on the Apache Software Foundation Individual Contributor License Agreement (ICLA) v2.0.
 
-By signing this Agreement, you accept and agree to the following terms and conditions for your present and future contributions submitted to Hermes IDE.
+By signing this Agreement, you accept and agree to the following terms and conditions for your present and future contributions submitted to Entry IDE.
 
 ---
 
 ## Definitions
 
 - **"You" (or "Your")** means the individual who submits a contribution to the project.
-- **"Contribution"** means any original work of authorship, including any modifications or additions to an existing work, that is intentionally submitted by you to Hermes IDE for inclusion in, or documentation of, the project. "Submitted" means any form of communication sent to the project (e.g., pull requests, issues, patches, emails, or messages in project communication channels), excluding communications conspicuously marked "Not a Contribution."
-- **"Licensor"** means Gabriel Anhaia da Silva, the creator and owner of Hermes IDE.
+- **"Contribution"** means any original work of authorship, including any modifications or additions to an existing work, that is intentionally submitted by you to Entry IDE for inclusion in, or documentation of, the project. "Submitted" means any form of communication sent to the project (e.g., pull requests, issues, patches, emails, or messages in project communication channels), excluding communications conspicuously marked "Not a Contribution."
+- **"Licensor"** means Gabriel Anhaia da Silva, the creator and owner of Entry IDE.
 
 ---
 
@@ -48,6 +48,6 @@ You agree to notify the Licensor of any facts or circumstances of which you beco
 
 ## How to Sign
 
-When you submit your first pull request to Hermes IDE, the CLA Assistant bot will post a comment asking you to sign this agreement. You sign by commenting on the pull request to indicate your agreement. This is a one-time process that covers all future contributions to the project.
+When you submit your first pull request to Entry IDE, the CLA Assistant bot will post a comment asking you to sign this agreement. You sign by commenting on the pull request to indicate your agreement. This is a one-time process that covers all future contributions to the project.
 
-If you have questions about this agreement, please open a discussion in the [Hermes IDE GitHub Discussions](https://github.com/hermes-hq/hermes-ide/discussions).
+If you have questions about this agreement, please open a discussion in the [Entry IDE GitHub Discussions](https://github.com/aleffalves44/entry-ide/discussions).

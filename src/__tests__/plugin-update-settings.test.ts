@@ -100,13 +100,13 @@ describe("plugin_auto_update setting values", () => {
 describe("plugin_ignored_updates JSON format", () => {
   it("stores ignored versions as plugin-id → version map", () => {
     const ignored: Record<string, string> = {
-      "hermes-hq.json-formatter": "1.1.0",
-      "hermes-hq.uuid-generator": "2.0.0",
+      "entry-ide.json-formatter": "1.1.0",
+      "entry-ide.uuid-generator": "2.0.0",
     };
     const json = JSON.stringify(ignored);
     const parsed = JSON.parse(json);
-    expect(parsed["hermes-hq.json-formatter"]).toBe("1.1.0");
-    expect(parsed["hermes-hq.uuid-generator"]).toBe("2.0.0");
+    expect(parsed["entry-ide.json-formatter"]).toBe("1.1.0");
+    expect(parsed["entry-ide.uuid-generator"]).toBe("2.0.0");
   });
 
   it("empty object means no ignored versions", () => {

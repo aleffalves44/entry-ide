@@ -1,7 +1,7 @@
 // ─── Prompt Bundle API ────────────────────────────────────────────────
 //
 // Thin wrappers around the Tauri commands for reading/writing
-// .hermes-prompts bundle files.
+// .entry-prompts bundle files.
 
 import { invoke } from "@tauri-apps/api/core";
 

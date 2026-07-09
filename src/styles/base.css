@@ -83,10 +83,10 @@ kbd {
   letter-spacing: var(--tracking-normal);
 }
 
-/* ─── hermes-progress · canonical indeterminate loader ───────
+/* ─── entry-progress · canonical indeterminate loader ───────
  * Brass strip sweeping across a hairline track. Use instead of
  * rotating-border CSS spinners. See docs/design-system/05-motion.md. */
-.hermes-progress {
+.entry-progress {
   position: relative;
   height: 2px;
   width: 100%;
@@ -94,7 +94,7 @@ kbd {
   border-radius: 1px;
   overflow: hidden;
 }
-.hermes-progress::after {
+.entry-progress::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -105,15 +105,15 @@ kbd {
     var(--voice-user) 50%,
     transparent
   );
-  animation: hermes-progress-sweep 1.2s var(--ease-out-soft) infinite;
+  animation: entry-progress-sweep 1.2s var(--ease-out-soft) infinite;
 }
-@keyframes hermes-progress-sweep {
+@keyframes entry-progress-sweep {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
 }
 
-/* ─── hermes-skel · canonical skeleton placeholder ─────────── */
-.hermes-skel {
+/* ─── entry-skel · canonical skeleton placeholder ─────────── */
+.entry-skel {
   background: linear-gradient(
     90deg,
     var(--bg-2) 0%,
@@ -121,15 +121,15 @@ kbd {
     var(--bg-2) 100%
   );
   background-size: 200% 100%;
-  animation: hermes-skel-shimmer 1.6s ease-in-out infinite;
+  animation: entry-skel-shimmer 1.6s ease-in-out infinite;
   border-radius: var(--radius-sm);
   color: transparent;
   user-select: none;
   pointer-events: none;
 }
-.hermes-skel-row { height: 14px; margin: var(--space-1) 0; }
-.hermes-skel-row-sm { height: 10px; width: 60%; }
-@keyframes hermes-skel-shimmer {
+.entry-skel-row { height: 14px; margin: var(--space-1) 0; }
+.entry-skel-row-sm { height: 10px; width: 60%; }
+@keyframes entry-skel-shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position:  200% 0; }
 }
@@ -210,8 +210,8 @@ kbd {
     scroll-behavior: auto !important;
   }
   /* Keep our utilities visible but static */
-  .hermes-progress::after { animation: none; opacity: 0.6; }
-  .hermes-skel { animation: none; }
+  .entry-progress::after { animation: none; opacity: 0.6; }
+  .entry-skel { animation: none; }
 }
 
 /* ─── Shared Keyframes ──────────────────────────────────── */

@@ -147,7 +147,7 @@ describe("createCanUseToolHandler — happy path", () => {
     expect(writes).toHaveLength(1);
     const envelope = JSON.parse(writes[0].trimEnd());
     expect(envelope).toEqual({
-      type: "_hermes_perm_request",
+      type: "_entry_perm_request",
       id: "perm-1",
       toolName: "Bash",
       input: { command: "ls" },

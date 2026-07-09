@@ -34,8 +34,8 @@ describe("REGISTRY_URL", () => {
     expect(REGISTRY_URL).toMatch(/index\.json$/);
   });
 
-  it("contains hermes-hq/plugins path", () => {
-    expect(REGISTRY_URL).toContain("hermes-hq/plugins");
+  it("contains aleffalves44/entry-ide-plugins path", () => {
+    expect(REGISTRY_URL).toContain("aleffalves44/entry-ide-plugins");
   });
 });
 
@@ -139,11 +139,11 @@ describe("Registry JSON parsing", () => {
       version: 2,
       plugins: [
         {
-          id: "hermes-hq.json-formatter",
+          id: "entry-ide.json-formatter",
           name: "JSON Formatter",
           version: "1.0.0",
           description: "Format JSON",
-          author: "Hermes IDE",
+          author: "Entry IDE",
           downloadUrl: "https://example.com/jf.tgz",
           changelog: [
             { version: "1.0.0", date: "2026-03-01", changes: ["Initial release"] },
@@ -165,11 +165,11 @@ describe("Registry JSON parsing", () => {
       version: 1,
       plugins: [
         {
-          id: "hermes-hq.json-formatter",
+          id: "entry-ide.json-formatter",
           name: "JSON Formatter",
           version: "1.0.0",
           description: "Format JSON",
-          author: "Hermes IDE",
+          author: "Entry IDE",
           downloadUrl: "https://example.com/jf.tgz",
         },
       ],

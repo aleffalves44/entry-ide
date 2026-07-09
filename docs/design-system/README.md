@@ -1,13 +1,13 @@
-# Hermes IDE · Design System
+# Entry IDE · Design System
 
-This folder is the canonical source of truth for Hermes IDE's visual language.
+This folder is the canonical source of truth for Entry IDE's visual language.
 It defines the tokens, components, and rules that the whole product follows so
 that any change — new feature, new theme, new contributor — stays coherent
 with the rest of the surface.
 
 ## Why this exists
 
-Hermes is an instrument, not a panel of switches. Every visual decision
+Entry is an instrument, not a panel of switches. Every visual decision
 either reinforces that posture or quietly erodes it. The design system makes
 the rules explicit so that:
 
@@ -74,4 +74,4 @@ The system was compiled in 2026 Q2 from a five-discipline audit:
 - Motion design & micro-interactions
 
 34 proposals were synthesized into the rules below. The original audit
-mockup is preserved at `/tmp/hermes-ui-audit/index.html` for reference.
+mockup is preserved at `/tmp/entry-ui-audit/index.html` for reference.

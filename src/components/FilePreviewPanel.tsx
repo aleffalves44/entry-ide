@@ -219,8 +219,8 @@ export function FilePreviewPanel({ sessionId, projectId, filePath, onBack, fileH
         promise.then(setFile).catch(console.error);
       }
     };
-    window.addEventListener("hermes:file-changed-on-disk", handler);
-    return () => window.removeEventListener("hermes:file-changed-on-disk", handler);
+    window.addEventListener("entry:file-changed-on-disk", handler);
+    return () => window.removeEventListener("entry:file-changed-on-disk", handler);
   }, [sessionId, projectId, filePath, isSSH]);
 
   useEffect(() => {

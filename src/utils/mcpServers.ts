@@ -2,7 +2,7 @@
  * MCP server helpers.  Spec: docs/internal/v1-tui-parity-plan.md §2 (M3) + §7.7.
  *
  * MCP server configuration lives in `~/.claude.json` under the
- * `mcpServers` key.  Hermes writes there directly so changes apply in
+ * `mcpServers` key.  Entry writes there directly so changes apply in
  * standalone Claude Code too (locked decision §0.2 — TUI-compatible).
  */
 

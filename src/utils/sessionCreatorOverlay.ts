@@ -30,7 +30,7 @@ export const MIN_OVERLAY_MS = 400;
  *  the safety net that prevents "loader stuck on screen forever". */
 export const MAX_OVERLAY_MS = 5000;
 
-const OVERLAY_ID = "hermes-session-creator-opening-overlay";
+const OVERLAY_ID = "entry-session-creator-opening-overlay";
 
 interface OverlayState {
   el: HTMLDivElement;
@@ -71,7 +71,7 @@ export function showOpeningOverlay(): OverlayState {
   // because the main thread was blocked.  By using a CSS keyframe
   // `transform: translateY` on a tall pre-rendered strip, the bit
   // stream keeps scrolling even while React is busy.
-  const STYLE_ID = "hermes-session-creator-opening-style";
+  const STYLE_ID = "entry-session-creator-opening-style";
   // Always replace the style tag so HMR-updated keyframes take effect.
   // The previous "create only if missing" guard meant updated keyframes
   // never made it into the page after a hot reload.
@@ -80,7 +80,7 @@ export function showOpeningOverlay(): OverlayState {
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = `
-      @keyframes hermes-overlay-rule-sweep {
+      @keyframes entry-overlay-rule-sweep {
         0%   { transform: scaleX(0); transform-origin: left center; }
         50%  { transform: scaleX(1); transform-origin: left center; }
         51%  { transform: scaleX(1); transform-origin: right center; }
@@ -91,7 +91,7 @@ export function showOpeningOverlay(): OverlayState {
        * (calm), yellow at mid-height (warning), red at the peak
        * (clipping).  Multi-stop keyframe keeps adjacent bars at
        * different heights AND colors at any given moment. */
-      @keyframes hermes-overlay-bar-bounce {
+      @keyframes entry-overlay-bar-bounce {
         0%   { transform: scaleY(0.20); background-color: #34d399; }
         18%  { transform: scaleY(0.75); background-color: #ffb000; }
         34%  { transform: scaleY(0.42); background-color: #34d399; }
@@ -142,7 +142,7 @@ export function showOpeningOverlay(): OverlayState {
 
   // Card — typeset fragment.  No drop shadow, no rounded corners,
   // no card border on left/right.  The hairline rules ABOVE and BELOW
-  // the headline carry the structure.  The HERMES tag in tracked
+  // the headline carry the structure.  The ENTRY tag in tracked
   // uppercase brass + the small reference number on the right give it
   // the feel of a printer's proof.
   const card = document.createElement("div");
@@ -203,7 +203,7 @@ export function showOpeningOverlay(): OverlayState {
     "height:1px",
     "background:color-mix(in srgb, var(--accent) 60%, transparent)",
     "transform-origin:left center",
-    "animation:hermes-overlay-rule-sweep 1.6s ease-in-out infinite",
+    "animation:entry-overlay-rule-sweep 1.6s ease-in-out infinite",
   ].join(";");
 
   // ── Headline + heartbeat cursor ──────────────────────────────
@@ -263,7 +263,7 @@ export function showOpeningOverlay(): OverlayState {
       // frame it might be visible.
       "background:var(--accent)",
       "transform-origin:bottom center",
-      `animation:hermes-overlay-bar-bounce ${dur}ms ease-in-out ${negDelay}ms infinite`,
+      `animation:entry-overlay-bar-bounce ${dur}ms ease-in-out ${negDelay}ms infinite`,
       "will-change:transform",
     ].join(";");
     bitsWindow.appendChild(bar);
@@ -292,7 +292,7 @@ export function showOpeningOverlay(): OverlayState {
     "height:1px",
     "background:color-mix(in srgb, var(--accent) 60%, transparent)",
     "transform-origin:right center",
-    "animation:hermes-overlay-rule-sweep 1.6s ease-in-out infinite",
+    "animation:entry-overlay-rule-sweep 1.6s ease-in-out infinite",
     "animation-delay:0.4s",
   ].join(";");
 

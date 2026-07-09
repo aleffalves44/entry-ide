@@ -122,7 +122,7 @@ export interface PluginSettingSelect extends PluginSettingBase {
 
 // ─── Events ──────────────────────────────────────────────
 
-export type HermesEvent =
+export type EntryEvent =
 	| "theme.changed"
 	| "session.created"
 	| "session.closed"
@@ -131,7 +131,7 @@ export type HermesEvent =
 
 // ─── Plugin API ──────────────────────────────────────────
 
-export interface HermesPluginAPI {
+export interface EntryPluginAPI {
 	ui: {
 		registerPanel(panelId: string, component: React.ComponentType<PluginPanelProps>): Disposable;
 		showPanel(panelId: string): void;
@@ -161,7 +161,7 @@ export interface HermesPluginAPI {
 		getAll(): Promise<Record<string, string | number | boolean>>;
 	};
 	events: {
-		on(event: HermesEvent, callback: (...args: any[]) => void): Disposable;
+		on(event: EntryEvent, callback: (...args: any[]) => void): Disposable;
 	};
 	notifications: {
 		send(options: { title: string; body?: string }): Promise<void>;

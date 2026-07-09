@@ -139,7 +139,7 @@ export interface RegistryPlugin {
 	changelog?: ChangelogEntry[];
 }
 
-export type HermesEvent =
+export type EntryEvent =
 	| "theme.changed"
 	| "session.created"
 	| "session.closed"

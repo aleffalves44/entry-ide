@@ -14,7 +14,7 @@ export interface ProcessInfo {
   status: string;
   start_time: number;
   fd_count: number | null;
-  is_hermes_session: boolean;
+  is_entry_session: boolean;
   is_zombie: boolean;
   is_protected: boolean;
 }
@@ -47,6 +47,6 @@ export interface ProcessFilter {
   search: string;
   cpuThreshold: number;
   memThreshold: number;
-  showHermesOnly: boolean;
+  showEntryOnly: boolean;
   showZombiesOnly: boolean;
 }

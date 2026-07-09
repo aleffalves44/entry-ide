@@ -17,7 +17,7 @@ fn main() -> ! {
 
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.is_empty() {
-        eprintln!("hermes-pty-setup: no command specified");
+        eprintln!("entry-pty-setup: no command specified");
         std::process::exit(1);
     }
 
@@ -25,13 +25,13 @@ fn main() -> ! {
     {
         use std::os::unix::process::CommandExt;
         let err = std::process::Command::new(&args[0]).args(&args[1..]).exec();
-        eprintln!("hermes-pty-setup: exec failed: {}", err);
+        eprintln!("entry-pty-setup: exec failed: {}", err);
         std::process::exit(1);
     }
 
     #[cfg(not(unix))]
     {
-        eprintln!("hermes-pty-setup: only supported on Unix");
+        eprintln!("entry-pty-setup: only supported on Unix");
         std::process::exit(1);
     }
 }

@@ -1,6 +1,6 @@
-export const REGISTRY_URL = "https://raw.githubusercontent.com/hermes-hq/plugins/main/registry/index.json";
+export const REGISTRY_URL = "https://raw.githubusercontent.com/aleffalves44/entry-ide-plugins/main/registry/index.json";
 
 /** Plugins installed automatically on fresh installs or upgrades (unless explicitly uninstalled). */
 export const DEFAULT_PLUGINS = [
-	"hermes-hq.markdown-preview",
+	"entry-ide.markdown-preview",
 ];

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { PluginRuntime, type PluginModule } from "../PluginRuntime";
 import { createPluginAPI, type PluginAPICallbacks } from "../PluginAPI";
-import type { HermesEvent } from "../types";
+import type { EntryEvent } from "../types";
 
 /**
  * Tests for the event bus system implemented in PluginRuntime.
@@ -49,7 +49,7 @@ describe("EventBus (PluginRuntime event system)", () => {
 		const listener = vi.fn();
 
 		const plugin = createEventPlugin((api) => {
-			disposable = api.events.on("theme.changed" as HermesEvent, listener);
+			disposable = api.events.on("theme.changed" as EntryEvent, listener);
 		});
 		runtime.register(plugin);
 		await runtime.activate("event.plugin");
@@ -62,7 +62,7 @@ describe("EventBus (PluginRuntime event system)", () => {
 		const listener = vi.fn();
 
 		const plugin = createEventPlugin((api) => {
-			api.events.on("session.created" as HermesEvent, listener);
+			api.events.on("session.created" as EntryEvent, listener);
 		});
 		runtime.register(plugin);
 		await runtime.activate("event.plugin");
@@ -79,8 +79,8 @@ describe("EventBus (PluginRuntime event system)", () => {
 		const goodListener = vi.fn();
 
 		const plugin = createEventPlugin((api) => {
-			api.events.on("theme.changed" as HermesEvent, badListener);
-			api.events.on("theme.changed" as HermesEvent, goodListener);
+			api.events.on("theme.changed" as EntryEvent, badListener);
+			api.events.on("theme.changed" as EntryEvent, goodListener);
 		});
 		runtime.register(plugin);
 		await runtime.activate("event.plugin");
@@ -95,7 +95,7 @@ describe("EventBus (PluginRuntime event system)", () => {
 		let disposable: { dispose(): void };
 
 		const plugin = createEventPlugin((api) => {
-			disposable = api.events.on("window.focused" as HermesEvent, listener);
+			disposable = api.events.on("window.focused" as EntryEvent, listener);
 		});
 		runtime.register(plugin);
 		await runtime.activate("event.plugin");
@@ -111,9 +111,9 @@ describe("EventBus (PluginRuntime event system)", () => {
 		const listener3 = vi.fn();
 
 		const plugin = createEventPlugin((api) => {
-			api.events.on("session.closed" as HermesEvent, listener1);
-			api.events.on("session.closed" as HermesEvent, listener2);
-			api.events.on("session.closed" as HermesEvent, listener3);
+			api.events.on("session.closed" as EntryEvent, listener1);
+			api.events.on("session.closed" as EntryEvent, listener2);
+			api.events.on("session.closed" as EntryEvent, listener3);
 		});
 		runtime.register(plugin);
 		await runtime.activate("event.plugin");
@@ -129,8 +129,8 @@ describe("EventBus (PluginRuntime event system)", () => {
 		const sessionListener = vi.fn();
 
 		const plugin = createEventPlugin((api) => {
-			api.events.on("theme.changed" as HermesEvent, themeListener);
-			api.events.on("session.created" as HermesEvent, sessionListener);
+			api.events.on("theme.changed" as EntryEvent, themeListener);
+			api.events.on("session.created" as EntryEvent, sessionListener);
 		});
 		runtime.register(plugin);
 		await runtime.activate("event.plugin");
@@ -154,7 +154,7 @@ describe("EventBus (PluginRuntime event system)", () => {
 		let disposable: { dispose(): void };
 
 		const plugin = createEventPlugin((api) => {
-			disposable = api.events.on("window.blurred" as HermesEvent, listener);
+			disposable = api.events.on("window.blurred" as EntryEvent, listener);
 		});
 		runtime.register(plugin);
 		await runtime.activate("event.plugin");

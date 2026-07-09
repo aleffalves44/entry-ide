@@ -468,7 +468,7 @@ describe("P1#5 - friendlyWorktreeLabel (GitProjectSection)", () => {
   it("extracts branch from worktree path", () => {
     const result = friendlyWorktreeLabel(
       "my-project",
-      "/Users/dev/.hermes/hermes-worktrees/a1b2c3d4/session1_feature-login",
+      "/Users/dev/.entry/entry-worktrees/a1b2c3d4/session1_feature-login",
     );
     expect(result).toBe("my-project (feature-login)");
   });
@@ -484,7 +484,7 @@ describe("P1#5 - friendlyWorktreeLabel (GitProjectSection)", () => {
   it("handles branch with hyphens", () => {
     const result = friendlyWorktreeLabel(
       "app",
-      "/data/hermes-worktrees/hash/sess_fix-auth-bug",
+      "/data/entry-worktrees/hash/sess_fix-auth-bug",
     );
     expect(result).toBe("app (fix-auth-bug)");
   });
@@ -492,7 +492,7 @@ describe("P1#5 - friendlyWorktreeLabel (GitProjectSection)", () => {
   it("handles worktree path with no underscore in dir name", () => {
     const result = friendlyWorktreeLabel(
       "app",
-      "/data/hermes-worktrees/hash/nounderscore",
+      "/data/entry-worktrees/hash/nounderscore",
     );
     // No underscore means no branch can be extracted, returns project name
     expect(result).toBe("app");
@@ -501,7 +501,7 @@ describe("P1#5 - friendlyWorktreeLabel (GitProjectSection)", () => {
   it("handles branch with slashes encoded as hyphens", () => {
     const result = friendlyWorktreeLabel(
       "app",
-      "/data/hermes-worktrees/hash/sess_feature-JIRA-123",
+      "/data/entry-worktrees/hash/sess_feature-JIRA-123",
     );
     expect(result).toBe("app (feature-JIRA-123)");
   });
@@ -510,7 +510,7 @@ describe("P1#5 - friendlyWorktreeLabel (GitProjectSection)", () => {
     // If the branch name itself contains underscores, they should be preserved
     const result = friendlyWorktreeLabel(
       "app",
-      "/data/hermes-worktrees/hash/sess_my_branch_name",
+      "/data/entry-worktrees/hash/sess_my_branch_name",
     );
     expect(result).toBe("app (my_branch_name)");
   });
@@ -543,7 +543,7 @@ describe("P1#5 - BranchMismatchAlert jargon removal", () => {
 describe("P1#5 - friendlyWorktreeTooltip (WorktreeOverviewPanel)", () => {
   it("returns branch and session label", () => {
     const result = friendlyWorktreeTooltip(
-      "/data/hermes-worktrees/hash/sess_main",
+      "/data/entry-worktrees/hash/sess_main",
       "main",
       "Session 1",
     );
@@ -552,7 +552,7 @@ describe("P1#5 - friendlyWorktreeTooltip (WorktreeOverviewPanel)", () => {
 
   it("returns just branch if no session label", () => {
     const result = friendlyWorktreeTooltip(
-      "/data/hermes-worktrees/hash/sess_feature",
+      "/data/entry-worktrees/hash/sess_feature",
       "feature",
     );
     expect(result).toBe("feature");
@@ -560,7 +560,7 @@ describe("P1#5 - friendlyWorktreeTooltip (WorktreeOverviewPanel)", () => {
 
   it("returns just session label if no branch", () => {
     const result = friendlyWorktreeTooltip(
-      "/data/hermes-worktrees/hash/detached",
+      "/data/entry-worktrees/hash/detached",
       null,
       "Session 2",
     );
@@ -569,7 +569,7 @@ describe("P1#5 - friendlyWorktreeTooltip (WorktreeOverviewPanel)", () => {
 
   it("falls back to last path segment if no branch or session", () => {
     const result = friendlyWorktreeTooltip(
-      "/data/hermes-worktrees/hash/sess_main",
+      "/data/entry-worktrees/hash/sess_main",
     );
     expect(result).toBe("sess_main");
   });

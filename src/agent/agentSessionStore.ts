@@ -29,7 +29,7 @@
  * The store also owns:
  *
  *   • **Pending permission requests** (v1.1.2 fix C1).  The interactive
- *     dispatcher used to keep `_hermes_perm_request` events in local
+ *     dispatcher used to keep `_entry_perm_request` events in local
  *     state; switching sessions deleted the pending request and the
  *     bridge waited forever.  We hold them here instead so they
  *     survive remount.
@@ -169,7 +169,7 @@ export class AgentSessionStore {
         // Bridge respawn: clear any pending permission request from the
         // dead bridge.  Otherwise the modal would still be showing the
         // old request id, and clicking allow/deny would write a
-        // _hermes_perm_response that the new bridge has never heard of
+        // _entry_perm_response that the new bridge has never heard of
         // (a no-op), leaving the modal stuck open (fix B1).
         this.snapshot = {
           ...this.snapshot,

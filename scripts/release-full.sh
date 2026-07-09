@@ -18,7 +18,7 @@
 # This script remains useful as a fallback for local builds and debugging.
 # ════════════════════════════════════════════════════════════════════════════
 # ────────────────────────────────────────────────────────────────────────────
-# Hermes IDE — Full Interactive Release
+# Entry IDE — Full Interactive Release
 #
 # Build strategy:
 #   macOS (aarch64 + x86_64) — locally on this Mac (signed + notarized)
@@ -36,8 +36,8 @@ cd "$SCRIPT_DIR/.."
 
 VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
 TAG="v$VERSION"
-PRIVATE_REPO="hermes-hq/hermes-ide"
-PUBLIC_REPO="hermes-hq/hermes-ide"
+PRIVATE_REPO="aleffalves44/entry-ide"
+PUBLIC_REPO="aleffalves44/entry-ide"
 
 # Colors
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
@@ -66,7 +66,7 @@ done
 
 # ═══════════════════════════════════════════════════════════════════════════
 
-banner "Hermes IDE — Release $TAG"
+banner "Entry IDE — Release $TAG"
 
 echo "  Version:  $VERSION"
 echo "  Tag:      $TAG"

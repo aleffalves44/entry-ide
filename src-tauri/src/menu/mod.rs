@@ -44,7 +44,7 @@ pub struct MenuActionPayload {
 // ─── Build Application Menu Bar ─────────────────────────────────────
 
 pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::Error>> {
-    // ── Hermes menu (app menu) ──
+    // ── Entry menu (app menu) ──
     let about = PredefinedMenuItem::about(
         app,
         Some("About Entry IDE"),
@@ -55,13 +55,13 @@ pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::
                 .build(),
         ),
     )?;
-    let settings = MenuItemBuilder::with_id("hermes.settings", "Settings...")
+    let settings = MenuItemBuilder::with_id("entry.settings", "Settings...")
         .accelerator("CmdOrCtrl+,")
         .build(app)?;
     let quit = PredefinedMenuItem::quit(app, None)?;
 
     #[cfg(target_os = "macos")]
-    let hermes_menu = {
+    let entry_menu = {
         let services = PredefinedMenuItem::services(app, None)?;
         let hide = PredefinedMenuItem::hide(app, None)?;
         let hide_others = PredefinedMenuItem::hide_others(app, None)?;
@@ -83,7 +83,7 @@ pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::
     };
 
     #[cfg(not(target_os = "macos"))]
-    let hermes_menu = SubmenuBuilder::new(app, "Entry IDE")
+    let entry_menu = SubmenuBuilder::new(app, "Entry IDE")
         .item(&about)
         .separator()
         .item(&settings)
@@ -252,7 +252,8 @@ pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::
     // ── Help menu ──
     let help_check_update =
         MenuItemBuilder::with_id("help.check-update", "Check for Updates...").build(app)?;
-    let help_website = MenuItemBuilder::with_id("help.website", "Entry IDE on GitHub").build(app)?;
+    let help_website =
+        MenuItemBuilder::with_id("help.website", "Entry IDE on GitHub").build(app)?;
     let help_legal =
         MenuItemBuilder::with_id("help.legal", "Privacy, Terms & License").build(app)?;
     let help_report_bug =
@@ -273,7 +274,7 @@ pub fn build_app_menu(app: &AppHandle) -> Result<Menu<Wry>, Box<dyn std::error::
 
     // ── Build complete menu bar ──
     let menu = MenuBuilder::new(app)
-        .item(&hermes_menu)
+        .item(&entry_menu)
         .item(&file_menu)
         .item(&edit_menu)
         .item(&view_menu)

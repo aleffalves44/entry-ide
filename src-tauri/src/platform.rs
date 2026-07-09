@@ -341,9 +341,9 @@ mod tests {
 
         // A binary that lives outside the minimal PATH should NOT be found.
         // We create a temp script to prove this.
-        let tmp = std::env::temp_dir().join("hermes_test_cli_detect");
+        let tmp = std::env::temp_dir().join("entry_test_cli_detect");
         std::fs::create_dir_all(&tmp).unwrap();
-        let fake_bin = tmp.join("__hermes_fake_cli__");
+        let fake_bin = tmp.join("__entry_fake_cli__");
         std::fs::write(&fake_bin, "#!/bin/sh\necho ok").unwrap();
         #[cfg(unix)]
         {
@@ -354,7 +354,7 @@ mod tests {
         // With the temp dir in PATH, `which` finds it.
         let full_path = format!("{}:{}", tmp.display(), minimal_path);
         let found_with_full = std::process::Command::new("which")
-            .arg("__hermes_fake_cli__")
+            .arg("__entry_fake_cli__")
             .env("PATH", &full_path)
             .output()
             .map(|o| o.status.success())
@@ -367,7 +367,7 @@ mod tests {
         // With only the minimal PATH, `which` does NOT find it — this is
         // exactly the bug that affected the production GUI app.
         let found_with_minimal = std::process::Command::new("which")
-            .arg("__hermes_fake_cli__")
+            .arg("__entry_fake_cli__")
             .env("PATH", minimal_path)
             .output()
             .map(|o| o.status.success())
@@ -433,7 +433,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         let tmp = std::env::temp_dir().join(format!(
-            "hermes_rc_regression_{}_{}",
+            "entry_rc_regression_{}_{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -445,7 +445,7 @@ mod tests {
 
         let bin_dir = tmp.join("mybin");
         std::fs::create_dir_all(&bin_dir).unwrap();
-        let fake_name = "hermes_rc_sentinel_bin";
+        let fake_name = "entry_rc_sentinel_bin";
         let fake_bin = bin_dir.join(fake_name);
         std::fs::write(&fake_bin, "#!/bin/sh\nexit 0\n").unwrap();
         std::fs::set_permissions(&fake_bin, std::fs::Permissions::from_mode(0o755)).unwrap();
@@ -515,7 +515,7 @@ mod tests {
         use std::os::unix::fs::PermissionsExt;
 
         let tmp = std::env::temp_dir().join(format!(
-            "hermes_wkp_{}_{}",
+            "entry_wkp_{}_{}",
             std::process::id(),
             std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
@@ -526,7 +526,7 @@ mod tests {
 
         let target_dir = tmp.join(".npm-global").join("bin");
         std::fs::create_dir_all(&target_dir).unwrap();
-        let fake_name = "hermes_wkp_sentinel_bin";
+        let fake_name = "entry_wkp_sentinel_bin";
         let fake_bin = target_dir.join(fake_name);
         std::fs::write(&fake_bin, "#!/bin/sh\nexit 0\n").unwrap();
         std::fs::set_permissions(&fake_bin, std::fs::Permissions::from_mode(0o755)).unwrap();
@@ -564,7 +564,7 @@ mod tests {
         unsafe {
             std::env::set_var("HOME", &tmp);
         }
-        let not_found = find_binary_in_well_known_dirs("__hermes_wkp_nonexistent__");
+        let not_found = find_binary_in_well_known_dirs("__entry_wkp_nonexistent__");
         unsafe {
             match prev_home {
                 Some(v) => std::env::set_var("HOME", v),

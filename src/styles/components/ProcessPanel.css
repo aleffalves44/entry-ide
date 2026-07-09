@@ -224,7 +224,7 @@
 
 /* ─── Row Variants ─────────────────────────────────────────── */
 
-.process-row-hermes {
+.process-row-entry {
   border-left: 2px solid var(--accent);
 }
 

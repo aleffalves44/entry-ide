@@ -19,7 +19,7 @@
  * verify that the guards EXIST in the code, but these simulation tests verify
  * that the terminal BEHAVES correctly when the guards fire.
  *
- * See: https://github.com/hermes-hq/hermes-ide/issues/112
+ * See: https://github.com/aleffalves44/entry-ide/issues/112
  */
 import { describe, it, expect } from "vitest";
 import { Terminal } from "@xterm/headless";

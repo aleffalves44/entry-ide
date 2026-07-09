@@ -3,7 +3,7 @@
  * open.  This is the 0→1 moment of the entire app, so it's designed
  * as a piece of typography, not a button row:
  *
- *   - Newsreader serif sets a "hand-bound logbook" tone — Hermes
+ *   - Newsreader serif sets a "hand-bound logbook" tone — Entry
  *     already loads it for the agent surface; here it gets the lead
  *     role on the title cut.
  *   - JetBrains Mono carries the operator voice (subtitle, shortcut

@@ -8,7 +8,7 @@ use std::process::Command;
 
 /// The directory name used inside the app data directory to store worktrees.
 /// This marker is also used by the frontend to detect worktree paths.
-pub const HERMES_WORKTREE_MARKER: &str = "hermes-worktrees";
+pub const ENTRY_WORKTREE_MARKER: &str = "entry-worktrees";
 
 // ─── Data Models ────────────────────────────────────────────────────
 
@@ -79,17 +79,17 @@ pub fn repo_path_hash(repo_path: &str) -> String {
 
 // ─── Public API ─────────────────────────────────────────────────────
 
-/// Returns the top-level directory for all Hermes worktrees.
-/// Path: `{app_data_dir}/hermes-worktrees/`
+/// Returns the top-level directory for all Entry worktrees.
+/// Path: `{app_data_dir}/entry-worktrees/`
 pub fn worktrees_base_dir(app_data_dir: &Path) -> PathBuf {
-    app_data_dir.join(HERMES_WORKTREE_MARKER)
+    app_data_dir.join(ENTRY_WORKTREE_MARKER)
 }
 
-/// Returns the base directory for Hermes worktrees for a specific repo.
+/// Returns the base directory for Entry worktrees for a specific repo.
 /// Creates the directory tree if it does not already exist.
 /// Also writes a `repo_path.txt` file so we can map back to the repo.
 ///
-/// Path: `{app_data_dir}/hermes-worktrees/{repo_hash}/`
+/// Path: `{app_data_dir}/entry-worktrees/{repo_hash}/`
 pub fn worktree_dir(app_data_dir: &Path, repo_path: &str) -> PathBuf {
     let hash = repo_path_hash(repo_path);
     let dir = worktrees_base_dir(app_data_dir).join(&hash);
@@ -113,7 +113,7 @@ pub fn read_repo_path(worktree_hash_dir: &Path) -> Option<String> {
 
 /// Compute the filesystem path for a session's worktree.
 ///
-/// Path: `{app_data_dir}/hermes-worktrees/{repo_hash}/{session_prefix}_{branch}/`
+/// Path: `{app_data_dir}/entry-worktrees/{repo_hash}/{session_prefix}_{branch}/`
 pub fn worktree_path_for_session(
     app_data_dir: &Path,
     repo_path: &str,
@@ -169,7 +169,7 @@ fn derive_local_branch_name(remote_ref: &str) -> String {
 /// Create a new git worktree for a session.
 ///
 /// Worktrees are stored outside the project directory in the app data dir
-/// to avoid polluting the user's project with Hermes internal files.
+/// to avoid polluting the user's project with Entry internal files.
 ///
 /// If `create_branch` is true, a new branch is created from HEAD before
 /// adding the worktree. If false, the branch must already exist.
@@ -386,7 +386,7 @@ pub fn create_worktree(
 ///
 /// This function contains multiple guards to prevent catastrophic deletion
 /// of project root directories. The `worktree_path` MUST be a linked
-/// worktree inside the app data `hermes-worktrees/` directory, never the
+/// worktree inside the app data `entry-worktrees/` directory, never the
 /// repo root itself.
 pub fn remove_worktree(
     repo_path: &str,
@@ -401,12 +401,12 @@ pub fn remove_worktree(
     // without these guards the fallback `remove_dir_all` would
     // recursively destroy the entire project.
 
-    // Guard 1: worktree_path must live under hermes-worktrees/
+    // Guard 1: worktree_path must live under entry-worktrees/
     // Normalize separators for cross-platform check (Windows uses backslashes)
     let normalized = worktree_path.replace('\\', "/");
-    if !normalized.contains("hermes-worktrees/") {
+    if !normalized.contains("entry-worktrees/") {
         return Err(format!(
-            "SAFETY: refusing to remove path outside hermes-worktrees/: '{}'",
+            "SAFETY: refusing to remove path outside entry-worktrees/: '{}'",
             worktree_path
         ));
     }
@@ -461,7 +461,7 @@ pub fn remove_worktree(
     let wt = Path::new(worktree_path);
     if wt.exists() {
         // Final safety re-check before the destructive operation
-        if !normalized.contains("hermes-worktrees/") {
+        if !normalized.contains("entry-worktrees/") {
             return Err(format!(
                 "SAFETY: last-resort guard prevented remove_dir_all on: '{}'",
                 worktree_path
@@ -675,10 +675,10 @@ pub fn cleanup_stale_worktrees(repo_path: &str) -> Result<u32, String> {
     Ok(pruned)
 }
 
-/// Check if a path is inside the Hermes worktrees directory.
-pub fn is_hermes_worktree_path(path: &str) -> bool {
+/// Check if a path is inside the Entry worktrees directory.
+pub fn is_entry_worktree_path(path: &str) -> bool {
     let normalized = path.replace('\\', "/");
-    normalized.contains("hermes-worktrees/")
+    normalized.contains("entry-worktrees/")
 }
 
 #[cfg(test)]
@@ -775,7 +775,7 @@ mod tests {
         let path =
             worktree_path_for_session(app_data.path(), "/repo", "abc12345-extra", "feature/auth");
         let path_str = path.to_string_lossy();
-        assert!(path_str.contains("hermes-worktrees"));
+        assert!(path_str.contains("entry-worktrees"));
         assert!(path_str.contains("abc12345_feature-auth"));
     }
 
@@ -796,9 +796,9 @@ mod tests {
         let repo_path = repo.path().to_str().unwrap();
         let dir = worktree_dir(app_data.path(), repo_path);
         assert!(dir.exists());
-        // Should be under hermes-worktrees
+        // Should be under entry-worktrees
         let dir_str = dir.to_string_lossy();
-        assert!(dir_str.contains("hermes-worktrees"));
+        assert!(dir_str.contains("entry-worktrees"));
         // Should have a repo_path.txt marker
         assert!(dir.join("repo_path.txt").exists());
     }
@@ -839,7 +839,7 @@ mod tests {
         assert!(Path::new(&wt.worktree_path).exists());
         // Worktree should be outside the repo
         assert!(!wt.worktree_path.contains(repo_path));
-        assert!(wt.worktree_path.contains("hermes-worktrees"));
+        assert!(wt.worktree_path.contains("entry-worktrees"));
     }
 
     #[test]
@@ -1211,19 +1211,19 @@ mod tests {
         assert_eq!(list_worktrees(repo_path).unwrap().len(), 0);
     }
 
-    // ── is_hermes_worktree_path ──────────────────────────────────────
+    // ── is_entry_worktree_path ──────────────────────────────────────
 
     #[test]
-    fn test_is_hermes_worktree_path() {
-        assert!(is_hermes_worktree_path(
-            "/app/data/hermes-worktrees/abc123/sess_main"
+    fn test_is_entry_worktree_path() {
+        assert!(is_entry_worktree_path(
+            "/app/data/entry-worktrees/abc123/sess_main"
         ));
-        assert!(is_hermes_worktree_path(
-            "C:\\app\\hermes-worktrees\\abc\\sess_main"
+        assert!(is_entry_worktree_path(
+            "C:\\app\\entry-worktrees\\abc\\sess_main"
         ));
-        assert!(!is_hermes_worktree_path("/Users/dev/project/src"));
-        assert!(!is_hermes_worktree_path(
-            "/Users/dev/project/.hermes/worktrees/abc"
+        assert!(!is_entry_worktree_path("/Users/dev/project/src"));
+        assert!(!is_entry_worktree_path(
+            "/Users/dev/project/.entry/worktrees/abc"
         ));
     }
 
@@ -1232,7 +1232,7 @@ mod tests {
     #[test]
     fn test_worktree_create_result_serializes() {
         let result = WorktreeCreateResult {
-            worktree_path: "/app/data/hermes-worktrees/hash/abc_main".to_string(),
+            worktree_path: "/app/data/entry-worktrees/hash/abc_main".to_string(),
             branch_name: "main".to_string(),
             is_main_worktree: false,
             is_shared: false,
@@ -1565,11 +1565,11 @@ mod tests {
     }
 
     #[test]
-    fn test_remove_worktree_safety_rejects_non_hermes_path() {
+    fn test_remove_worktree_safety_rejects_non_entry_path() {
         let repo_dir = create_test_repo();
         let repo_path = repo_dir.path().to_str().unwrap();
 
-        // Attempting to remove a path outside hermes-worktrees/ should be rejected
+        // Attempting to remove a path outside entry-worktrees/ should be rejected
         let result = remove_worktree(repo_path, "session1", "/some/regular/path");
         assert!(result.is_err());
         let err = result.unwrap_err();

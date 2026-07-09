@@ -8,7 +8,7 @@
  *   elsewhere, disk full, FS permission error), the createSession flow:
  *     1. Caught every error in the per-project try/catch
  *     2. Pushed messages into a `worktreeErrors` array
- *     3. Dispatched a `hermes:worktree-errors` DOM event (non-blocking)
+ *     3. Dispatched a `entry:worktree-errors` DOM event (non-blocking)
  *     4. Called `apiCreateSession` anyway, which silently fell back to
  *        the project root because no `session_worktrees` row existed.
  *   Result: the agent booted on the project's current branch with NO
@@ -19,7 +19,7 @@
  * Fix:
  *   When every selected worktree fails (>=1 error, 0 successes) the
  *   flow aborts: it destroys the pre-created TerminalPool entry, emits
- *   `hermes:worktree-errors` with `fatal: true`, and `createSession`
+ *   `entry:worktree-errors` with `fatal: true`, and `createSession`
  *   returns null so the caller can show a real failure dialog.
  *   Partial failures (some succeeded, some failed) still proceed — the
  *   surviving projects get isolation, the rest are flagged in the

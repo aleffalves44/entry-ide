@@ -32,7 +32,7 @@
  *   Fix: re-send resizeSession() when the session phase transitions to
  *   "shell_ready", guaranteeing the shell picks up the correct size.
  *
- * See: https://github.com/hermes-hq/hermes-ide/issues/112
+ * See: https://github.com/aleffalves44/entry-ide/issues/112
  */
 import { describe, it, expect } from "vitest";
 

@@ -1,6 +1,6 @@
 # SSH Remote Sessions
 
-Connect to remote machines directly from Hermes IDE, with the same terminal experience as local sessions.
+Connect to remote machines directly from Entry IDE, with the same terminal experience as local sessions.
 
 ---
 
@@ -68,4 +68,4 @@ Polish and power-user features.
 - **Remote terminal multiplexing** — Multiple shells on a single SSH connection
 - **File transfer** — Drag-and-drop upload/download between local and remote
 - **Remote environment variables** — Configure env vars injected into remote sessions
-- **SSH key management** — Generate, import, and manage SSH keys from within Hermes
+- **SSH key management** — Generate, import, and manage SSH keys from within Entry

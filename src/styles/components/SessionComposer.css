@@ -739,7 +739,7 @@
  * actuator on the slate.  Compresses on press.  */
 /* ─── Send button (Variant 1: text + sliding arrow) ─────────
  * Design-system v2.  See docs/design-system/06-components.md and
- * /tmp/hermes-composer-redesign/refinements.html · γ + 1. */
+ * /tmp/entry-composer-redesign/refinements.html · γ + 1. */
 .session-composer-send-btn {
   display: inline-flex;
   align-items: center;
@@ -830,7 +830,7 @@
  * Universal chip shape for Model · Permission · Effort. A 5px
  * colored dot identifies the slot category; the value is the
  * single visible word. See docs/design-system/06-components.md
- * and /tmp/hermes-composer-redesign/refinements.html · γ.
+ * and /tmp/entry-composer-redesign/refinements.html · γ.
  * ──────────────────────────────────────────────────────── */
 .composer-chip {
   display: inline-flex;

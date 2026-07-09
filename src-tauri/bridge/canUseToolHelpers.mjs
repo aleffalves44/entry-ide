@@ -136,8 +136,8 @@ export function ruleMatches(rule, toolName, input) {
  *      again.  In-memory cache + persist field gives correct behaviour
  *      now; future work can also load disk rules at startup.
  *
- * Otherwise the bridge writes a `_hermes_perm_request` on stdout and
- * waits for `_hermes_perm_response` on stdin.  Honours the SDK's
+ * Otherwise the bridge writes a `_entry_perm_request` on stdout and
+ * waits for `_entry_perm_response` on stdin.  Honours the SDK's
  * abort signal — see the top-of-file comment.
  *
  * @template T
@@ -238,7 +238,7 @@ export function createCanUseToolHandler({
       }
 
       stdout.write(
-        JSON.stringify({ type: "_hermes_perm_request", id, toolName, input }) + "\n",
+        JSON.stringify({ type: "_entry_perm_request", id, toolName, input }) + "\n",
       );
     });
     // Cache "approve always" rules so future calls in this session don't
@@ -269,7 +269,7 @@ export function createCanUseToolHandler({
  * where it may refuse to actually bypass — surfacing as confusing
  * "permission denied" errors that the host UI cannot explain.
  *
- * Hermes' UI exposes the permission-mode chip as flippable to ANY mode
+ * Entry' UI exposes the permission-mode chip as flippable to ANY mode
  * mid-session — including Bypass. The SDK's runtime `setPermissionMode`
  * control op refuses to enter `bypassPermissions` unless the session was
  * spawned with `allowDangerouslySkipPermissions: true`. Granting the

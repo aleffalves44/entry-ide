@@ -4,7 +4,7 @@
  * The `top` value in ToastContainer.css must reference `--topbar-h`
  * so toasts clear the title bar regardless of its height.
  *
- * See: https://github.com/hermes-hq/hermes-ide/issues/134
+ * See: https://github.com/aleffalves44/entry-ide/issues/134
  */
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "fs";

@@ -105,7 +105,7 @@ export function shouldShowGhostText(sessionId: string): boolean {
   if (!env) return globalConfig.ghostTextEnabled;
 
   // If shell integration is active, conflicting plugins have been disabled
-  // at the shell level — always show Hermes ghost text.
+  // at the shell level — always show Entry ghost text.
   if (env.shellIntegrationActive) return true;
 
   // Without integration, don't show ghost text if shell has native autosuggestions
@@ -134,7 +134,7 @@ export function shouldConsumeTab(sessionId: string, overlayVisible: boolean): bo
   if (!env) return overlayVisible;
 
   // If shell integration is active, conflicting plugins have been disabled —
-  // safe to consume Tab for Hermes suggestions.
+  // safe to consume Tab for Entry suggestions.
   if (env.shellIntegrationActive) return true;
 
   // Without integration, prefer shell Tab completion in augment mode

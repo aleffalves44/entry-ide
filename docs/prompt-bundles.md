@@ -1,21 +1,21 @@
 # Prompt Bundles
 
-Prompt bundles let you share custom prompt templates as portable `.hermes-prompts` files. A bundle packages one or more templates together with any custom roles and styles they depend on, so the recipient gets a complete, ready-to-use setup.
+Prompt bundles let you share custom prompt templates as portable `.entry-prompts` files. A bundle packages one or more templates together with any custom roles and styles they depend on, so the recipient gets a complete, ready-to-use setup.
 
 ## Quick start
 
 1. **Export** -- Open the Prompt Composer, click Templates, and use the arrow icon on any saved template to export it. Or click **Export All** to bundle every saved template at once.
-2. **Import** -- Click **Import** in the template picker, select a `.hermes-prompts` file, and your new templates appear instantly.
+2. **Import** -- Click **Import** in the template picker, select a `.entry-prompts` file, and your new templates appear instantly.
 
 ## File format
 
-A `.hermes-prompts` file is JSON with this structure:
+A `.entry-prompts` file is JSON with this structure:
 
 ```json
 {
-  "_hermes_bundle_version": 1,
-  "_hermes_app_version": "0.6.4",
-  "_hermes_exported_at": "2026-03-24T12:00:00.000Z",
+  "_entry_bundle_version": 1,
+  "_entry_app_version": "0.6.4",
+  "_entry_exported_at": "2026-03-24T12:00:00.000Z",
   "templates": [],
   "roles": [],
   "styles": []
@@ -26,9 +26,9 @@ A `.hermes-prompts` file is JSON with this structure:
 
 | Field | Type | Description |
 |---|---|---|
-| `_hermes_bundle_version` | `number` | Format version. Currently `1`. |
-| `_hermes_app_version` | `string` | App version that created the bundle (informational). |
-| `_hermes_exported_at` | `string` | ISO 8601 timestamp (informational). |
+| `_entry_bundle_version` | `number` | Format version. Currently `1`. |
+| `_entry_app_version` | `string` | App version that created the bundle (informational). |
+| `_entry_exported_at` | `string` | ISO 8601 timestamp (informational). |
 
 ### `templates` (required)
 
@@ -81,7 +81,7 @@ An array of template objects. At least one is required.
 
 ### `roles` (optional)
 
-An array of custom role definitions. Only include roles that your templates reference -- built-in roles (like `"backend-eng"` or `"debugger"`) are already available in every Hermes installation.
+An array of custom role definitions. Only include roles that your templates reference -- built-in roles (like `"backend-eng"` or `"debugger"`) are already available in every Entry installation.
 
 ```json
 {
@@ -131,7 +131,7 @@ An array of custom style definitions with 5 intensity levels.
 
 ## Built-in role and style IDs
 
-When your template references a built-in role or style, use its ID directly -- it will resolve on any Hermes installation. Don't include built-in definitions in the `roles` or `styles` arrays.
+When your template references a built-in role or style, use its ID directly -- it will resolve on any Entry installation. Don't include built-in definitions in the `roles` or `styles` arrays.
 
 **Built-in roles:** `backend-eng`, `frontend-eng`, `fullstack-eng`, `typescript-specialist`, `debugger`, `performance-specialist`, `security-specialist`, `devops-eng`, `code-reviewer`, `technical-writer`, `concurrency-specialist`, `database-specialist`, `rust-specialist`, `systems-eng`, `qa-eng`, `data-eng`, `ml-eng`, `ux-eng`, `accessibility-specialist`, `product-manager`
 
@@ -148,11 +148,11 @@ When importing a bundle:
 
 ## Creating bundles by hand
 
-You can write `.hermes-prompts` files manually or generate them with a script. The minimal valid bundle:
+You can write `.entry-prompts` files manually or generate them with a script. The minimal valid bundle:
 
 ```json
 {
-  "_hermes_bundle_version": 1,
+  "_entry_bundle_version": 1,
   "templates": [
     {
       "id": "t1",
@@ -169,8 +169,8 @@ You can write `.hermes-prompts` files manually or generate them with a script. T
 }
 ```
 
-The `roles` and `styles` arrays can be omitted if your templates only use built-in references. The `_hermes_app_version` and `_hermes_exported_at` metadata fields are optional.
+The `roles` and `styles` arrays can be omitted if your templates only use built-in references. The `_entry_app_version` and `_entry_exported_at` metadata fields are optional.
 
 ## Example
 
-See [`examples/starter-bundle.hermes-prompts`](examples/starter-bundle.hermes-prompts) for a complete example with custom roles and styles.
+See [`examples/starter-bundle.entry-prompts`](examples/starter-bundle.entry-prompts) for a complete example with custom roles and styles.

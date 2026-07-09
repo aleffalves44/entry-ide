@@ -1,7 +1,7 @@
 // ─── Prompt Bundle ────────────────────────────────────────────────────
 //
 // Self-contained export/import format for prompt templates and their
-// custom role/style dependencies. Uses `.hermes-prompts` file extension
+// custom role/style dependencies. Uses `.entry-prompts` file extension
 // (JSON internally) to distinguish from the full settings export.
 
 import type { PromptTemplate } from "./templates";
@@ -11,10 +11,10 @@ import type { StyleDefinition } from "./styles";
 // ── Types ────────────────────────────────────────────────────────────
 
 export interface PromptBundle {
-	_hermes_bundle_version: number;
-	_hermes_app_version: string;
-	_hermes_exported_at: string;
-	_hermes_bundle_name?: string;
+	_entry_bundle_version: number;
+	_entry_app_version: string;
+	_entry_exported_at: string;
+	_entry_bundle_name?: string;
 	templates: PromptTemplate[];
 	roles: RoleDefinition[];
 	styles: StyleDefinition[];
@@ -83,10 +83,10 @@ export function createBundle(
 	const bundledTemplates = templates.map((t) => ({ ...t, builtIn: false }));
 
 	return {
-		_hermes_bundle_version: BUNDLE_VERSION,
-		_hermes_app_version: appVersion,
-		_hermes_exported_at: new Date().toISOString(),
-		...(bundleName ? { _hermes_bundle_name: bundleName } : {}),
+		_entry_bundle_version: BUNDLE_VERSION,
+		_entry_app_version: appVersion,
+		_entry_exported_at: new Date().toISOString(),
+		...(bundleName ? { _entry_bundle_name: bundleName } : {}),
 		templates: bundledTemplates,
 		roles: bundledRoles,
 		styles: bundledStyles,
@@ -105,10 +105,10 @@ export function validateBundle(
 	const obj = data as Record<string, unknown>;
 
 	// Version check
-	if (typeof obj._hermes_bundle_version !== "number") {
+	if (typeof obj._entry_bundle_version !== "number") {
 		return { valid: false, error: "This file does not appear to be an Entry IDE prompt bundle" };
 	}
-	if (obj._hermes_bundle_version > BUNDLE_VERSION) {
+	if (obj._entry_bundle_version > BUNDLE_VERSION) {
 		return {
 			valid: false,
 			error: "This bundle was created by a newer version of Entry IDE. Please update the app to import it.",
@@ -142,10 +142,10 @@ export function validateBundle(
 	return {
 		valid: true,
 		bundle: {
-			_hermes_bundle_version: obj._hermes_bundle_version as number,
-			_hermes_app_version: (obj._hermes_app_version as string) ?? "",
-			_hermes_exported_at: (obj._hermes_exported_at as string) ?? "",
-			...(typeof obj._hermes_bundle_name === "string" ? { _hermes_bundle_name: obj._hermes_bundle_name } : {}),
+			_entry_bundle_version: obj._entry_bundle_version as number,
+			_entry_app_version: (obj._entry_app_version as string) ?? "",
+			_entry_exported_at: (obj._entry_exported_at as string) ?? "",
+			...(typeof obj._entry_bundle_name === "string" ? { _entry_bundle_name: obj._entry_bundle_name } : {}),
 			templates: obj.templates as PromptTemplate[],
 			roles: (obj.roles as RoleDefinition[]) ?? [],
 			styles: (obj.styles as StyleDefinition[]) ?? [],

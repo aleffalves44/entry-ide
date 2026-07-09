@@ -1,6 +1,6 @@
-# Hermes IDE — Governance
+# Entry IDE — Governance
 
-Hermes IDE follows a **BDFL (Benevolent Dictator For Life)** governance model. The creator has final say on all decisions: roadmap, features, releases, licensing, and community policy.
+Entry IDE follows a **BDFL (Benevolent Dictator For Life)** governance model. The creator has final say on all decisions: roadmap, features, releases, licensing, and community policy.
 
 ## Roles
 

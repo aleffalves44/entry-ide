@@ -1,7 +1,7 @@
-# Hermes IDE 1.3.2
+# Entry IDE 1.3.2
 
 A recovery release for the agent mode: when a conversation grows past
-the model's context window, Hermes now tells you what happened and
+the model's context window, Entry now tells you what happened and
 gives you a one-step path out.
 
 ## You'll know when Claude can't continue
@@ -33,7 +33,7 @@ to the wrong place, and all of them now work where you'd expect.
 ## Cleaner feedback for the side-effect-only commands
 
 `/compact` and `/clear` don't have anything conversational to say
-back — their effect is internal. Previously you'd see a "Hermes: (no
+back — their effect is internal. Previously you'd see a "Entry: (no
 content)" turn after sending one, which read as a broken response.
 
 Now you see a small confirmation card with a brass checkmark — for

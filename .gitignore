@@ -38,7 +38,7 @@ npm-debug.log*
 # Local release
 release-artifacts/
 scripts/release-local.env
-.hermes/
+.entry/
 .claude/
 
 # Personal marketing assets — promo videos, design mockups, etc.

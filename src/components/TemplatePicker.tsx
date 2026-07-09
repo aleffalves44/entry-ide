@@ -392,7 +392,7 @@ export function TemplatePicker({
                       <button
                         className="template-picker-bundle-btn"
                         onClick={(e) => { e.stopPropagation(); onImportBundle(); }}
-                        title="Import templates from a .hermes-prompts file"
+                        title="Import templates from a .entry-prompts file"
                       >
                         Import
                       </button>
@@ -401,7 +401,7 @@ export function TemplatePicker({
                       <button
                         className="template-picker-bundle-btn"
                         onClick={(e) => { e.stopPropagation(); onExportAll(); }}
-                        title="Export all saved templates to a .hermes-prompts file"
+                        title="Export all saved templates to a .entry-prompts file"
                       >
                         Export All
                       </button>

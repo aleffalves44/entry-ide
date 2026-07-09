@@ -66,9 +66,9 @@ describe("createBundle", () => {
 
 		const bundle = createBundle([tpl], [role], [style], BUILT_IN_ROLE_IDS, BUILT_IN_STYLE_IDS, "0.6.4");
 
-		expect(bundle._hermes_bundle_version).toBe(1);
-		expect(bundle._hermes_app_version).toBe("0.6.4");
-		expect(bundle._hermes_exported_at).toBeTruthy();
+		expect(bundle._entry_bundle_version).toBe(1);
+		expect(bundle._entry_app_version).toBe("0.6.4");
+		expect(bundle._entry_exported_at).toBeTruthy();
 		expect(bundle.templates).toHaveLength(1);
 		expect(bundle.templates[0].name).toBe("Test Template");
 		expect(bundle.templates[0].builtIn).toBe(false);
@@ -215,9 +215,9 @@ describe("createBundle", () => {
 describe("validateBundle", () => {
 	function validBundleData(): Record<string, unknown> {
 		return {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "2026-01-01T00:00:00Z",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "2026-01-01T00:00:00Z",
 			templates: [{ id: "user-1", name: "Test", category: "debugging", fields: {}, recommendedRoles: [], recommendedStyles: [], builtIn: false }],
 			roles: [],
 			styles: [],
@@ -240,9 +240,9 @@ describe("validateBundle", () => {
 		expect(validateBundle(undefined).valid).toBe(false);
 	});
 
-	it("rejects missing _hermes_bundle_version", () => {
+	it("rejects missing _entry_bundle_version", () => {
 		const data = validBundleData();
-		delete data._hermes_bundle_version;
+		delete data._entry_bundle_version;
 		const result = validateBundle(data);
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -252,7 +252,7 @@ describe("validateBundle", () => {
 
 	it("rejects future bundle version", () => {
 		const data = validBundleData();
-		data._hermes_bundle_version = 99;
+		data._entry_bundle_version = 99;
 		const result = validateBundle(data);
 		expect(result.valid).toBe(false);
 		if (!result.valid) {
@@ -331,13 +331,13 @@ describe("validateBundle", () => {
 
 	it("defaults missing app_version and exported_at to empty strings", () => {
 		const data = validBundleData();
-		delete data._hermes_app_version;
-		delete data._hermes_exported_at;
+		delete data._entry_app_version;
+		delete data._entry_exported_at;
 		const result = validateBundle(data);
 		expect(result.valid).toBe(true);
 		if (result.valid) {
-			expect(result.bundle._hermes_app_version).toBe("");
-			expect(result.bundle._hermes_exported_at).toBe("");
+			expect(result.bundle._entry_app_version).toBe("");
+			expect(result.bundle._entry_exported_at).toBe("");
 		}
 	});
 
@@ -357,9 +357,9 @@ describe("validateBundle", () => {
 describe("importBundle", () => {
 	function makeBundleWithDeps(): PromptBundle {
 		return {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "2026-01-01T00:00:00Z",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "2026-01-01T00:00:00Z",
 			templates: [makeTemplate()],
 			roles: [makeRole()],
 			styles: [makeStyle()],
@@ -460,9 +460,9 @@ describe("importBundle", () => {
 		const existingStyle = makeStyle({ id: "existing-style", label: "Existing Style" });
 
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [makeTemplate({ id: "new-1", name: "New Template" })],
 			roles: [makeRole({ id: "new-role", label: "New Role" })],
 			styles: [makeStyle({ id: "new-style", label: "New Style" })],
@@ -482,9 +482,9 @@ describe("importBundle", () => {
 
 	it("handles built-in role/style references in templates (pass through unchanged)", () => {
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [makeTemplate({
 				fields: {
 					roleIds: ["backend-eng"],
@@ -513,9 +513,9 @@ describe("importBundle", () => {
 
 	it("handles bundle with empty roles and styles arrays", () => {
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [makeTemplate({
 				fields: { roleIds: [], task: "simple task", scope: "", constraints: "", styleSelections: [], style: "" },
 				recommendedRoles: [],
@@ -539,9 +539,9 @@ describe("importBundle", () => {
 
 	it("imports multiple templates from a single bundle", () => {
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [
 				makeTemplate({ id: "t1", name: "Template A" }),
 				makeTemplate({ id: "t2", name: "Template B" }),
@@ -565,9 +565,9 @@ describe("importBundle", () => {
 	it("skips some and adds others in a mixed import", () => {
 		const existing = makeTemplate({ id: "ex-1", name: "Template A" });
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [
 				makeTemplate({ id: "t1", name: "Template A" }), // duplicate — skip
 				makeTemplate({ id: "t2", name: "Template B" }), // new — add
@@ -593,9 +593,9 @@ describe("importBundle", () => {
 			makeTemplate({ id: "builtin-2", name: "Bug Report", builtIn: true }),
 		];
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [
 				makeTemplate({ id: "t1", name: "Code Review" }), // matches built-in — skip
 				makeTemplate({ id: "t2", name: "New Template" }), // unique — add
@@ -619,9 +619,9 @@ describe("importBundle", () => {
 			makeTemplate({ id: "builtin-1", name: "Code Review", builtIn: true }),
 		];
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [makeTemplate({ id: "t1", name: "code review" })],
 			roles: [],
 			styles: [],
@@ -641,9 +641,9 @@ describe("importBundle", () => {
 		];
 		const existingUser = makeTemplate({ id: "user-existing", name: "User Template" });
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [
 				makeTemplate({ id: "t1", name: "Built-in Template" }), // matches built-in
 				makeTemplate({ id: "t2", name: "User Template" }),     // matches user
@@ -666,9 +666,9 @@ describe("importBundle", () => {
 
 	it("works without builtInTemplates param (backward compat)", () => {
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [makeTemplate({ id: "t1", name: "New One" })],
 			roles: [],
 			styles: [],
@@ -684,9 +684,9 @@ describe("importBundle", () => {
 
 	it("handles template with missing fields gracefully", () => {
 		const bundle: PromptBundle = {
-			_hermes_bundle_version: 1,
-			_hermes_app_version: "0.6.4",
-			_hermes_exported_at: "",
+			_entry_bundle_version: 1,
+			_entry_app_version: "0.6.4",
+			_entry_exported_at: "",
 			templates: [makeTemplate({
 				fields: {},
 				recommendedRoles: [],

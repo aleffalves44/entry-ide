@@ -9,7 +9,7 @@
  *     Claude-described slash command falls here.
  *   - `cli`    — purely-interactive TUI built-in that the SDK CAN'T
  *     drive over stream-json (because it expects a real terminal).
- *     Hermes routes these to an embedded `claude /<cmd>` PTY instead
+ *     Entry routes these to an embedded `claude /<cmd>` PTY instead
  *     of submitting them as user prompts.
  *
  * Why a curated catalog: the SDK's `init.slash_commands` only reports

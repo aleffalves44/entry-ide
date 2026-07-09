@@ -736,8 +736,8 @@ export function SessionComposer() {
       dispatch({ type: "SET_COMPOSER_EXPANDED", sessionId: composerSessionId, expanded: true });
       requestAnimationFrame(() => textareaRef.current?.focus());
     };
-    window.addEventListener("hermes:expand-composer", handler);
-    return () => window.removeEventListener("hermes:expand-composer", handler);
+    window.addEventListener("entry:expand-composer", handler);
+    return () => window.removeEventListener("entry:expand-composer", handler);
   }, [composerSessionId, dispatch]);
 
   if (!composerSessionId) {

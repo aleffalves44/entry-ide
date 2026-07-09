@@ -233,7 +233,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
 
   // ─── Interactive tools ───────────────────────────────────────────
   // AskUserQuestion / ExitPlanMode are dispatched via the
-  // `_hermes_perm_request` stream from the bridge's canUseTool —
+  // `_entry_perm_request` stream from the bridge's canUseTool —
   // see <InteractivePermissionDispatcher /> below.  That's the SDK's
   // contract: the host injects answers as `updatedInput` rather than
   // writing a tool_result envelope.  No tool_use scanning needed here.
@@ -366,7 +366,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
 
           {/* All interactive tooling — AskUserQuestion, ExitPlanMode,
               and the generic permission modal — is driven by
-              `_hermes_perm_request` envelopes from the bridge's
+              `_entry_perm_request` envelopes from the bridge's
               canUseTool.  The dispatcher routes by toolName. */}
           <InteractivePermissionDispatcher
             sessionId={sessionId}
@@ -397,7 +397,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
 /**
  * Bridge ⇄ frontend canUseTool dispatcher.
  *
- * Listens for `_hermes_perm_request` envelopes on the agent stream and
+ * Listens for `_entry_perm_request` envelopes on the agent stream and
  * routes each by tool name:
  *
  *   AskUserQuestion → <AskUserQuestionCard />     allow → updatedInput
@@ -409,7 +409,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
  *                                                  with feedback message
  *   else            → <PermissionRequestModal />  generic allow/deny
  *
- * The user's decision goes back as `_hermes_perm_response` via
+ * The user's decision goes back as `_entry_perm_response` via
  * `sendAgentEnvelope` (retry-on-not-found, M10) so we don't drop a
  * decision when the bridge has exited between turns.
  */
@@ -535,7 +535,7 @@ function InteractivePermissionDispatcher({
   function decide(decision: PermissionDecision) {
     if (!request) return;
     // Latch immediately so a double-click on the modal can't fire
-    // two `_hermes_perm_response` envelopes for the same request id
+    // two `_entry_perm_response` envelopes for the same request id
     // (fix H6).  Keyed by request id (fix B4) so an in-flight send
     // for request A doesn't silently drop the first click on
     // request B.
@@ -578,7 +578,7 @@ function InteractivePermissionDispatcher({
     }
   }
 
-  // Banner that surfaces a failed `_hermes_perm_response` send.  The
+  // Banner that surfaces a failed `_entry_perm_response` send.  The
   // bridge is still waiting on canUseTool, so we re-show the modal
   // (decide() restored the request via the store) and prepend a
   // visible error so the user understands why the click didn't land.
@@ -907,7 +907,7 @@ export function classifyExit(
  * `--print --input-format stream-json` channel emits for receipt-style
  * slash commands (`/compact`, `/clear`, `/init`, `/review`).  Claude's
  * reply for these is the literal text `"(no content)"`, which used
- * to render as a confusing "Hermes: (no content)" turn — leaving the
+ * to render as a confusing "Entry: (no content)" turn — leaving the
  * user wondering whether their command worked.
  *
  * The card occupies the same horizontal slot the message would have:

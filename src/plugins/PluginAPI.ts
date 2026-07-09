@@ -1,4 +1,4 @@
-import type { Disposable, PluginSettingsSchema, HermesEvent, SessionInfo, TranscriptEvent, AgentsAPI, FileHandlerProps } from "./types";
+import type { Disposable, PluginSettingsSchema, EntryEvent, SessionInfo, TranscriptEvent, AgentsAPI, FileHandlerProps } from "./types";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { open as shellOpen } from "@tauri-apps/plugin-shell";
@@ -10,7 +10,7 @@ export interface PluginPanelProps {
 }
 
 // The API surface available to every plugin
-export interface HermesPluginAPI {
+export interface EntryPluginAPI {
 	ui: {
 		registerPanel(panelId: string, component: React.ComponentType<PluginPanelProps>): Disposable;
 		showPanel(panelId: string): void;
@@ -41,7 +41,7 @@ export interface HermesPluginAPI {
 		getAll(): Promise<Record<string, string | number | boolean>>;
 	};
 	events: {
-		on(event: HermesEvent, callback: (...args: unknown[]) => void): Disposable;
+		on(event: EntryEvent, callback: (...args: unknown[]) => void): Disposable;
 	};
 	notifications: {
 		send(options: { title: string; body?: string }): Promise<void>;
@@ -84,7 +84,7 @@ export interface PluginAPICallbacks {
 	onStatusBarUpdate: StatusBarUpdateCallback;
 	onSessionActionBadgeUpdate?: (actionId: string, badge: { text?: string; count?: number }) => void;
 	onSettingChanged?: (pluginId: string, key: string, value: string | number | boolean) => void;
-	onEventSubscribe?: (event: HermesEvent, callback: (...args: unknown[]) => void) => Disposable;
+	onEventSubscribe?: (event: EntryEvent, callback: (...args: unknown[]) => void) => Disposable;
 	onNotification?: (options: { title: string; body?: string }) => Promise<void>;
 	onSessionsGetActive?: () => Promise<SessionInfo | null>;
 	onSessionsList?: () => Promise<SessionInfo[]>;
@@ -100,7 +100,7 @@ export function createPluginAPI(
 	commandHandlers: Map<string, () => void | Promise<void>>,
 	panelComponents: Map<string, React.ComponentType<PluginPanelProps>>,
 	fileHandlers?: Map<string, { pluginId: string; component: React.ComponentType<FileHandlerProps> }>,
-): HermesPluginAPI {
+): EntryPluginAPI {
 	const subscriptions: Disposable[] = [];
 	const schema = settingsSchema ?? {};
 	const settingsChangeListeners = new Map<string, Set<(value: string | number | boolean) => void>>();
@@ -328,7 +328,7 @@ export function createPluginAPI(
 			},
 		},
 		events: {
-			on(event: HermesEvent, callback: (...args: unknown[]) => void): Disposable {
+			on(event: EntryEvent, callback: (...args: unknown[]) => void): Disposable {
 				if (callbacks.onEventSubscribe) {
 					return callbacks.onEventSubscribe(event, callback);
 				}

@@ -1,4 +1,4 @@
-# Hermes IDE — Visual System Audit & Redesign Proposal
+# Entry IDE — Visual System Audit & Redesign Proposal
 
 **Date:** 2026-05-09
 **Author:** Frontend design audit (post-v1.1.4)
@@ -8,13 +8,13 @@
 
 ## Executive summary
 
-Hermes IDE has a **better-than-average visual system** for an indie IDE. The existing token taxonomy ("ink", "rule", "paper", "brass", archetype paint), the warm-cool tension between brass and slate-blue, and the publication-flag masthead are all design-aware choices that put it ahead of the VS-Code-with-a-fresh-coat-of-paint crowd.
+Entry IDE has a **better-than-average visual system** for an indie IDE. The existing token taxonomy ("ink", "rule", "paper", "brass", archetype paint), the warm-cool tension between brass and slate-blue, and the publication-flag masthead are all design-aware choices that put it ahead of the VS-Code-with-a-fresh-coat-of-paint crowd.
 
 That said, three things are holding it back from being a *truly distinctive* surface:
 
 1. **The type scale is over-compressed and uneven.** Seven size steps packed into a 9-pixel range (9px–18px) with irregular ratios. The agent-mode prose layer can't breathe; the chrome eats screen real estate at small sizes; on 4K displays everything is microscopic. Fixed pixels everywhere — no fluid scaling, no user-density preference.
 
-2. **Newsreader is loaded but underutilized.** A genuinely beautiful serif sits in the font payload, restricted to "WebFetch / WebSearch excerpts ONLY". This is the single highest-leverage improvement available. Push it into agent prose, empty states, and editorial moments — Hermes goes from "another dark IDE" to "the Edward-Tufte-built-an-IDE" surface, instantly.
+2. **Newsreader is loaded but underutilized.** A genuinely beautiful serif sits in the font payload, restricted to "WebFetch / WebSearch excerpts ONLY". This is the single highest-leverage improvement available. Push it into agent prose, empty states, and editorial moments — Entry goes from "another dark IDE" to "the Edward-Tufte-built-an-IDE" surface, instantly.
 
 3. **No real light theme.** Six themes ship; all six are dark. The "designer (atelier)" theme is warm-dark, not light. A serious chunk of the audience — the prose-and-design-collab crowd, daylight workers, accessibility-conscious users — is being told to install a different IDE.
 
@@ -317,4 +317,4 @@ Total to a fully-realized v1.2 visual system: ~6-8 focused days, none of them in
 
 The system has good bones. None of this proposal asks you to throw anything away. The biggest wins — Newsreader-for-prose and the type scale overhaul — are *additive*, behind feature flags or new token names, and can land in a single afternoon each.
 
-The one thing I'd push back on if I had to pick a fight: ship a real light theme. Hermes-as-IDE is dark-only by default; Hermes-as-craftspace is dark *and* light, and the audience for the latter is much larger than the former. Don't let "I prefer dark" be the reason a designer-collaboration tool can't be used in daylight.
+The one thing I'd push back on if I had to pick a fight: ship a real light theme. Entry-as-IDE is dark-only by default; Entry-as-craftspace is dark *and* light, and the audience for the latter is much larger than the former. Don't let "I prefer dark" be the reason a designer-collaboration tool can't be used in daylight.

@@ -1,5 +1,5 @@
 # ────────────────────────────────────────────────────────────────────────────
-# Hermes IDE — Release & Development Makefile
+# Entry IDE — Release & Development Makefile
 #
 # Release Strategy:
 #   The primary release path is the GitHub Actions CI workflow (release.yml).
@@ -19,8 +19,8 @@
 SHELL := /bin/bash
 VERSION := $(shell node -p "require('./src-tauri/tauri.conf.json').version")
 TAG := v$(VERSION)
-PRIVATE_REPO := hermes-hq/hermes-ide
-PUBLIC_REPO := hermes-hq/hermes-ide
+PRIVATE_REPO := aleffalves44/entry-ide
+PUBLIC_REPO := aleffalves44/entry-ide
 
 .PHONY: help dev build test bump release-push \
         release release-macos release-linux release-windows \
@@ -36,7 +36,7 @@ PUBLIC_REPO := hermes-hq/hermes-ide
 
 help: ## Show this help
 	@echo ""
-	@echo "  Hermes IDE — v$(VERSION)"
+	@echo "  Entry IDE — v$(VERSION)"
 	@echo ""
 	@echo "  Development"
 	@echo "  ─────────────────────────────────────────────────"

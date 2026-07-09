@@ -23,7 +23,7 @@ pub struct InstalledPlugin {
 }
 
 /// List all installed plugins by scanning the plugins directory.
-/// Each plugin is a subdirectory containing a `hermes-plugin.json` manifest.
+/// Each plugin is a subdirectory containing a `entry-plugin.json` manifest.
 #[tauri::command]
 pub fn list_installed_plugins(app: tauri::AppHandle) -> Result<Vec<InstalledPlugin>, String> {
     let dir = plugins_dir(&app)?;
@@ -44,7 +44,7 @@ pub fn list_installed_plugins(app: tauri::AppHandle) -> Result<Vec<InstalledPlug
             continue;
         }
 
-        let manifest_path = path.join("hermes-plugin.json");
+        let manifest_path = path.join("entry-plugin.json");
         if !manifest_path.exists() {
             continue;
         }
@@ -101,7 +101,7 @@ pub fn read_plugin_bundle(app: tauri::AppHandle, plugin_dir: String) -> Result<S
     }
 
     // Read manifest to find the main entry point
-    let manifest_path = canonical_plugin.join("hermes-plugin.json");
+    let manifest_path = canonical_plugin.join("entry-plugin.json");
     let manifest_json = fs::read_to_string(&manifest_path)
         .map_err(|e| format!("Failed to read manifest: {}", e))?;
     let manifest: serde_json::Value = serde_json::from_str(&manifest_json)
@@ -186,7 +186,7 @@ pub fn install_plugin(app: tauri::AppHandle, data: Vec<u8>) -> Result<String, St
         return Err(format!("Failed to extract archive: {}", e));
     }
 
-    // Find hermes-plugin.json (may be at root or in a single subdirectory like "package/")
+    // Find entry-plugin.json (may be at root or in a single subdirectory like "package/")
     let (manifest_root, manifest_json) = find_manifest_in_dir(&temp_dir).inspect_err(|_| {
         let _ = fs::remove_dir_all(&temp_dir);
     })?;
@@ -281,7 +281,7 @@ pub async fn download_and_install_plugin(
 
 fn find_manifest_in_dir(dir: &std::path::Path) -> Result<(PathBuf, String), String> {
     // Check root
-    let root_manifest = dir.join("hermes-plugin.json");
+    let root_manifest = dir.join("entry-plugin.json");
     if root_manifest.exists() {
         let json = fs::read_to_string(&root_manifest)
             .map_err(|e| format!("Failed to read manifest: {}", e))?;
@@ -297,7 +297,7 @@ fn find_manifest_in_dir(dir: &std::path::Path) -> Result<(PathBuf, String), Stri
 
     if entries.len() == 1 {
         let sub = entries[0].path();
-        let sub_manifest = sub.join("hermes-plugin.json");
+        let sub_manifest = sub.join("entry-plugin.json");
         if sub_manifest.exists() {
             let json = fs::read_to_string(&sub_manifest)
                 .map_err(|e| format!("Failed to read manifest: {}", e))?;
@@ -305,7 +305,7 @@ fn find_manifest_in_dir(dir: &std::path::Path) -> Result<(PathBuf, String), Stri
         }
     }
 
-    Err("Archive does not contain hermes-plugin.json".to_string())
+    Err("Archive does not contain entry-plugin.json".to_string())
 }
 
 /// Fetch a URL and return the response body as a string.

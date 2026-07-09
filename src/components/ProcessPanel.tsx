@@ -46,7 +46,7 @@ export function filterProcesses(processes: ProcessInfo[], filter: ProcessFilter)
     }
     if (filter.cpuThreshold > 0 && p.cpu_percent < filter.cpuThreshold) return false;
     if (filter.memThreshold > 0 && p.memory_percent < filter.memThreshold) return false;
-    if (filter.showHermesOnly && !p.is_hermes_session) return false;
+    if (filter.showEntryOnly && !p.is_entry_session) return false;
     if (filter.showZombiesOnly && !p.is_zombie) return false;
     return true;
   });
@@ -128,7 +128,7 @@ const ProcessRow = memo(function ProcessRow({
 
   return (
     <div
-      className={`process-row${isExpanded ? " process-row-expanded" : ""}${process.is_hermes_session ? " process-row-hermes" : ""}${process.is_zombie ? " process-row-zombie" : ""}${isNew ? " process-row-new" : ""}`}
+      className={`process-row${isExpanded ? " process-row-expanded" : ""}${process.is_entry_session ? " process-row-entry" : ""}${process.is_zombie ? " process-row-zombie" : ""}${isNew ? " process-row-new" : ""}`}
       style={{ position: "absolute", top, height, width: "100%" }}
       onClick={handleExpand}
       onContextMenu={(e) => onContextMenu(e, process)}
@@ -213,7 +213,7 @@ const ProcessRow = memo(function ProcessRow({
     prev.process.memory_percent === next.process.memory_percent &&
     prev.process.status === next.process.status &&
     prev.process.threads === next.process.threads &&
-    prev.process.is_hermes_session === next.process.is_hermes_session &&
+    prev.process.is_entry_session === next.process.is_entry_session &&
     prev.isExpanded === next.isExpanded &&
     prev.isNew === next.isNew &&
     prev.top === next.top &&
@@ -286,7 +286,7 @@ export function ProcessPanel({ visible }: ProcessPanelProps) {
   const [sortField, setSortField] = useState<ProcessSortField>("cpu_percent");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
   const [filter, setFilter] = useState<ProcessFilter>({
-    search: "", cpuThreshold: 0, memThreshold: 0, showHermesOnly: false, showZombiesOnly: false,
+    search: "", cpuThreshold: 0, memThreshold: 0, showEntryOnly: false, showZombiesOnly: false,
   });
   const [expandedPids, setExpandedPids] = useState<Set<number>>(new Set());
   const [advancedMode, setAdvancedMode] = useState(false);
@@ -473,10 +473,10 @@ export function ProcessPanel({ visible }: ProcessPanelProps) {
         />
         <div className="process-toolbar-toggles">
           <button
-            className={`process-toggle${filter.showHermesOnly ? " process-toggle-active" : ""}`}
-            onClick={() => setFilter((f) => ({ ...f, showHermesOnly: !f.showHermesOnly }))}
+            className={`process-toggle${filter.showEntryOnly ? " process-toggle-active" : ""}`}
+            onClick={() => setFilter((f) => ({ ...f, showEntryOnly: !f.showEntryOnly }))}
             title="Show Entry IDE sessions only"
-            aria-pressed={filter.showHermesOnly}
+            aria-pressed={filter.showEntryOnly}
           >
             Entry
           </button>

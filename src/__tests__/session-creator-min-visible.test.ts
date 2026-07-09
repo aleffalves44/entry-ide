@@ -42,14 +42,14 @@ describe("showOpeningOverlay (imperative)", () => {
 
   it("synchronously appends a <div> to document.body — no React, no portal", () => {
     showOpeningOverlay();
-    const node = document.querySelector("#hermes-session-creator-opening-overlay");
+    const node = document.querySelector("#entry-session-creator-opening-overlay");
     expect(node).not.toBeNull();
     expect(node?.parentElement).toBe(document.body);
   });
 
   it("renders the ENTRY brand mark immediately", () => {
     showOpeningOverlay();
-    const node = document.querySelector("#hermes-session-creator-opening-overlay");
+    const node = document.querySelector("#entry-session-creator-opening-overlay");
     const text = node?.textContent?.toLowerCase() ?? "";
     expect(text).toContain("entry");
     // The headline types out character-by-character — at t=0 only the
@@ -61,7 +61,7 @@ describe("showOpeningOverlay (imperative)", () => {
 
   it("uses fixed positioning + max z-index so nothing can hide it", () => {
     showOpeningOverlay();
-    const node = document.querySelector("#hermes-session-creator-opening-overlay") as HTMLElement;
+    const node = document.querySelector("#entry-session-creator-opening-overlay") as HTMLElement;
     expect(node.style.position).toBe("fixed");
     // Some jsdom versions normalize the value, others keep "2147483647".
     expect(node.style.zIndex.length).toBeGreaterThan(0);
@@ -70,16 +70,16 @@ describe("showOpeningOverlay (imperative)", () => {
   it("idempotent: calling twice while one is up doesn't append a second", () => {
     showOpeningOverlay();
     showOpeningOverlay();
-    const nodes = document.querySelectorAll("#hermes-session-creator-opening-overlay");
+    const nodes = document.querySelectorAll("#entry-session-creator-opening-overlay");
     expect(nodes.length).toBe(1);
   });
 
   it("hideOpeningOverlay removes the element after the minimum has elapsed", async () => {
     showOpeningOverlay();
-    const before = document.querySelector("#hermes-session-creator-opening-overlay");
+    const before = document.querySelector("#entry-session-creator-opening-overlay");
     expect(before).not.toBeNull();
     await hideOpeningOverlay();
-    const after = document.querySelector("#hermes-session-creator-opening-overlay");
+    const after = document.querySelector("#entry-session-creator-opening-overlay");
     expect(after).toBeNull();
   });
 

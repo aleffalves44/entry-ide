@@ -49,7 +49,7 @@ function branchColor(branchName: string): string {
  * Mirrors worktree detection logic from SessionList.tsx / SessionItemGitInfo.
  */
 function isLinkedWorktree(workingDirectory: string): boolean {
-  return workingDirectory.includes("hermes-worktrees/");
+  return workingDirectory.includes("entry-worktrees/");
 }
 
 /**
@@ -167,25 +167,25 @@ describe("branchColor utility", () => {
 // =====================================================================
 
 describe("Worktree detection", () => {
-  it("detects linked worktree from path containing hermes-worktrees/", () => {
-    expect(isLinkedWorktree("/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc123_feat/")).toBe(true);
+  it("detects linked worktree from path containing entry-worktrees/", () => {
+    expect(isLinkedWorktree("/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc123_feat/")).toBe(true);
   });
 
   it("detects linked worktree with deeply nested path", () => {
-    expect(isLinkedWorktree("/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/def456_main/subdir")).toBe(true);
+    expect(isLinkedWorktree("/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/def456_main/subdir")).toBe(true);
   });
 
-  it("detects main checkout from path without hermes-worktrees/", () => {
+  it("detects main checkout from path without entry-worktrees/", () => {
     expect(isLinkedWorktree("/Users/dev/project")).toBe(false);
   });
 
   it("does not false-positive on partial match", () => {
-    // Path that contains 'worktrees' but not 'hermes-worktrees/'
+    // Path that contains 'worktrees' but not 'entry-worktrees/'
     expect(isLinkedWorktree("/Users/dev/worktrees/something")).toBe(false);
   });
 
-  it("does not false-positive on hermes without worktrees segment", () => {
-    expect(isLinkedWorktree("/app/data/hermes-config/something")).toBe(false);
+  it("does not false-positive on entry without worktrees segment", () => {
+    expect(isLinkedWorktree("/app/data/entry-config/something")).toBe(false);
   });
 });
 
@@ -507,17 +507,17 @@ describe("Branch mismatch false-positive regression", () => {
     currentSessionId: string,
     newCwd: string,
   ): { sessionId: string; branch: string } | null {
-    if (!newCwd.includes("hermes-worktrees/")) return null;
+    if (!newCwd.includes("entry-worktrees/")) return null;
 
     for (const [sessionId, entry] of pool.entries()) {
       if (sessionId === currentSessionId) continue;
       if (
         entry.cwd &&
         (newCwd === entry.cwd || newCwd.startsWith(entry.cwd + '/')) &&
-        entry.cwd.includes("hermes-worktrees/")
+        entry.cwd.includes("entry-worktrees/")
       ) {
         const match = entry.cwd.match(
-          /hermes-worktrees\/[^/]+\/[^/]+_(.+?)(?:\/|$)/,
+          /entry-worktrees\/[^/]+\/[^/]+_(.+?)(?:\/|$)/,
         );
         const branch = match?.[1] || "unknown";
         return { sessionId, branch };
@@ -530,13 +530,13 @@ describe("Branch mismatch false-positive regression", () => {
     // Specifically test that /worktrees/abc_main does NOT match /worktrees/abc_main-feature
     const pool = new Map<string, MismatchPoolEntry>();
     pool.set("session-2", {
-      cwd: "/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc_main",
+      cwd: "/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc_main",
     });
 
     const result = detectBranchMismatchFixed(
       pool,
       "session-1",
-      "/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc_main-feature/src",
+      "/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc_main-feature/src",
     );
 
     // This MUST be null — abc_main should not match abc_main-feature
@@ -546,14 +546,14 @@ describe("Branch mismatch false-positive regression", () => {
   it("still matches exact directory and subdirectories", () => {
     const pool = new Map<string, MismatchPoolEntry>();
     pool.set("session-2", {
-      cwd: "/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc_main",
+      cwd: "/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc_main",
     });
 
     // Exact match
     const exactResult = detectBranchMismatchFixed(
       pool,
       "session-1",
-      "/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc_main",
+      "/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc_main",
     );
     expect(exactResult).not.toBeNull();
     expect(exactResult!.sessionId).toBe("session-2");
@@ -562,7 +562,7 @@ describe("Branch mismatch false-positive regression", () => {
     const subResult = detectBranchMismatchFixed(
       pool,
       "session-1",
-      "/app/data/hermes-worktrees/a1b2c3d4e5f6a7b8/abc_main/src/index.ts",
+      "/app/data/entry-worktrees/a1b2c3d4e5f6a7b8/abc_main/src/index.ts",
     );
     expect(subResult).not.toBeNull();
     expect(subResult!.sessionId).toBe("session-2");

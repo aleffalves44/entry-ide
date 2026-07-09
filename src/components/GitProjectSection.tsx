@@ -38,12 +38,12 @@ function truncatePath(fullPath: string, maxLen = 45): string {
 }
 
 function isWorktreePath(path: string): boolean {
-  return path.includes("hermes-worktrees/");
+  return path.includes("entry-worktrees/");
 }
 
 /**
  * Extract a user-friendly display name from a worktree path.
- * Worktree paths look like: .../hermes-worktrees/<hash>/<session>_<branch>
+ * Worktree paths look like: .../entry-worktrees/<hash>/<session>_<branch>
  * We extract the branch name (after the last underscore in the directory name).
  */
 export function friendlyWorktreeLabel(projectName: string, projectPath: string): string {
@@ -143,7 +143,7 @@ export function GitProjectSection({ sessionId, projectId, project, onRefresh, on
       await gitDiscardChanges(sessionId, projectId, [path]);
       onRefresh();
       // Notify file editor to reload if this file is open
-      window.dispatchEvent(new CustomEvent("hermes:file-changed-on-disk", { detail: { projectId, filePath: path } }));
+      window.dispatchEvent(new CustomEvent("entry:file-changed-on-disk", { detail: { projectId, filePath: path } }));
     } catch (e) { setError(String(e)); }
   }, [sessionId, projectId, onRefresh]);
 

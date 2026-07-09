@@ -4,7 +4,7 @@
 
 **Objetivo:** o plugin `agentic-harness` como **framework de primeira classe dentro da IDE** — usável com qualquer provider (Claude, Ollama, qualquer endpoint Anthropic-compatible) e com observabilidade completa: consumo de tokens por comando, por agente, por modelo e por sessão. Métricas locais viram base para backtest e melhoria contínua do framework, provando o ganho com dados. Distribuição interna na Creditas quando maduro.
 
-**Estado atual:** fork do Hermes IDE 1.3.2, rebrand user-facing completo, telemetria e updater removidos.
+**Estado atual:** fork do Entry IDE 1.3.2, rebrand user-facing completo, telemetria e updater removidos.
 
 ## Princípio arquitetural — um harness, vários cérebros
 
@@ -47,7 +47,7 @@ Nenhum bridge novo, nenhum executor de tools — todo o agent mode existente (th
 
 ## Fase 2 — Framework agentic-harness na IDE
 
-**Base técnica (verificado no código):** o bridge (`hermes-claude-bridge.mjs`) constrói as `sdkOptions` **sem** `settingSources` — e o default do agent-sdk quando omitido é carregar todas as fontes (`user`, `project`, `local`), igual ao CLI. Ou seja: plugins do Claude Code do usuário (incluindo `harness-cmd`) já entram nas sessões agent hoje. O dropdown de slash commands é populado pelo `init.slash_commands` que o SDK emite no início da sessão (`src/agent/useAgentInit.ts`) + scan estático no prewarm (`read_static_slash_commands`).
+**Base técnica (verificado no código):** o bridge (`entry-claude-bridge.mjs`) constrói as `sdkOptions` **sem** `settingSources` — e o default do agent-sdk quando omitido é carregar todas as fontes (`user`, `project`, `local`), igual ao CLI. Ou seja: plugins do Claude Code do usuário (incluindo `harness-cmd`) já entram nas sessões agent hoje. O dropdown de slash commands é populado pelo `init.slash_commands` que o SDK emite no início da sessão (`src/agent/useAgentInit.ts`) + scan estático no prewarm (`read_static_slash_commands`).
 
 ### Bloco A — UI do pipeline
 
@@ -57,7 +57,7 @@ Nenhum bridge novo, nenhum executor de tools — todo o agent mode existente (th
 | 2.2 | Painel Pipeline SDD | Nova aba no rail direito com as 4 fases. **Estado derivado de artefatos, não de estado paralelo**: spike feito = doc de spike existe; plan feito = SPEC.md/PLAN.md no worktree; task = commits na branch; pr = PR aberto (via `gh`/git). Disparo de fase = `sendAgentInput` com o slash command correspondente | M | Fase dispara com 1 clique; estado reflete filesystem/git |
 | 2.3 | Render de artefatos | SPEC.md/PLAN.md clicáveis no painel → abrem no FilePreviewPanel (markdown já renderiza); highlight das seções RIGID/FLEXIBLE | P | Link abre artefato |
 | 2.4 | Fallback sem plugin | Se harness-cmd não instalado, painel mostra instrução de instalação (link para doc interna) em vez de quebrar | P | Estado vazio orienta setup |
-| 2.5 | Prompt bundle Creditas | Bundle `.hermes-prompts` com roles/estilos/templates do time; import já existe no PromptComposer | P | Bundle importa limpo |
+| 2.5 | Prompt bundle Creditas | Bundle `.entry-prompts` com roles/estilos/templates do time; import já existe no PromptComposer | P | Bundle importa limpo |
 | 2.6 | Empacotar como plugin Entry | Painel Pipeline vira plugin do SDK interno (`packages/plugin-sdk`): painéis, comandos e storage já suportados pela PluginAPI. Dogfooding — expõe lacunas do SDK antes de terceiros usarem | M | Painel instala/desinstala via PluginManager |
 | 2.7 | Provider por fase | Painel Pipeline permite escolher backend/modelo por fase: ex. `/plan` no Claude (raciocínio pesado), `/task` no qwen3-coder local (volume de código, custo zero). Cada fase pode abrir sessão com env próprio — resolve os 3 pontos sensíveis a provider de uma vez. Requer mapeamento de `model:` de agents (frontmatter Anthropic → modelo local equivalente ou default da sessão) | M | Fase roda no backend escolhido; agents com model override não quebram no Ollama |
 
@@ -103,7 +103,7 @@ Pré-requisitos para colocar na mão de outros usuários. O `release.yml` herdad
 |---|------|-----------|---------|
 | 3.4 | Keypair de updater | `npx tauri signer generate` → chave privada vira secrets `TAURI_SIGNING_PRIVATE_KEY`/`_PASSWORD` no repo; pubkey vai no `tauri.conf.json` | P (horas) |
 | 3.5 | Reativar updater | `tauri.conf.json`: `plugins.updater` com pubkey nova + endpoint `github.com/aleffalves44/entry-ide/releases/latest/download/latest.json`; `createUpdaterArtifacts: true`; re-registrar `tauri_plugin_updater` no `lib.rs` (removido no rebrand) | P |
-| 3.6 | Adaptar release.yml | Nomes de artefato `hermes-ide-*` → `entry-ide-*` (linhas 434-517), URLs `hermes-ide.com/changelog` no corpo do release e no `latest.json` (linhas 553, 646). O path do `.app` usa `find` (agnóstico a nome — sobrevive ao rename do productName). Refs a `hermes-pty-setup` ficam (helper não renomeado) | M |
+| 3.6 | Adaptar release.yml | Nomes de artefato `entry-ide-*` → `entry-ide-*` (linhas 434-517), URLs `entry-ide.dev/changelog` no corpo do release e no `latest.json` (linhas 553, 646). O path do `.app` usa `find` (agnóstico a nome — sobrevive ao rename do productName). Refs a `entry-pty-setup` ficam (helper não renomeado) | M |
 | 3.7 | Secrets Apple no repo | `APPLE_CERTIFICATE_BASE64`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY` (+ credenciais de notarização) — depende de 3.3 | P |
 | 3.8 | Release de teste | Tag beta → workflow completo → instalar em máquina limpa → validar updater atualizando 1.3.2→1.3.3 | P |
 | 3.9 | Onboarding Creditas | Presets no primeiro launch: MCP servers padrão, templates do time, setup do `claude` CLI apontando para o guia interno do Claude Pro | P |
@@ -119,7 +119,7 @@ Pré-requisitos para colocar na mão de outros usuários. O `release.yml` herdad
 | 4.1 | Orquestração multi-sessão | Rodar N sessões agent em worktrees paralelos com fila e visão agregada (infra de worktree já existe) | G |
 | 4.2 | Hooks pós-execução | Ação ao terminar tarefa: notificação nativa já existe; adicionar webhook/Slack | P |
 | 4.3 | Refactor SessionContext | `src/state/SessionContext.tsx` (2.7k linhas) é gargalo de manutenção — dividir antes das fases 1-2 crescerem em cima | M |
-| 4.4 | Rebrand interno (fase 2) | Renomear `HermesEvent`/`HermesPluginAPI`/env vars/`.hermes-prompts` — só se for expor SDK de plugins a terceiros | M |
+| 4.4 | Rebrand interno (fase 2) | Renomear `EntryEvent`/`EntryPluginAPI`/env vars/`.entry-prompts` — só se for expor SDK de plugins a terceiros | M |
 
 ---
 

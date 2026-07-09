@@ -108,12 +108,12 @@ pub struct SpawnArgs {
 
 // ─── Bridge resolution ────────────────────────────────────────────
 
-/// Locate the Hermes Claude bridge (`hermes-claude-bridge.mjs`).
+/// Locate the Entry Claude bridge (`entry-claude-bridge.mjs`).
 ///
 /// Search order (first hit wins):
-///   1. `HERMES_BRIDGE_PATH` env var  — explicit override (used in tests).
-///   2. `<CARGO_MANIFEST_DIR>/bridge/hermes-claude-bridge.mjs`  — dev path.
-///   3. The Tauri resource dir under `bridge/hermes-claude-bridge.mjs`  —
+///   1. `ENTRY_BRIDGE_PATH` env var  — explicit override (used in tests).
+///   2. `<CARGO_MANIFEST_DIR>/bridge/entry-claude-bridge.mjs`  — dev path.
+///   3. The Tauri resource dir under `bridge/entry-claude-bridge.mjs`  —
 ///      production path.  Populated by the bundler when
 ///      `tauri.conf.json#bundle.resources` includes `bridge/*`.
 ///
@@ -129,18 +129,18 @@ fn bridge_path_candidates(
     if let Some(p) = env_override {
         out.push(std::path::PathBuf::from(p));
     }
-    out.push(manifest_dir.join("bridge").join("hermes-claude-bridge.mjs"));
+    out.push(manifest_dir.join("bridge").join("entry-claude-bridge.mjs"));
     if let Some(r) = resource_dir {
-        out.push(r.join("bridge").join("hermes-claude-bridge.mjs"));
+        out.push(r.join("bridge").join("entry-claude-bridge.mjs"));
         // Some bundler/platform combinations flatten the resource subdir
         // (notably the macOS Resources/_up_/ path Tauri uses for
         // out-of-tree resource entries).  Probe a couple of well-known
         // alternative layouts as a defensive fallback.
-        out.push(r.join("hermes-claude-bridge.mjs"));
+        out.push(r.join("entry-claude-bridge.mjs"));
         out.push(
             r.join("_up_")
                 .join("bridge")
-                .join("hermes-claude-bridge.mjs"),
+                .join("entry-claude-bridge.mjs"),
         );
     }
     out
@@ -149,13 +149,13 @@ fn bridge_path_candidates(
 fn resolve_bridge_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
     // Honor an explicit override even if it's broken — surface the
     // misconfiguration loudly rather than silently falling through.
-    if let Ok(p) = std::env::var("HERMES_BRIDGE_PATH") {
+    if let Ok(p) = std::env::var("ENTRY_BRIDGE_PATH") {
         let pb = std::path::PathBuf::from(&p);
         if pb.exists() {
             return Ok(pb);
         }
         return Err(format!(
-            "HERMES_BRIDGE_PATH points to a non-existent file: {}",
+            "ENTRY_BRIDGE_PATH points to a non-existent file: {}",
             pb.display()
         ));
     }
@@ -170,7 +170,7 @@ fn resolve_bridge_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
         }
     }
     Err(format!(
-        "could not locate hermes-claude-bridge.mjs (looked at: {})",
+        "could not locate entry-claude-bridge.mjs (looked at: {})",
         candidates
             .iter()
             .map(|p| p.display().to_string())
@@ -244,21 +244,21 @@ fn which_node() -> Option<std::path::PathBuf> {
     None
 }
 
-// ─── Hermes IDE state file ─────────────────────────────────────────
+// ─── Entry IDE state file ─────────────────────────────────────────
 
-/// Write the initial Hermes IDE state JSON for this session.  The bridge's
-/// `mcp__hermes__get_project_state` tool reads from this file on demand,
-/// so the value Claude sees stays in sync with whatever Hermes most
+/// Write the initial Entry IDE state JSON for this session.  The bridge's
+/// `mcp__entry__get_project_state` tool reads from this file on demand,
+/// so the value Claude sees stays in sync with whatever Entry most
 /// recently wrote.
 ///
 /// File layout:
-///   ~/.hermes-ide/sessions/<sid>/state.json  →  { cwd, attachedPaths, ... }
+///   ~/.entry-ide/sessions/<sid>/state.json  →  { cwd, attachedPaths, ... }
 ///
 /// Returns the absolute path to the state file (so we can pass it to the
-/// bridge via `--hermes-state-path`).  On error, returns the error string;
+/// bridge via `--entry-state-path`).  On error, returns the error string;
 /// the spawn falls back to a no-op MCP server (the bridge gracefully
 /// returns empty state when the path is missing).
-pub fn ensure_hermes_state_file(
+pub fn ensure_entry_state_file(
     session_id: &str,
     working_dir: &str,
     add_dirs: &[String],
@@ -266,7 +266,7 @@ pub fn ensure_hermes_state_file(
     use std::fs;
     let home = std::env::var("HOME").map_err(|_| "HOME env var unset".to_string())?;
     let dir = std::path::PathBuf::from(home)
-        .join(".hermes-ide")
+        .join(".entry-ide")
         .join("sessions")
         .join(session_id);
     fs::create_dir_all(&dir).map_err(|e| format!("create state dir: {}", e))?;
@@ -288,16 +288,16 @@ pub fn ensure_hermes_state_file(
         .ok_or_else(|| "non-utf8 state path".to_string())
 }
 
-/// Update the Hermes IDE state file for an active session.  Called from
-/// `update_hermes_state` IPC when the frontend changes attached projects,
+/// Update the Entry IDE state file for an active session.  Called from
+/// `update_entry_state` IPC when the frontend changes attached projects,
 /// active file, etc.  The file is the single source of truth the bridge's
 /// MCP tools query, so writing here makes the change visible to Claude on
 /// its next tool call (no respawn required).
-pub fn update_hermes_state_file(session_id: &str, state: &serde_json::Value) -> Result<(), String> {
+pub fn update_entry_state_file(session_id: &str, state: &serde_json::Value) -> Result<(), String> {
     use std::fs;
     let home = std::env::var("HOME").map_err(|_| "HOME env var unset".to_string())?;
     let path = std::path::PathBuf::from(home)
-        .join(".hermes-ide")
+        .join(".entry-ide")
         .join("sessions")
         .join(session_id)
         .join("state.json");
@@ -468,17 +468,17 @@ pub async fn spawn_agent_session(
 
     // ─── M1 SDK adoption ────────────────────────────────────────────
     // We no longer spawn `claude` directly.  Instead we spawn a Node
-    // bridge (`hermes-claude-bridge.mjs`) that drives the Claude Agent
+    // bridge (`entry-claude-bridge.mjs`) that drives the Claude Agent
     // SDK in-process and pipes the SDK's message stream back out as the
     // same NDJSON format `claude --print stream-json` produces — so the
     // existing message-store reducer and IPC plumbing work unchanged.
     //
     // The bridge gives us the SDK's superpowers (interrupt(), setModel(),
     // setMcpServers(), rewindFiles(), canUseTool, in-process MCP).
-    // Toggle back to direct claude with HERMES_AGENT_DIRECT=1 for one-off
+    // Toggle back to direct claude with ENTRY_AGENT_DIRECT=1 for one-off
     // debugging.  The bridge path is the default and the e2e suite runs
     // through it.
-    let use_direct = std::env::var("HERMES_AGENT_DIRECT")
+    let use_direct = std::env::var("ENTRY_AGENT_DIRECT")
         .map(|v| v == "1" || v == "true")
         .unwrap_or(false);
     let bridge_path = resolve_bridge_path(&app)?;
@@ -488,7 +488,7 @@ pub async fn spawn_agent_session(
         Some(which_node().ok_or_else(|| {
             "Could not find `node` on PATH or in common install locations \
              (tried Homebrew, nvm, volta, /usr/local/bin). Install Node.js 20+ \
-             or add its directory to PATH before launching Hermes."
+             or add its directory to PATH before launching Entry."
                 .to_string()
         })?)
     };
@@ -512,14 +512,14 @@ pub async fn spawn_agent_session(
         plan.args,
     );
 
-    // Hermes IDE state file: a JSON blob the bridge's MCP tools read on
+    // Entry IDE state file: a JSON blob the bridge's MCP tools read on
     // demand to answer "what does the IDE see right now?".  Lives under
-    // `~/.hermes-ide/sessions/<sid>/state.json`.  Initial content is the
+    // `~/.entry-ide/sessions/<sid>/state.json`.  Initial content is the
     // attached project paths + cwd; future updates (active file, git
     // status, memory pins) write to the same path.
     let state_path =
-        ensure_hermes_state_file(&session_id, &working_dir, &dirs).unwrap_or_else(|err| {
-            log::warn!("[agent spawn] could not init hermes state file: {}", err);
+        ensure_entry_state_file(&session_id, &working_dir, &dirs).unwrap_or_else(|err| {
+            log::warn!("[agent spawn] could not init entry state file: {}", err);
             String::new()
         });
 
@@ -538,7 +538,7 @@ pub async fn spawn_agent_session(
         // the SDK's spawn of the claude binary resolve from the same place.
         c.args(["--working-dir", &plan.working_dir]);
         if !state_path.is_empty() {
-            c.args(["--hermes-state-path", &state_path]);
+            c.args(["--entry-state-path", &state_path]);
         }
         c.args(&plan.args);
         c
@@ -592,7 +592,7 @@ pub async fn spawn_agent_session(
                             MAX_LINE_BYTES
                         );
                         let synth = serde_json::json!({
-                            "type": "_hermes_event",
+                            "type": "_entry_event",
                             "subtype": "parse_error",
                             "reason": "oversize_line",
                             "limit": MAX_LINE_BYTES,
@@ -638,7 +638,7 @@ pub async fn spawn_agent_session(
                         let _ = app.emit(
                             &format!("agent-stderr-{}", sid),
                             &format!(
-                                "[hermes] dropped oversize stderr line (>{} bytes)\n",
+                                "[entry] dropped oversize stderr line (>{} bytes)\n",
                                 MAX_LINE_BYTES
                             ),
                         );
@@ -931,18 +931,18 @@ pub async fn close_agent_session(
 
 /// Diagnostic: locate `claude` on PATH and return its version + resolved path.
 /// Frontend calls this on startup to decide whether Agent mode is available.
-/// Update the Hermes IDE state file the bridge's MCP tools read from.
+/// Update the Entry IDE state file the bridge's MCP tools read from.
 /// Called by the frontend whenever per-session IDE state changes (active
 /// file switched, project attached/detached, memory pin added, etc.).
 ///
-/// The file is overwritten atomically; the next `mcp__hermes__*` tool call
+/// The file is overwritten atomically; the next `mcp__entry__*` tool call
 /// from Claude reads the fresh value.  No respawn / refork needed.
 #[tauri::command]
-pub async fn update_hermes_state(
+pub async fn update_entry_state(
     session_id: String,
     state: serde_json::Value,
 ) -> Result<(), String> {
-    update_hermes_state_file(&session_id, &state)
+    update_entry_state_file(&session_id, &state)
 }
 
 #[tauri::command]
@@ -1703,7 +1703,7 @@ mod tests {
     // ─── Bridge resolution / Node lookup regressions ─────────────────
     //
     // Critical bug v1.1.0: `resolve_bridge_path` only checked
-    // `HERMES_BRIDGE_PATH` and `CARGO_MANIFEST_DIR/bridge/...` — the
+    // `ENTRY_BRIDGE_PATH` and `CARGO_MANIFEST_DIR/bridge/...` — the
     // production resource_dir branch was a docstring-only TODO.  When
     // the bridge wasn't bundled, every Agent-mode session silently
     // failed to spawn and the user's first message hung on
@@ -1718,26 +1718,26 @@ mod tests {
         // Dev path first, then resource_dir-based candidates after.
         assert_eq!(
             candidates[0],
-            manifest.join("bridge/hermes-claude-bridge.mjs")
+            manifest.join("bridge/entry-claude-bridge.mjs")
         );
         assert!(
             candidates
                 .iter()
-                .any(|p| p == &resource.join("bridge/hermes-claude-bridge.mjs")),
+                .any(|p| p == &resource.join("bridge/entry-claude-bridge.mjs")),
             "candidates missing primary resource_dir path: {:?}",
             candidates,
         );
         assert!(
             candidates
                 .iter()
-                .any(|p| p == &resource.join("hermes-claude-bridge.mjs")),
+                .any(|p| p == &resource.join("entry-claude-bridge.mjs")),
             "candidates missing flattened resource_dir path: {:?}",
             candidates,
         );
         assert!(
             candidates
                 .iter()
-                .any(|p| p == &resource.join("_up_/bridge/hermes-claude-bridge.mjs")),
+                .any(|p| p == &resource.join("_up_/bridge/entry-claude-bridge.mjs")),
             "candidates missing macOS Resources/_up_ fallback: {:?}",
             candidates,
         );
@@ -1748,13 +1748,13 @@ mod tests {
         let manifest = std::path::Path::new("/dev/manifest");
         let resource = std::path::Path::new("/app/Resources");
         let candidates = bridge_path_candidates(
-            Some("/tmp/explicit/hermes-claude-bridge.mjs"),
+            Some("/tmp/explicit/entry-claude-bridge.mjs"),
             manifest,
             Some(resource),
         );
         assert_eq!(
             candidates[0],
-            std::path::PathBuf::from("/tmp/explicit/hermes-claude-bridge.mjs"),
+            std::path::PathBuf::from("/tmp/explicit/entry-claude-bridge.mjs"),
             "explicit override must win over manifest + resource_dir",
         );
     }
@@ -1770,7 +1770,7 @@ mod tests {
         assert_eq!(candidates.len(), 1);
         assert_eq!(
             candidates[0],
-            manifest.join("bridge/hermes-claude-bridge.mjs")
+            manifest.join("bridge/entry-claude-bridge.mjs")
         );
     }
 
@@ -1779,10 +1779,10 @@ mod tests {
         // Simulates the production case: write a dummy bridge file into
         // a temp dir and verify the candidate enumeration would find it
         // even though the dev manifest dir doesn't contain the bridge.
-        let tmp = std::env::temp_dir().join(format!("hermes-bridge-test-{}", std::process::id()));
+        let tmp = std::env::temp_dir().join(format!("entry-bridge-test-{}", std::process::id()));
         let resources = tmp.join("Resources");
         std::fs::create_dir_all(resources.join("bridge")).expect("mkdir resources");
-        let bridge_file = resources.join("bridge/hermes-claude-bridge.mjs");
+        let bridge_file = resources.join("bridge/entry-claude-bridge.mjs");
         std::fs::write(&bridge_file, "// fake bridge").expect("write bridge");
 
         let candidates = bridge_path_candidates(

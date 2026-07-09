@@ -22,8 +22,8 @@ use crate::AppState;
 /// exclusion fails or a repo has an unusual number of real changes.
 const VCS_STATUS_FILE_CAP: usize = 10_000;
 
-/// Validates that a path is inside the Hermes worktrees directory
-/// (`hermes-worktrees/`). Returns the canonical path if valid, or an error
+/// Validates that a path is inside the Entry worktrees directory
+/// (`entry-worktrees/`). Returns the canonical path if valid, or an error
 /// if the path is outside the expected worktree directory (prevents path
 /// traversal attacks).
 fn validate_worktree_path(path: &str) -> Result<std::path::PathBuf, String> {
@@ -31,9 +31,9 @@ fn validate_worktree_path(path: &str) -> Result<std::path::PathBuf, String> {
 
     // First check the raw path string before canonicalizing
     // (canonicalize follows symlinks, which we want for the final check)
-    if !worktree::is_hermes_worktree_path(path) {
+    if !worktree::is_entry_worktree_path(path) {
         return Err(format!(
-            "Refusing to operate on '{}': not inside a hermes-worktrees/ directory",
+            "Refusing to operate on '{}': not inside a entry-worktrees/ directory",
             path
         ));
     }
@@ -44,9 +44,9 @@ fn validate_worktree_path(path: &str) -> Result<std::path::PathBuf, String> {
             .canonicalize()
             .map_err(|e| format!("Failed to resolve path '{}': {}", path, e))?;
         let canonical_str = canonical.to_string_lossy();
-        if !worktree::is_hermes_worktree_path(&canonical_str) {
+        if !worktree::is_entry_worktree_path(&canonical_str) {
             return Err(format!(
-                "Refusing to operate on '{}': canonical path '{}' is not inside a hermes-worktrees/ directory",
+                "Refusing to operate on '{}': canonical path '{}' is not inside a entry-worktrees/ directory",
                 path, canonical_str
             ));
         }
@@ -3669,7 +3669,7 @@ pub fn git_detect_orphan_worktrees(
 
 #[tauri::command]
 pub fn git_worktree_disk_usage(worktree_path: String) -> Result<u64, String> {
-    // Validate the path is inside a .hermes/worktrees/ directory
+    // Validate the path is inside a .entry/worktrees/ directory
     let validated = validate_worktree_path(&worktree_path)?;
 
     fn dir_size(path: &std::path::Path) -> u64 {
@@ -3701,7 +3701,7 @@ pub fn git_cleanup_orphan_worktrees(
     let mut results = Vec::new();
 
     for path in &paths {
-        // Validate the path is inside a .hermes/worktrees/ directory
+        // Validate the path is inside a .entry/worktrees/ directory
         let validated = match validate_worktree_path(path) {
             Ok(v) => v,
             Err(e) => {
@@ -3842,7 +3842,7 @@ mod tests {
             "wt1",
             "sess1",
             "proj1",
-            "/nonexistent/hermes-worktrees/abc/wt",
+            "/nonexistent/entry-worktrees/abc/wt",
             Some("feat"),
             false,
         )
@@ -4059,7 +4059,7 @@ mod tests {
             "wt1",
             "sess1",
             "proj1",
-            "/nonexistent/hermes-worktrees/abc/wt",
+            "/nonexistent/entry-worktrees/abc/wt",
             Some("feat"),
             false,
         )
@@ -4099,7 +4099,7 @@ mod tests {
             "wt1",
             "sess1",
             "proj_gone",
-            "/nonexistent/hermes-worktrees/abc/wt",
+            "/nonexistent/entry-worktrees/abc/wt",
             Some("feat"),
             false,
         )

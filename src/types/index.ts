@@ -22,7 +22,7 @@ export type {
   ContextLifecycleState,
   ContextManager,
   ApplyContextResult,
-  HermesProjectConfig,
+  EntryProjectConfig,
 } from "./context";
 
 export type {

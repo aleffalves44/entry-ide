@@ -79,7 +79,7 @@ export function peekAgentInitCache(sessionId: string): InitEvent | null {
  *
  *    1. `system/init` (fresh from the SDK on spawn / resume) — wholly
  *       replaces the cached init.
- *    2. `_hermes_state_changed` (bridge-internal) — patches the cached
+ *    2. `_entry_state_changed` (bridge-internal) — patches the cached
  *       init's `model` / `permissionMode` fields when Claude's runtime
  *       values drift mid-session (e.g. EnterPlanMode flips the mode
  *       without a respawn).  Ignored when no init has been seen yet —

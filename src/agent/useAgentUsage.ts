@@ -26,7 +26,7 @@ export interface AgentUsageSnapshot {
 
 /**
  * Lightweight subscriber for the two slices of agent state the Usage panel
- * needs: `accountInfo` (one-shot, from the bridge's `_hermes_event/account_info`
+ * needs: `accountInfo` (one-shot, from the bridge's `_entry_event/account_info`
  * envelope) and `rateLimits` (per-`rateLimitType` snapshots from the SDK's
  * `rate_limit_event`s).
  *
@@ -98,7 +98,7 @@ export function useAgentUsage(sessionId: string | null): AgentUsageSnapshot {
             return;
           }
 
-          if (type === "_hermes_event" && ev.subtype === "account_info") {
+          if (type === "_entry_event" && ev.subtype === "account_info") {
             const info = ev.info as AgentAccountInfo | undefined;
             if (info && typeof info === "object") {
               setSnapshot((s) => ({ ...s, accountInfo: info }));

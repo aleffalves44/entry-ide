@@ -1,8 +1,8 @@
 //! Lightweight one-shot PTY for embedded slash-command terminals.
 //!
-//! Hermes' main `PtyManager` is heavyweight: it persists sessions to
+//! Entry' main `PtyManager` is heavyweight: it persists sessions to
 //! the database, tracks worktrees, runs agent-detection nudges, and
-//! is keyed off Hermes session ids.  None of that fits when the user
+//! is keyed off Entry session ids.  None of that fits when the user
 //! picks `/mcp` from the slash dropdown and just wants to run
 //! `claude /mcp` interactively in a 280-px-tall xterm above the
 //! composer.

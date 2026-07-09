@@ -23,7 +23,7 @@ export function WhatsNewDialog({ version }: WhatsNewDialogProps) {
   // for the DevTools snippet that activates this path.
   const previewVersion =
     typeof window !== "undefined"
-      ? window.localStorage.getItem("hermesPreviewWhatsNew") ?? null
+      ? window.localStorage.getItem("entryPreviewWhatsNew") ?? null
       : null;
   const effectiveVersion =
     previewVersion && changelog[previewVersion] ? previewVersion : version;

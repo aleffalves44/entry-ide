@@ -51,7 +51,7 @@ export function interruptAgent(sessionId: string): Promise<void> {
  *  without killing the process.  Bridge keeps running, ready for the
  *  next user message.  Use this from the user-facing Stop button. */
 export function softInterruptAgent(sessionId: string): Promise<void> {
-  return sendAgentInput(sessionId, { type: "_hermes_control", op: "interrupt" });
+  return sendAgentInput(sessionId, { type: "_entry_control", op: "interrupt" });
 }
 
 /**
@@ -65,7 +65,7 @@ export async function setAgentPermissionMode(
   sessionId: string,
   mode: string,
 ): Promise<void> {
-  return sendAgentInput(sessionId, { type: "_hermes_control", op: "setPermissionMode", mode });
+  return sendAgentInput(sessionId, { type: "_entry_control", op: "setPermissionMode", mode });
 }
 
 /** Graceful shutdown: drop stdin, wait briefly, kill if still alive. */
@@ -89,10 +89,10 @@ export function readImageForAttachment(path: string): Promise<number[]> {
   return invoke<number[]>("read_image_for_attachment", { path });
 }
 
-/** Hermes IDE state pushed to the bridge's MCP tools.  Anything Claude
+/** Entry IDE state pushed to the bridge's MCP tools.  Anything Claude
  *  should know about IDE state without polluting the user transcript goes
- *  here — `mcp__hermes__get_project_state` returns it on demand. */
-export interface HermesIdeState {
+ *  here — `mcp__entry__get_project_state` returns it on demand. */
+export interface EntryIdeState {
   cwd?: string;
   branch?: string;
   dirty?: boolean;
@@ -104,9 +104,9 @@ export interface HermesIdeState {
   [key: string]: unknown;
 }
 
-/** Update the Hermes IDE state file the bridge's MCP tools read.  Cheap;
+/** Update the Entry IDE state file the bridge's MCP tools read.  Cheap;
  *  call freely (on every project attach/detach, on active-file change).
  *  No respawn — Claude sees the new value on its next tool call. */
-export function updateHermesState(sessionId: string, state: HermesIdeState): Promise<void> {
-  return invoke("update_hermes_state", { sessionId, state });
+export function updateEntryState(sessionId: string, state: EntryIdeState): Promise<void> {
+  return invoke("update_entry_state", { sessionId, state });
 }

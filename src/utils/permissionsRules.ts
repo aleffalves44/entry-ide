@@ -2,7 +2,7 @@
  * Permission rule helpers.  Spec: §2 (M5) + §7.9.
  *
  * Rules live in `~/.claude/settings.json` (user scope) and the project
- * `.claude/settings.json` (project scope).  Hermes writes there directly
+ * `.claude/settings.json` (project scope).  Entry writes there directly
  * so the rule applies in standalone Claude Code too.
  */
 

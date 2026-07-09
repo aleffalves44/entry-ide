@@ -109,7 +109,7 @@ describe("classifySlashCommand — namespaced (skill / plugin)", () => {
   it("/<plugin>:<skill> is always native", () => {
     expect(classifySlashCommand({ command: "/frontend-design:frontend-design" })).toBe("native");
     expect(classifySlashCommand({ command: "/telegram:configure" })).toBe("native");
-    expect(classifySlashCommand({ command: "/hermes-test:ping" })).toBe("native");
+    expect(classifySlashCommand({ command: "/entry-test:ping" })).toBe("native");
   });
 
   it("plugin-namespaced names that look like CLI commands are STILL native", () => {
@@ -121,7 +121,7 @@ describe("classifySlashCommand — namespaced (skill / plugin)", () => {
 describe("classifySlashCommand — user / custom commands", () => {
   it("custom commands NOT on the curated list default to native", () => {
     expect(classifySlashCommand({ command: "/ship" })).toBe("native");
-    expect(classifySlashCommand({ command: "/hermes-ping" })).toBe("native");
+    expect(classifySlashCommand({ command: "/entry-ping" })).toBe("native");
     expect(classifySlashCommand({ command: "/team-standup" })).toBe("native");
   });
 });
