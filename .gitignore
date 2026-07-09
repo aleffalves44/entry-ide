@@ -49,3 +49,94 @@ docs/design/preview/
 # Local tooling state (Playwright-MCP traces, Claude superpowers cache).
 .playwright-mcp/
 .superpowers/
+
+# harness-managed: typescript
+# ==============================================================
+# .gitignore — projeto TypeScript + diretório .claude
+# Regra geral: versionar o que é CONFIGURAÇÃO DE PROJETO
+# (compartilhável com o time) e ignorar o que é PESSOAL,
+# LOCAL ou SENSÍVEL (credenciais, sessões, histórico, build).
+# ==============================================================
+
+# --------------------------------------------------------------
+# TYPESCRIPT / NODE
+# --------------------------------------------------------------
+
+# Dependências
+node_modules/
+.pnp
+.pnp.*
+jspm_packages/
+
+# Build / saída de compilação
+dist/
+build/
+out/
+lib/
+*.tsbuildinfo
+.tsbuildinfo
+
+# Frameworks (comuns)
+.next/
+.nuxt/
+.svelte-kit/
+.astro/
+.turbo/
+.vercel/
+coverage/
+
+# Cache de ferramentas
+.cache/
+.parcel-cache/
+.eslintcache
+.vite/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Variáveis de ambiente (segredos) — mantenha .env.example versionado
+.env
+.env.*
+!.env.example
+
+# IDEs e SO
+.idea/
+.vscode/
+.DS_Store
+
+# OBS: mantenha os lockfiles versionados
+#   package-lock.json / yarn.lock / pnpm-lock.yaml
+
+# --------------------------------------------------------------
+# DIRETÓRIO .claude
+# Regra: versionar CONFIGURAÇÃO DE PROJETO (compartilhável)
+# e ignorar o que é PESSOAL, LOCAL ou SENSÍVEL.
+# --------------------------------------------------------------
+
+# PESSOAL / LOCAL — nunca compartilhar
+.claude/settings.local.json
+
+# Credenciais e segredos
+.claude/.credentials.json
+
+# Sessões, histórico e estado de execução (por máquina/usuário)
+.claude/projects/
+.claude/todos/
+.claude/history/
+.claude/shell-snapshots/
+.claude/statsig/
+.claude/ide/
+
+# COMPARTILHÁVEL — manter versionado (NÃO ignorar):
+#   .claude/CLAUDE.md, .claude/settings.json, .claude/commands/, .claude/agents/, .claude/skills/, .claude/hooks/
+!.claude/CLAUDE.md
+!.claude/settings.json
+!.claude/commands/
+!.claude/agents/
+!.claude/skills/
+!.claude/hooks/

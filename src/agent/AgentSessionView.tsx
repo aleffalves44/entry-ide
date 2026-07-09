@@ -24,6 +24,7 @@ import { ToolUseBlock } from "./blocks/ToolUseBlock";
 import { ImageBlock } from "./blocks/ImageBlock";
 import { ResultFooter } from "./blocks/ResultFooter";
 import { SubagentMastheadChip } from "./SubagentMastheadChip";
+import { PipelineStrip } from "../components/PipelineStrip";
 import { selectWorkingState } from "./workingState";
 import { WorkingFootline } from "./WorkingFootline";
 import { MarginDraft } from "./MarginDraft";
@@ -246,6 +247,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
   return (
     <div className="agent-session-view" data-session-id={sessionId}>
       <AgentHeader state={state} sessionId={sessionId} workspacePathCount={workspacePathCount} />
+      {sessionEntryForPerm && <PipelineStrip session={sessionEntryForPerm} />}
       <div className="agent-session-scroll" ref={scrollRef}>
         <div className="agent-session-messages">
           {numbered.flatMap(({ message, turn, isFirstOfTurn }, idx, arr) => {

@@ -47,11 +47,11 @@ describe("showOpeningOverlay (imperative)", () => {
     expect(node?.parentElement).toBe(document.body);
   });
 
-  it("renders the HERMES brand mark immediately", () => {
+  it("renders the ENTRY brand mark immediately", () => {
     showOpeningOverlay();
     const node = document.querySelector("#hermes-session-creator-opening-overlay");
     const text = node?.textContent?.toLowerCase() ?? "";
-    expect(text).toContain("hermes");
+    expect(text).toContain("entry");
     // The headline types out character-by-character — at t=0 only the
     // first character is in.  We can't reliably assert on a partial
     // text without timer faking, so just confirm the headline element

@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from "react";
 import { subscribeGitStatus, getGitStatusSnapshot, refreshGitStatus } from "../hooks/useGitStatusCache";
 import { useSession, useActiveSession } from "../state/SessionContext";
 import { GitProjectSection } from "./GitProjectSection";
-import { GitDiffView } from "./GitDiffView";
 import { WorktreeOverviewPanel } from "./WorktreeOverviewPanel";
 import { getSettings } from "../api/settings";
 import type { GitFile } from "../types/git";
@@ -21,7 +20,7 @@ export interface GitToast {
 }
 
 export function GitPanel({ visible }: GitPanelProps) {
-  const { state } = useSession();
+  const { state, dispatch } = useSession();
   const activeSession = useActiveSession();
   const [pollInterval, setPollInterval] = useState(3000);
   const [status, setStatus] = useState<GitSessionStatus | null>(null);
@@ -46,7 +45,6 @@ export function GitPanel({ visible }: GitPanelProps) {
     if (workDir) refreshGitStatus(workDir);
   }, [workDir]);
   const error = null; // errors are silently ignored in the shared cache
-  const [diffTarget, setDiffTarget] = useState<{ sessionId: string; projectId: string; file: GitFile } | null>(null);
   const [toast, setToast] = useState<GitToast | null>(null);
   const [panelView, setPanelView] = useState<GitPanelView>("changes");
 
@@ -59,11 +57,6 @@ export function GitPanel({ visible }: GitPanelProps) {
     }).catch(() => {});
   }, []);
 
-  // Clear diff when session changes
-  useEffect(() => {
-    setDiffTarget(null);
-  }, [state.activeSessionId]);
-
   // Auto-dismiss toast
   useEffect(() => {
     if (!toast) return;
@@ -75,9 +68,12 @@ export function GitPanel({ visible }: GitPanelProps) {
     setToast({ message, type });
   }, []);
 
+  // Diffs open in the side viewer next to the chat — the execution stays
+  // visible.  The old in-panel modal is gone; `SET_DIFF_VIEWER` is the
+  // single path.
   const handleDiffFile = useCallback((sessionId: string, projectId: string, file: GitFile) => {
-    setDiffTarget({ sessionId, projectId, file });
-  }, []);
+    dispatch({ type: "SET_DIFF_VIEWER", sessionId, projectId, file });
+  }, [dispatch]);
 
   return (
     <div className="git-panel">
@@ -157,14 +153,6 @@ export function GitPanel({ visible }: GitPanelProps) {
         </div>
       )}
 
-      {diffTarget && (
-        <GitDiffView
-          sessionId={diffTarget.sessionId}
-          projectId={diffTarget.projectId}
-          file={diffTarget.file}
-          onClose={() => setDiffTarget(null)}
-        />
-      )}
     </div>
   );
 }

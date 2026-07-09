@@ -42,10 +42,11 @@
  *     can't OOM the renderer.
  */
 
-import type { AgentEvent } from "./types";
+import type { AgentEvent, ResultEvent } from "./types";
 import { emptyState, freezePendingThinking, reduceEvent } from "./messageStore";
 import type { AgentSessionState } from "./messageStore";
 import { isPermRequest, type PermRequest } from "../utils/permissionRequest";
+import { recordFrameworkUsageForResult } from "./frameworkMetrics";
 
 export interface AgentExitInfo {
   code: number | null;
@@ -146,6 +147,16 @@ export class AgentSessionStore {
         ...this.snapshot,
         state: reduceEvent(this.snapshot.state, payload),
       };
+      // Framework metrics: every completed turn is recorded locally
+      // (SQLite) for the usage dashboard.  Fire-and-forget — a metrics
+      // failure must never affect the chat stream.
+      if ((payload as { type?: string })?.type === "result") {
+        recordFrameworkUsageForResult(
+          sessionId,
+          this.snapshot.state,
+          payload as unknown as ResultEvent,
+        );
+      }
       // Drop the locally-cached exitInfo when a fresh init arrives —
       // a new init session_id means the agent is alive again, so any
       // prior exit notice is stale.  Bump the generation counter so

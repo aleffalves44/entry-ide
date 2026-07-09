@@ -76,7 +76,7 @@ export const changelog: Record<string, ChangelogEntry> = {
         description:
           "Type / and you see every Claude command — built-ins, plugins, skills — clearly labeled in-app or terminal.",
         items: [
-          "Pick /mcp, /agents, /cost, /help — Hermes spawns claude in an inline xterm and auto-types the command for you",
+          "Pick /mcp, /agents, /cost, /help — Entry IDE spawns claude in an inline xterm and auto-types the command for you",
           "New Terminal button next to Builder opens a quick shell for git, npm, ls — anything",
         ],
         hint: "Type / in the composer to see them all.",

@@ -62,7 +62,7 @@ export function PermissionRequestModal({ request, permissionMode, onDecision }: 
     <div className="perm-modal" role="dialog" aria-label="Permission request">
       <div className="perm-modal-header">
         <span className="perm-modal-glyph" aria-hidden="true">▸</span>
-        <span>HERMES IS REQUESTING PERMISSION TO RUN A TOOL</span>
+        <span>ENTRY IS REQUESTING PERMISSION TO RUN A TOOL</span>
       </div>
 
       <dl className="perm-modal-body">

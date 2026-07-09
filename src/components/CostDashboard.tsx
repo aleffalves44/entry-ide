@@ -2,6 +2,7 @@ import "../styles/components/CostDashboard.css";
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import type { CostDailyEntry, ProjectCostEntry } from "../types";
 import { getCostHistory, getCostByProject } from "../api/costs";
+import { FrameworkMetricsView } from "./FrameworkMetricsView";
 import { useContextMenu, menuItem } from "../hooks/useContextMenu";
 
 interface CostDashboardProps {
@@ -16,6 +17,7 @@ function formatCost(n: number): string {
 
 export function CostDashboard({ onClose }: CostDashboardProps) {
   const [days, setDays] = useState(7);
+  const [view, setView] = useState<"costs" | "framework">("costs");
   const [dailyCosts, setDailyCosts] = useState<CostDailyEntry[]>([]);
   const [projectCosts, setProjectCosts] = useState<ProjectCostEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -88,6 +90,19 @@ export function CostDashboard({ onClose }: CostDashboardProps) {
         <div className="cost-dashboard-header">
           <h2 className="cost-dashboard-title">Cost Dashboard</h2>
           <div className="cost-dashboard-tabs">
+            <button
+              className={`cost-tab ${view === "costs" ? "cost-tab-active" : ""}`}
+              onClick={() => setView("costs")}
+            >
+              Costs
+            </button>
+            <button
+              className={`cost-tab ${view === "framework" ? "cost-tab-active" : ""}`}
+              onClick={() => setView("framework")}
+            >
+              Framework
+            </button>
+            <span className="cost-tab-sep" aria-hidden="true" />
             {[7, 14, 30].map((d) => (
               <button
                 key={d}
@@ -104,6 +119,10 @@ export function CostDashboard({ onClose }: CostDashboardProps) {
         {loading ? (
           <div className="cost-dashboard-empty">
             Loading cost data...
+          </div>
+        ) : view === "framework" ? (
+          <div className="cost-dashboard-body">
+            <FrameworkMetricsView days={days} />
           </div>
         ) : isEmpty ? (
           <div className="cost-dashboard-empty">

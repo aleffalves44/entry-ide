@@ -8,9 +8,12 @@ interface GitDiffViewProps {
   projectId: string;
   file: GitFile;
   onClose: () => void;
+  /** `modal` (default): overlay + backdrop-click close.  `inline`: bare
+   *  panel for embedding in the side viewer next to the chat. */
+  variant?: "modal" | "inline";
 }
 
-export function GitDiffView({ sessionId, projectId, file, onClose }: GitDiffViewProps) {
+export function GitDiffView({ sessionId, projectId, file, onClose, variant = "modal" }: GitDiffViewProps) {
   const [diff, setDiff] = useState<GitDiff | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,43 +39,51 @@ export function GitDiffView({ sessionId, projectId, file, onClose }: GitDiffView
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
+  const body = (
+    <div
+      className={variant === "modal" ? "git-diff-modal" : "git-diff-modal git-diff-inline"}
+      onClick={variant === "modal" ? (e) => e.stopPropagation() : undefined}
+    >
+      <div className="git-diff-header">
+        <span className="git-diff-path">{file.path}</span>
+        {diff && !diff.is_binary && (
+          <span className="git-diff-stats">
+            <span className="git-diff-additions">+{diff.additions}</span>
+            <span className="git-diff-deletions">-{diff.deletions}</span>
+          </span>
+        )}
+        <button className="git-diff-close" onClick={onClose}>&times;</button>
+      </div>
+      <div className="git-diff-content">
+        {loading && <div className="git-diff-loading">Loading diff...</div>}
+        {error && <div className="git-diff-error">{error}</div>}
+        {diff && diff.is_binary && (
+          <div className="git-diff-binary">Binary file</div>
+        )}
+        {diff && !diff.is_binary && (
+          <pre className="git-diff-text">
+            {diff.diff_text.split("\n").map((line, i) => {
+              let className = "git-diff-line";
+              if (line.startsWith("@@")) className += " git-diff-line-hunk";
+              else if (line.startsWith("+++") || line.startsWith("---")) className += " git-diff-line-header";
+              else if (line.startsWith("+")) className += " git-diff-line-add";
+              else if (line.startsWith("-")) className += " git-diff-line-del";
+              return (
+                <div key={i} className={className}>
+                  {line}
+                </div>
+              );
+            })}
+          </pre>
+        )}
+      </div>
+    </div>
+  );
+
+  if (variant === "inline") return body;
   return (
     <div className="git-diff-overlay" onClick={onClose}>
-      <div className="git-diff-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="git-diff-header">
-          <span className="git-diff-path">{file.path}</span>
-          {diff && !diff.is_binary && (
-            <span className="git-diff-stats">
-              <span className="git-diff-additions">+{diff.additions}</span>
-              <span className="git-diff-deletions">-{diff.deletions}</span>
-            </span>
-          )}
-          <button className="git-diff-close" onClick={onClose}>&times;</button>
-        </div>
-        <div className="git-diff-content">
-          {loading && <div className="git-diff-loading">Loading diff...</div>}
-          {error && <div className="git-diff-error">{error}</div>}
-          {diff && diff.is_binary && (
-            <div className="git-diff-binary">Binary file</div>
-          )}
-          {diff && !diff.is_binary && (
-            <pre className="git-diff-text">
-              {diff.diff_text.split("\n").map((line, i) => {
-                let className = "git-diff-line";
-                if (line.startsWith("@@")) className += " git-diff-line-hunk";
-                else if (line.startsWith("+++") || line.startsWith("---")) className += " git-diff-line-header";
-                else if (line.startsWith("+")) className += " git-diff-line-add";
-                else if (line.startsWith("-")) className += " git-diff-line-del";
-                return (
-                  <div key={i} className={className}>
-                    {line}
-                  </div>
-                );
-              })}
-            </pre>
-          )}
-        </div>
-      </div>
+      {body}
     </div>
   );
 }

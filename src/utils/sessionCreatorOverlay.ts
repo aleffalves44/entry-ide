@@ -167,7 +167,7 @@ export function showOpeningOverlay(): OverlayState {
   ].join(";");
 
   const brand = document.createElement("span");
-  brand.textContent = "HERMES · NEW SESSION";
+  brand.textContent = "ENTRY · NEW SESSION";
   brand.style.cssText = [
     'font-family:"Inter Tight",system-ui,sans-serif',
     "font-size:9px",

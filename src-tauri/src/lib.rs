@@ -5,6 +5,7 @@ mod db;
 mod git;
 mod inline_pty;
 mod menu;
+mod pipeline;
 mod platform;
 mod plugins;
 mod process;
@@ -608,6 +609,10 @@ pub fn run() {
             db::get_recent_sessions,
             db::get_session_snapshot,
             db::get_token_usage_today,
+            db::record_framework_usage,
+            db::get_framework_usage,
+            db::export_framework_usage,
+            pipeline::get_pipeline_state,
             db::get_cost_history,
             db::save_memory,
             db::get_all_memory,

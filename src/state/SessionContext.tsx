@@ -353,13 +353,19 @@ interface SessionState {
     searchPanelOpen: boolean;
     composerOpen: boolean;
     activeLeftTab: "sessions" | "terminal" | "processes" | "git" | "files" | "search";
-    filePreview: { projectId: string; filePath: string } | null;
+    /** Side viewer next to the chat (never replaces it): file preview or
+     *  an expanded git diff.  `SET_FILE_PREVIEW` / `SET_DIFF_VIEWER` open
+     *  it; `CLOSE_FILE_PREVIEW` closes both kinds. */
+    viewer:
+      | { kind: "file"; projectId: string; filePath: string }
+      | { kind: "diff"; sessionId: string; projectId: string; file: import("../types/git").GitFile }
+      | null;
     /** Right-rail Workbench layout — open/tab/ratio/files-notes split.
      *  Agent-mode sessions only; ignored otherwise.  Defaults come from
      *  `DEFAULT_PERSISTED_WORKBENCH` in `utils/workbenchLayout.ts`. */
     workbench: {
       open: boolean;
-      tab: "files" | "context" | "git";
+      tab: "files" | "context" | "git" | "pipeline" | "metrics";
       ratio: number;
       filesNotesSplit: number;
     };
@@ -926,11 +932,13 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
     case "CLOSE_COMPOSER":
       return state.ui.composerOpen ? { ...state, ui: { ...state.ui, composerOpen: false } } : state;
 
-    // ─── File preview actions ─────────────────────────────────────────
+    // ─── Side viewer actions (file preview / expanded diff) ──────────
     case "SET_FILE_PREVIEW":
-      return { ...state, ui: { ...state.ui, filePreview: { projectId: action.projectId, filePath: action.filePath } } };
+      return { ...state, ui: { ...state.ui, viewer: { kind: "file", projectId: action.projectId, filePath: action.filePath } } };
+    case "SET_DIFF_VIEWER":
+      return { ...state, ui: { ...state.ui, viewer: { kind: "diff", sessionId: action.sessionId, projectId: action.projectId, file: action.file } } };
     case "CLOSE_FILE_PREVIEW":
-      return state.ui.filePreview ? { ...state, ui: { ...state.ui, filePreview: null } } : state;
+      return state.ui.viewer ? { ...state, ui: { ...state.ui, viewer: null } } : state;
 
     // ─── Workspace restore actions ───────────────────────────────────
     case "RESTORE_LAYOUT":
@@ -1071,7 +1079,7 @@ export const initialState: SessionState = {
     searchPanelOpen: false,
     composerOpen: false,
     activeLeftTab: "terminal" as const,
-    filePreview: null,
+    viewer: null,
     // Right-rail Workbench (agent-mode only) — defaults to OPEN per
     // user spec, 50/50 chat/workbench, Files tab active, files take 70%
     // of the vertical space.  Persisted in saved_workspace.json.

@@ -82,3 +82,31 @@
 }
 .cost-bar-provider { background: var(--accent) !important; }
 .cost-bar-project { background: var(--green) !important; }
+
+/* ─── Framework view (framework_usage metrics) ─────────────────────── */
+.cost-tab-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--rule);
+  margin: 0 4px;
+  align-self: center;
+}
+.cost-export-btn {
+  margin-left: 12px;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 2px 10px;
+  font-size: 11px;
+}
+.cost-export-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+.cost-export-status {
+  margin-left: 8px;
+  font-size: 11px;
+  color: var(--text-2);
+}

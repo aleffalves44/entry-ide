@@ -1,0 +1,133 @@
+/* ─────────────────────────────────────────────────────────────────
+ * FrameworkMetricsView — consumo do framework por comando/agente/
+ * modelo.  Vive na aba Metrics do Workbench e no Cost Dashboard.
+ * ────────────────────────────────────────────────────────────────── */
+
+.fw-metrics {
+  height: 100%;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--text-1);
+}
+
+.fw-metrics-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fw-metrics-scope {
+  display: flex;
+  gap: 2px;
+}
+
+.fw-metrics-chip {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 2px 8px;
+  font-size: 10.5px;
+}
+.fw-metrics-chip.active {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.fw-metrics-export {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 2px 10px;
+  font-size: 10.5px;
+}
+.fw-metrics-export:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.fw-metrics-export-status {
+  font-size: 10.5px;
+  color: var(--text-2);
+}
+
+.fw-metrics-summary {
+  font-size: 12px;
+  color: var(--text-1);
+}
+.fw-metrics-period {
+  color: var(--text-2);
+}
+
+.fw-metrics-empty {
+  padding: 24px 8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+.fw-metrics-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fw-metrics-title {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3, var(--text-2));
+  margin-bottom: 2px;
+}
+
+.fw-metrics-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fw-metrics-label {
+  flex: 0 0 34%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  color: var(--text-1);
+}
+
+.fw-metrics-track {
+  flex: 1;
+  height: 6px;
+  background: var(--bg-1, rgba(128, 128, 128, 0.15));
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.fw-metrics-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+}
+.fw-metrics-fill-agent {
+  background: var(--green);
+}
+.fw-metrics-fill-model {
+  background: var(--text-2);
+}
+
+.fw-metrics-value {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+}

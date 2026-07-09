@@ -106,12 +106,12 @@ export function validateBundle(
 
 	// Version check
 	if (typeof obj._hermes_bundle_version !== "number") {
-		return { valid: false, error: "This file does not appear to be a Hermes prompt bundle" };
+		return { valid: false, error: "This file does not appear to be an Entry IDE prompt bundle" };
 	}
 	if (obj._hermes_bundle_version > BUNDLE_VERSION) {
 		return {
 			valid: false,
-			error: "This bundle was created by a newer version of Hermes. Please update the app to import it.",
+			error: "This bundle was created by a newer version of Entry IDE. Please update the app to import it.",
 		};
 	}
 

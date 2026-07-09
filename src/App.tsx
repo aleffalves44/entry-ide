@@ -34,6 +34,7 @@ import type { SessionView } from "./components/SessionList";
 import { ProcessPanel } from "./components/ProcessPanel";
 import { FileExplorerPanel } from "./components/FileExplorerPanel";
 import { FilePreviewPanel } from "./components/FilePreviewPanel";
+import { GitDiffView } from "./components/GitDiffView";
 import { SearchPanel } from "./components/SearchPanel";
 import { StatusBar } from "./components/StatusBar";
 import { CommandPalette } from "./components/CommandPalette";
@@ -154,6 +155,9 @@ function AppContent() {
   const [activityBarOrder, setActivityBarOrder] = useState<string[]>([]);
   const [leftPanelWidth, setLeftPanelWidth] = useState(240);
   const [rightPanelWidth, setRightPanelWidth] = useState(300);
+  // Side-viewer (file preview / expanded diff) width — the viewer opens
+  // BESIDE the chat, never over it.
+  const [viewerWidth, setViewerWidth] = useState(520);
 
   // Right-rail Workbench width tracks the viewport, since its persisted
   // size is a *ratio* of the chat+workbench area (so a workspace saved
@@ -936,40 +940,63 @@ function AppContent() {
           <PanelResizeHandle direction="horizontal" onResize={handleLeftResize} onResizeEnd={refitActive} />
         )}
         <div className="main-area">
+          {/* Chat/terminal column + optional side viewer.  The viewer
+           *  NEVER replaces the session surface — files and diffs open
+           *  beside the running execution, resizable, closable. */}
           <div className="terminal-and-timeline">
-            {ui.filePreview && state.activeSessionId ? (
-              <div className="file-preview-main-container">
-                {(() => {
-                  const handler = pluginRuntime?.getFileHandler(ui.filePreview.filePath);
-                  return (
-                    <FilePreviewPanel
-                      sessionId={state.activeSessionId}
-                      projectId={ui.filePreview.projectId}
-                      filePath={ui.filePreview.filePath}
-                      onBack={() => dispatch({ type: "CLOSE_FILE_PREVIEW" })}
-                      fileHandler={handler?.component}
-                      fileHandlerPluginId={handler?.pluginId}
+            <div className="chat-and-viewer">
+              <div className="chat-column">
+                <div className="terminal-container">
+                  {state.layout.root ? (
+                    <SplitLayout node={state.layout.root} />
+                  ) : (
+                    <EmptyState
+                      recentSessions={state.recentSessions}
+                      onNew={() => {
+                        console.log("[opening-overlay] EmptyState 'New Session' clicked");
+                        setSessionCreatorOpen({});
+                      }}
+                      onRestore={(entry, restoreScrollback) => createSession({ label: entry.label, workingDirectory: entry.working_directory, restoreFromId: restoreScrollback ? entry.id : undefined })}
                     />
-                  );
-                })()}
+                  )}
+                </div>
+                <SessionComposer />
               </div>
-            ) : (
-            <div className="terminal-container">
-              {state.layout.root ? (
-                <SplitLayout node={state.layout.root} />
-              ) : (
-                <EmptyState
-                  recentSessions={state.recentSessions}
-                  onNew={() => {
-                    console.log("[opening-overlay] EmptyState 'New Session' clicked");
-                    setSessionCreatorOpen({});
-                  }}
-                  onRestore={(entry, restoreScrollback) => createSession({ label: entry.label, workingDirectory: entry.working_directory, restoreFromId: restoreScrollback ? entry.id : undefined })}
-                />
+
+              {ui.viewer && state.activeSessionId && (
+                <>
+                  <PanelResizeHandle
+                    direction="horizontal"
+                    onResize={(delta) => setViewerWidth((w) => Math.min(Math.max(w - delta, 320), window.innerWidth * 0.7))}
+                  />
+                  <div className="viewer-pane" style={{ width: `${viewerWidth}px` }}>
+                    {ui.viewer.kind === "file" ? (
+                      (() => {
+                        const handler = pluginRuntime?.getFileHandler(ui.viewer.filePath);
+                        return (
+                          <FilePreviewPanel
+                            sessionId={state.activeSessionId}
+                            projectId={ui.viewer.projectId}
+                            filePath={ui.viewer.filePath}
+                            onBack={() => dispatch({ type: "CLOSE_FILE_PREVIEW" })}
+                            fileHandler={handler?.component}
+                            fileHandlerPluginId={handler?.pluginId}
+                          />
+                        );
+                      })()
+                    ) : (
+                      <GitDiffView
+                        variant="inline"
+                        sessionId={ui.viewer.sessionId}
+                        projectId={ui.viewer.projectId}
+                        file={ui.viewer.file}
+                        onClose={() => dispatch({ type: "CLOSE_FILE_PREVIEW" })}
+                      />
+                    )}
+                  </div>
+                </>
               )}
             </div>
-            )}
-            <SessionComposer />
           </div>
           {/* Right rail.
            *

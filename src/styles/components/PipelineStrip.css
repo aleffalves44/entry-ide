@@ -1,0 +1,48 @@
+/* ─────────────────────────────────────────────────────────────────
+ * PipelineStrip — compact SDD phase readout at the top of the agent
+ * chat.  One row, quiet by default, accent on the running phase.
+ * ────────────────────────────────────────────────────────────────── */
+
+.pipeline-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 14px;
+  background: var(--bg-1, transparent);
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--text-2);
+  text-align: left;
+}
+.pipeline-strip:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.pipeline-strip-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--text-3, var(--text-2));
+}
+
+.pipeline-strip-phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.pipeline-strip-phase.is-done {
+  color: var(--text-1);
+}
+.pipeline-strip-phase.is-done .pipeline-strip-dot {
+  color: var(--green);
+}
+.pipeline-strip-phase.is-running {
+  color: var(--accent);
+}
+.pipeline-strip-phase.is-pending .pipeline-strip-dot {
+  color: var(--text-3, var(--text-2));
+}

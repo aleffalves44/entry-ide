@@ -294,6 +294,7 @@ export function validateSavedWorkspace(raw: unknown): SavedWorkspace | null {
 // ─── Session Action (reducer) ────────────────────────────────────────
 
 import type { SplitDirection } from "../state/layoutTypes";
+import type { GitFile } from "./git";
 
 export type SessionAction =
   | { type: "SESSION_UPDATED"; session: SessionData }
@@ -350,12 +351,13 @@ export type SessionAction =
   | { type: "SET_COMPOSER_EXPANDED"; sessionId: string; expanded: boolean }
   // File preview
   | { type: "SET_FILE_PREVIEW"; projectId: string; filePath: string }
+  | { type: "SET_DIFF_VIEWER"; sessionId: string; projectId: string; file: GitFile }
   | { type: "CLOSE_FILE_PREVIEW" }
   // Right-rail Workbench (v1.1.14) — agent-mode only.  See
   // `utils/workbenchLayout.ts` for the persisted shape.
   | { type: "TOGGLE_WORKBENCH" }
   | { type: "SET_WORKBENCH_OPEN"; open: boolean }
-  | { type: "SET_WORKBENCH_TAB"; tab: "files" | "context" | "git" }
+  | { type: "SET_WORKBENCH_TAB"; tab: "files" | "context" | "git" | "pipeline" | "metrics" }
   | { type: "SET_WORKBENCH_RATIO"; ratio: number }
   | { type: "SET_WORKBENCH_FILES_NOTES_SPLIT"; ratio: number }
   // Per-session notes (1.1.14) — replaces or complements the

@@ -121,6 +121,50 @@ pub struct TokenUsageEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FrameworkUsageRow {
+    #[serde(default)]
+    pub session_id: String,
+    /// Result-event uuid — dedup key so replays on session restore don't double-count.
+    pub turn_uuid: Option<String>,
+    /// 'turn' = totals for the whole turn; 'agent' = per-subagent breakdown
+    /// (informational, NOT additive with the 'turn' row of the same turn).
+    #[serde(default = "default_kind")]
+    pub kind: String,
+    #[serde(default = "default_provider")]
+    pub provider: String,
+    pub model: String,
+    /// Slash command that initiated the turn (e.g. "harness-cmd:task"); None = prose.
+    pub command: Option<String>,
+    #[serde(default = "default_agent")]
+    pub agent: String,
+    /// SDD phase derived from the command (spike/plan/task/pr).
+    pub phase: Option<String>,
+    #[serde(default)]
+    pub input_tokens: i64,
+    #[serde(default)]
+    pub output_tokens: i64,
+    #[serde(default)]
+    pub cache_read_tokens: i64,
+    #[serde(default)]
+    pub cache_creation_tokens: i64,
+    pub duration_ms: Option<i64>,
+    #[serde(default)]
+    pub cost_usd: f64,
+    #[serde(default)]
+    pub recorded_at: Option<String>,
+}
+
+fn default_kind() -> String {
+    "turn".to_string()
+}
+fn default_provider() -> String {
+    "claude".to_string()
+}
+fn default_agent() -> String {
+    "main".to_string()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CostDailyEntry {
     pub date: String,
     pub provider: String,
@@ -227,6 +271,30 @@ impl Database {
             );
             CREATE INDEX IF NOT EXISTS idx_token_snap_session ON token_snapshots(session_id);
             CREATE INDEX IF NOT EXISTS idx_token_snap_date ON token_snapshots(recorded_at);
+
+            CREATE TABLE IF NOT EXISTS framework_usage (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
+                turn_uuid TEXT,
+                kind TEXT NOT NULL DEFAULT 'turn',
+                provider TEXT NOT NULL DEFAULT 'claude',
+                model TEXT NOT NULL,
+                command TEXT,
+                agent TEXT NOT NULL DEFAULT 'main',
+                phase TEXT,
+                input_tokens INTEGER NOT NULL DEFAULT 0,
+                output_tokens INTEGER NOT NULL DEFAULT 0,
+                cache_read_tokens INTEGER NOT NULL DEFAULT 0,
+                cache_creation_tokens INTEGER NOT NULL DEFAULT 0,
+                duration_ms INTEGER,
+                cost_usd REAL DEFAULT 0.0,
+                recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_framework_usage_dedup
+                ON framework_usage(turn_uuid, agent) WHERE turn_uuid IS NOT NULL;
+            CREATE INDEX IF NOT EXISTS idx_framework_usage_session ON framework_usage(session_id);
+            CREATE INDEX IF NOT EXISTS idx_framework_usage_command ON framework_usage(command);
+            CREATE INDEX IF NOT EXISTS idx_framework_usage_date ON framework_usage(recorded_at);
 
             CREATE TABLE IF NOT EXISTS cost_daily (
                 date TEXT NOT NULL,
@@ -782,6 +850,117 @@ impl Database {
             params![session_id, provider, model, input_tokens, output_tokens, cost],
         ).map_err(|e| e.to_string())?;
         Ok(())
+    }
+
+    /// Batch-insert framework usage rows. `INSERT OR IGNORE` + the partial
+    /// unique index on (turn_uuid, agent) makes replays idempotent — a
+    /// restored session re-emitting old result events won't double-count.
+    ///
+    /// Freshly-inserted `turn` rows are also mirrored into `token_usage`,
+    /// which is what the Cost Dashboard's "Costs" view (and the
+    /// `cost_daily` rollup) read.  Terminal sessions feed that table via
+    /// the PTY analyzer; agent sessions have no analyzer, so without the
+    /// mirror their spend is invisible there.  Mirroring only on a real
+    /// insert (n > 0) keeps replays from double-counting.
+    pub fn record_framework_usage(&self, rows: &[FrameworkUsageRow]) -> Result<usize, String> {
+        let mut inserted = 0usize;
+        for r in rows {
+            let n = self
+                .conn
+                .execute(
+                    "INSERT OR IGNORE INTO framework_usage
+                     (session_id, turn_uuid, kind, provider, model, command, agent, phase,
+                      input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens,
+                      duration_ms, cost_usd)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
+                    params![
+                        r.session_id,
+                        r.turn_uuid,
+                        r.kind,
+                        r.provider,
+                        r.model,
+                        r.command,
+                        r.agent,
+                        r.phase,
+                        r.input_tokens,
+                        r.output_tokens,
+                        r.cache_read_tokens,
+                        r.cache_creation_tokens,
+                        r.duration_ms,
+                        r.cost_usd,
+                    ],
+                )
+                .map_err(|e| e.to_string())?;
+            inserted += n;
+
+            if n > 0 && r.kind == "turn" {
+                self.record_token_usage(
+                    &r.session_id,
+                    &r.provider,
+                    &r.model,
+                    r.input_tokens,
+                    r.output_tokens,
+                    r.cost_usd,
+                )?;
+            }
+        }
+        Ok(inserted)
+    }
+
+    /// Raw framework usage rows, newest first. Aggregation happens on the
+    /// frontend — raw rows keep every dimension available for the dashboard
+    /// and the JSONL export without one query per view.
+    pub fn get_framework_usage(
+        &self,
+        since: Option<&str>,
+        session_id: Option<&str>,
+    ) -> Result<Vec<FrameworkUsageRow>, String> {
+        let mut sql = String::from(
+            "SELECT session_id, turn_uuid, kind, provider, model, command, agent, phase,
+                    input_tokens, output_tokens, cache_read_tokens, cache_creation_tokens,
+                    duration_ms, cost_usd, recorded_at
+             FROM framework_usage WHERE 1=1",
+        );
+        let mut args: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        if let Some(s) = since {
+            sql.push_str(&format!(" AND recorded_at >= ?{}", args.len() + 1));
+            args.push(Box::new(s.to_string()));
+        }
+        if let Some(sid) = session_id {
+            sql.push_str(&format!(" AND session_id = ?{}", args.len() + 1));
+            args.push(Box::new(sid.to_string()));
+        }
+        sql.push_str(" ORDER BY recorded_at DESC");
+
+        let mut stmt = self.conn.prepare(&sql).map_err(|e| e.to_string())?;
+        let params_ref: Vec<&dyn rusqlite::ToSql> = args.iter().map(|b| b.as_ref()).collect();
+        let rows = stmt
+            .query_map(params_ref.as_slice(), |row| {
+                Ok(FrameworkUsageRow {
+                    session_id: row.get(0)?,
+                    turn_uuid: row.get(1)?,
+                    kind: row.get(2)?,
+                    provider: row.get(3)?,
+                    model: row.get(4)?,
+                    command: row.get(5)?,
+                    agent: row.get(6)?,
+                    phase: row.get(7)?,
+                    input_tokens: row.get(8)?,
+                    output_tokens: row.get(9)?,
+                    cache_read_tokens: row.get(10)?,
+                    cache_creation_tokens: row.get(11)?,
+                    duration_ms: row.get(12)?,
+                    cost_usd: row.get(13)?,
+                    recorded_at: row.get(14)?,
+                })
+            })
+            .map_err(|e| e.to_string())?;
+
+        let mut entries = Vec::new();
+        for row in rows {
+            entries.push(row.map_err(|e| e.to_string())?);
+        }
+        Ok(entries)
     }
 
     pub fn get_token_usage_today(&self) -> Result<Vec<TokenUsageEntry>, String> {
@@ -2273,6 +2452,44 @@ pub fn get_token_usage_today(state: State<'_, AppState>) -> Result<Vec<TokenUsag
 }
 
 #[tauri::command]
+pub fn record_framework_usage(
+    state: State<'_, AppState>,
+    rows: Vec<FrameworkUsageRow>,
+) -> Result<usize, String> {
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+    db.record_framework_usage(&rows)
+}
+
+#[tauri::command]
+pub fn get_framework_usage(
+    state: State<'_, AppState>,
+    since: Option<String>,
+    session_id: Option<String>,
+) -> Result<Vec<FrameworkUsageRow>, String> {
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+    db.get_framework_usage(since.as_deref(), session_id.as_deref())
+}
+
+#[tauri::command]
+pub fn export_framework_usage(
+    state: State<'_, AppState>,
+    path: String,
+    since: Option<String>,
+) -> Result<usize, String> {
+    let rows = {
+        let db = state.db.lock().map_err(|e| e.to_string())?;
+        db.get_framework_usage(since.as_deref(), None)?
+    };
+    let mut out = String::new();
+    for r in &rows {
+        out.push_str(&serde_json::to_string(r).map_err(|e| e.to_string())?);
+        out.push('\n');
+    }
+    std::fs::write(&path, out).map_err(|e| e.to_string())?;
+    Ok(rows.len())
+}
+
+#[tauri::command]
 pub fn get_cost_history(
     state: State<'_, AppState>,
     days: Option<i64>,
@@ -2564,6 +2781,78 @@ mod tests {
     fn test_db() -> Database {
         let tmp = NamedTempFile::new().unwrap();
         Database::new(tmp.path()).expect("Failed to create test database")
+    }
+
+    // ── framework_usage ────────────────────────────────────────────────
+
+    fn usage_row(turn_uuid: Option<&str>, agent: &str) -> FrameworkUsageRow {
+        FrameworkUsageRow {
+            session_id: "sess1".into(),
+            turn_uuid: turn_uuid.map(String::from),
+            kind: if agent == "main" { "turn".into() } else { "agent".into() },
+            provider: "claude".into(),
+            model: "claude-sonnet-5".into(),
+            command: Some("harness-cmd:task".into()),
+            agent: agent.into(),
+            phase: Some("task".into()),
+            input_tokens: 1000,
+            output_tokens: 250,
+            cache_read_tokens: 8000,
+            cache_creation_tokens: 100,
+            duration_ms: Some(45_000),
+            cost_usd: 0.31,
+            recorded_at: None,
+        }
+    }
+
+    #[test]
+    fn test_framework_usage_roundtrip_and_dedup() {
+        let db = test_db();
+
+        // Turn row + one agent breakdown row.
+        let n = db
+            .record_framework_usage(&[
+                usage_row(Some("uuid-1"), "main"),
+                usage_row(Some("uuid-1"), "Build"),
+            ])
+            .unwrap();
+        assert_eq!(n, 2);
+
+        // Replay of the same turn (session restore) must be ignored.
+        let n = db
+            .record_framework_usage(&[
+                usage_row(Some("uuid-1"), "main"),
+                usage_row(Some("uuid-1"), "Build"),
+            ])
+            .unwrap();
+        assert_eq!(n, 0, "replayed rows must be deduped by (turn_uuid, agent)");
+
+        // Rows without turn_uuid always insert (no dedup key).
+        let n = db.record_framework_usage(&[usage_row(None, "main")]).unwrap();
+        assert_eq!(n, 1);
+
+        let all = db.get_framework_usage(None, None).unwrap();
+        assert_eq!(all.len(), 3);
+
+        let by_session = db.get_framework_usage(None, Some("sess1")).unwrap();
+        assert_eq!(by_session.len(), 3);
+        assert_eq!(by_session[0].command.as_deref(), Some("harness-cmd:task"));
+        assert_eq!(by_session[0].phase.as_deref(), Some("task"));
+
+        let none = db.get_framework_usage(None, Some("other")).unwrap();
+        assert!(none.is_empty());
+
+        // `since` in the future filters everything out.
+        let future = db.get_framework_usage(Some("2999-01-01"), None).unwrap();
+        assert!(future.is_empty());
+
+        // Turn rows are mirrored into token_usage (Cost Dashboard "Costs"
+        // view) exactly once each — agent rows and replays never mirror.
+        // 2 turn rows inserted above (uuid-1 main + no-uuid main).
+        let today = db.get_token_usage_today().unwrap();
+        assert_eq!(today.len(), 1, "one (provider, model) aggregate row");
+        assert_eq!(today[0].input_tokens, 2000, "2 turn rows × 1000 input");
+        assert_eq!(today[0].output_tokens, 500, "2 turn rows × 250 output");
     }
 
     // ── insert + get_session_worktrees ─────────────────────────────────
