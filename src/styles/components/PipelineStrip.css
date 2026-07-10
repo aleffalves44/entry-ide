@@ -46,3 +46,14 @@
 .pipeline-strip-phase.is-pending .pipeline-strip-dot {
   color: var(--text-3, var(--text-2));
 }
+
+.pipeline-strip-meta {
+  margin-left: auto;
+  font-size: 10.5px;
+  color: var(--text-3, var(--text-2));
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+}
+.pipeline-strip-cost {
+  color: var(--text-2);
+}

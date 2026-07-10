@@ -14,19 +14,23 @@
  * entirely (no pixel-width budget) when the workbench is closed.
  */
 import "../styles/components/WorkbenchPanel.css";
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useSession } from "../state/SessionContext";
 import { FileExplorerPanel } from "./FileExplorerPanel";
 import { AgentContextPanel } from "./AgentContextPanel";
 import { GitPanel } from "./GitPanel";
 import { PipelinePanel } from "./PipelinePanel";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
+import { WorkflowTimelinePanel } from "./WorkflowTimelinePanel";
 import { WorkbenchNotes } from "./WorkbenchNotes";
 import {
   clampFilesNotesSplit,
   MIN_FILES_NOTES_SPLIT,
   MAX_FILES_NOTES_SPLIT,
+  DEFAULT_WORKBENCH_TAB_WITH_PLUGIN,
 } from "../utils/workbenchLayout";
+import { peekAgentSessionStore } from "../agent/agentSessionStore";
+import { hasHarnessPlugin } from "../utils/pipelinePhases";
 import type { SessionData } from "../types/session";
 
 interface WorkbenchPanelProps {
@@ -166,7 +170,7 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
   }, [dispatch]);
 
   const setTab = useCallback(
-    (tab: "files" | "context" | "git" | "pipeline" | "metrics") => {
+    (tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics") => {
       dispatch({ type: "SET_WORKBENCH_TAB", tab });
     },
     [dispatch],
@@ -175,6 +179,38 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
   const close = useCallback(() => {
     dispatch({ type: "SET_WORKBENCH_OPEN", open: false });
   }, [dispatch]);
+
+  // Plugin presence for the agent session — drives the default tab.  We
+  // subscribe to the session's agent store directly (lighter than the full
+  // `usePipelineState` hook, which we don't need here).  Inert when there's
+  // no store yet (terminal session, not-yet-spawned agent).
+  const pluginPresent = useSyncExternalStore(
+    useCallback((onStoreChange: () => void) => {
+      const store = session ? peekAgentSessionStore(session.id) : null;
+      if (!store) return () => {};
+      return store.subscribe(onStoreChange);
+    }, [session]),
+    useCallback(() => {
+      if (!session) return false;
+      const store = peekAgentSessionStore(session.id);
+      const init = store?.getSnapshot().state.initEvent ?? null;
+      return init !== null && hasHarnessPlugin(init.slash_commands);
+    }, [session]),
+  );
+
+  // Default-tab policy: when the harness-cmd plugin is present and the
+  // user hasn't picked a tab yet (still on the legacy "files" default),
+  // surface the unified Workflow timeline as the accompanying view.
+  // Fires once per session-init edge; a manual tab choice wins because the
+  // condition narrows on `wb.tab === "files"`.
+  const autoSwitchedRef = useRef(false);
+  useEffect(() => {
+    if (!pluginPresent) return;
+    if (autoSwitchedRef.current) return;
+    if (wb.tab !== "files") return;
+    autoSwitchedRef.current = true;
+    dispatch({ type: "SET_WORKBENCH_TAB", tab: DEFAULT_WORKBENCH_TAB_WITH_PLUGIN });
+  }, [pluginPresent, wb.tab, dispatch]);
 
   // Convert the Files↔Notes ratio to a CSS height for the notes row.
   // grid-template-rows is `auto 1fr 6px MIN(140px, var(--w-notes-h))`,
@@ -232,6 +268,15 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
             type="button"
             className="workbench-tab"
             role="tab"
+            aria-selected={wb.tab === "workflow"}
+            onClick={() => setTab("workflow")}
+          >
+            Workflow
+          </button>
+          <button
+            type="button"
+            className="workbench-tab"
+            role="tab"
             aria-selected={wb.tab === "files"}
             onClick={() => setTab("files")}
           >
@@ -280,6 +325,14 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
           Keeping both in the DOM preserves scroll position and avoids
           re-running the embedded panel's heavy mount work on every
           tab switch.  The hidden attribute drops them out of layout. */}
+      <div
+        className="workbench-body"
+        role="tabpanel"
+        aria-label="Workflow"
+        hidden={wb.tab !== "workflow"}
+      >
+        <WorkflowTimelinePanel session={session} />
+      </div>
       <div
         className="workbench-body"
         role="tabpanel"

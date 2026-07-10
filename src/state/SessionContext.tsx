@@ -365,7 +365,7 @@ interface SessionState {
      *  `DEFAULT_PERSISTED_WORKBENCH` in `utils/workbenchLayout.ts`. */
     workbench: {
       open: boolean;
-      tab: "files" | "context" | "git" | "pipeline" | "metrics";
+      tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics";
       ratio: number;
       filesNotesSplit: number;
     };
