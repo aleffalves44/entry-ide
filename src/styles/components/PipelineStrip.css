@@ -1,7 +1,13 @@
 /* ─────────────────────────────────────────────────────────────────
  * PipelineStrip — compact SDD phase readout at the top of the agent
  * chat.  One row, quiet by default, accent on the running phase.
+ * Each phase is a one-click trigger with an inline context popover.
  * ────────────────────────────────────────────────────────────────── */
+
+.pipeline-strip-wrap {
+  position: relative;
+  width: 100%;
+}
 
 .pipeline-strip {
   display: flex;
@@ -13,13 +19,9 @@
   background: var(--bg-1, transparent);
   border: none;
   border-bottom: 1px solid var(--rule);
-  cursor: pointer;
   font-size: 11px;
   color: var(--text-2);
   text-align: left;
-}
-.pipeline-strip:hover {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .pipeline-strip-tag {
@@ -27,12 +29,36 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--text-3, var(--text-2));
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.pipeline-strip-tag:hover {
+  color: var(--accent);
 }
 
 .pipeline-strip-phase {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.pipeline-strip-phase:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.pipeline-strip-phase:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+.pipeline-strip-phase.is-active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
 }
 .pipeline-strip-phase.is-done {
   color: var(--text-1);
@@ -56,4 +82,58 @@
 }
 .pipeline-strip-cost {
   color: var(--text-2);
+}
+
+/* Inline phase-context popover — appears right under the strip */
+.pipeline-strip-popover {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  box-sizing: border-box;
+  padding: 8px 14px 10px;
+  background: var(--bg-1, var(--bg-0));
+  border-bottom: 1px solid var(--rule);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.pipeline-strip-popover-desc {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.pipeline-strip-popover-row {
+  display: flex;
+  gap: 8px;
+}
+
+.pipeline-strip-popover-input {
+  flex: 1;
+  box-sizing: border-box;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--text-1);
+  background: var(--bg-0, transparent);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+.pipeline-strip-popover-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.pipeline-strip-popover-send {
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--bg-0, #fff);
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.pipeline-strip-popover-send:hover {
+  filter: brightness(1.1);
 }
