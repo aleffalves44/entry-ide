@@ -204,9 +204,9 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
             )}
 
             <div className="quick-creator-footer">
-              <span className="quick-creator-hint">
+              <span className={`quick-creator-hint${branchSel ? " has-selection" : ""}`}>
                 {branchSel
-                  ? `Branch: ${branchSel.branch}${branchSel.createNew ? " (nova)" : ""}`
+                  ? `✓ Branch: ${branchSel.branch}${branchSel.createNew ? " (nova)" : ""}`
                   : "Sem worktree — branch atual do repo"}
               </span>
               <button className="quick-creator-btn" onClick={onAdvanced}>
