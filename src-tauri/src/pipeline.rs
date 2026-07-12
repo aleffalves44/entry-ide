@@ -24,6 +24,11 @@ pub struct PipelineState {
     pub pr_number: Option<u64>,
     pub pr_url: Option<String>,
     pub pr_state: Option<String>,
+    /// Exact PR timestamps from gh (ISO 8601) — used by the delivery
+    /// (lead-time) metrics so pr_opened/pr_merged aren't recorded at
+    /// observation time.
+    pub pr_created_at: Option<String>,
+    pub pr_merged_at: Option<String>,
 }
 
 /// Find the first existing file among `candidates` (relative to `root`).
@@ -105,24 +110,35 @@ fn git_facts(root: &Path) -> (Option<String>, Option<u32>) {
 
 /// Open PR for the current branch via `gh pr view`.  `gh` missing, not
 /// authenticated, or no PR → all-None.
-fn pr_facts(root: &Path) -> (Option<u64>, Option<String>, Option<String>) {
+type PrFacts = (
+    Option<u64>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+);
+
+fn pr_facts(root: &Path) -> PrFacts {
     let out = std::process::Command::new("gh")
-        .args(["pr", "view", "--json", "number,url,state"])
+        .args(["pr", "view", "--json", "number,url,state,createdAt,mergedAt"])
         .current_dir(root)
         .output();
     let Ok(out) = out else {
-        return (None, None, None);
+        return (None, None, None, None, None);
     };
     if !out.status.success() {
-        return (None, None, None);
+        return (None, None, None, None, None);
     }
     let Ok(v) = serde_json::from_slice::<serde_json::Value>(&out.stdout) else {
-        return (None, None, None);
+        return (None, None, None, None, None);
     };
+    let s = |key: &str| v.get(key).and_then(|x| x.as_str()).map(String::from);
     (
         v.get("number").and_then(|n| n.as_u64()),
-        v.get("url").and_then(|u| u.as_str()).map(String::from),
-        v.get("state").and_then(|s| s.as_str()).map(String::from),
+        s("url"),
+        s("state"),
+        s("createdAt"),
+        s("mergedAt"),
     )
 }
 
@@ -133,7 +149,7 @@ pub fn compute_pipeline_state(working_dir: &str) -> PipelineState {
     }
 
     let (branch, commits_ahead) = git_facts(root);
-    let (pr_number, pr_url, pr_state) = pr_facts(root);
+    let (pr_number, pr_url, pr_state, pr_created_at, pr_merged_at) = pr_facts(root);
 
     PipelineState {
         branch,
@@ -144,6 +160,8 @@ pub fn compute_pipeline_state(working_dir: &str) -> PipelineState {
         pr_number,
         pr_url,
         pr_state,
+        pr_created_at,
+        pr_merged_at,
     }
 }
 

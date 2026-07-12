@@ -14,6 +14,9 @@ export interface PipelineState {
   pr_number: number | null;
   pr_url: string | null;
   pr_state: string | null;
+  /** Exact PR timestamps from gh (ISO 8601) — used by delivery metrics. */
+  pr_created_at?: string | null;
+  pr_merged_at?: string | null;
 }
 
 export type PhaseKey = "spike" | "plan" | "task" | "pr";
