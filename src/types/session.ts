@@ -331,6 +331,10 @@ export type SessionAction =
    *  atomic layout change: agent pane left, terminal pane right.  Replaces
    *  the focused pane when a layout exists; becomes the root otherwise. */
   | { type: "OPEN_SESSION_GROUP"; agentSessionId: string; terminalSessionId: string }
+  /** Tile a new pane beside the existing layout (right edge) instead of
+   *  swapping the focused pane — used by session creation so multiple
+   *  sessions stay visible side by side. */
+  | { type: "APPEND_PANE"; sessionId: string }
   | { type: "CLOSE_PANE"; paneId: string }
   | { type: "FOCUS_PANE"; paneId: string }
   | { type: "RESIZE_SPLIT"; splitId: string; ratio: number }

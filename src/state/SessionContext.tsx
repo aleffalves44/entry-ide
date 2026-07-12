@@ -749,25 +749,45 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           layout: { root: groupSplit, focusedPaneId: agentPane.id },
         };
       }
-      // Replace the focused pane with the group split; if no pane is
-      // focused (shouldn't happen with a non-null root), wrap the root.
-      const focusedId = state.layout.focusedPaneId;
-      const focusedPane = focusedId
-        ? collectPanes(state.layout.root).find((p) => p.id === focusedId)
-        : undefined;
-      const newRoot: LayoutNode = focusedPane
-        ? replaceNode(state.layout.root, focusedPane.id, groupSplit)
-        : {
-            type: "split",
-            id: nextSplitId(),
-            direction: "horizontal",
-            children: [state.layout.root, groupSplit],
-            ratio: 0.5,
-          };
+      // Tile: the new group joins BESIDE the existing layout (never
+      // replaces a pane), so several agent sessions stay visible side by
+      // side.  Existing panes keep a share proportional to their count.
+      const existingCount = collectPanes(state.layout.root).length;
+      const newRoot: LayoutNode = {
+        type: "split",
+        id: nextSplitId(),
+        direction: "horizontal",
+        children: [state.layout.root, groupSplit],
+        ratio: existingCount / (existingCount + 2),
+      };
       return {
         ...state,
         activeSessionId: action.agentSessionId,
         layout: { root: newRoot, focusedPaneId: agentPane.id },
+      };
+    }
+    case "APPEND_PANE": {
+      workspaceDirty = true;
+      const pane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.sessionId };
+      if (!state.layout.root) {
+        return {
+          ...state,
+          activeSessionId: action.sessionId,
+          layout: { root: pane, focusedPaneId: pane.id },
+        };
+      }
+      const paneCount = collectPanes(state.layout.root).length;
+      const appendedRoot: LayoutNode = {
+        type: "split",
+        id: nextSplitId(),
+        direction: "horizontal",
+        children: [state.layout.root, pane],
+        ratio: paneCount / (paneCount + 1),
+      };
+      return {
+        ...state,
+        activeSessionId: action.sessionId,
+        layout: { root: appendedRoot, focusedPaneId: pane.id },
       };
     }
     case "CLOSE_PANE": {

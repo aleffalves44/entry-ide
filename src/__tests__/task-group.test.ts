@@ -99,7 +99,7 @@ describe("OPEN_SESSION_GROUP", () => {
     expect(state.activeSessionId).toBe("agent-1");
   });
 
-  it("replaces the focused pane when a layout already exists", () => {
+  it("tiles beside the existing layout — never replaces open panes", () => {
     let state = initialState;
     state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id: "old-1" }) });
     state = sessionReducer(state, { type: "INIT_PANE", sessionId: "old-1" });
@@ -113,37 +113,48 @@ describe("OPEN_SESSION_GROUP", () => {
     });
 
     const panes = collectPanes(state.layout.root!);
-    // Focused pane (old-1's) was replaced by the group split
-    expect(panes.map((p) => p.sessionId)).toEqual(["agent-2", "term-2"]);
+    // old-1 stays visible; the group joins on the right
+    expect(panes.map((p) => p.sessionId)).toEqual(["old-1", "agent-2", "term-2"]);
     expect(state.activeSessionId).toBe("agent-2");
+    // Existing single pane keeps 1/3 of the width (1 existing vs 2 new)
+    const root = state.layout.root as SplitNode;
+    expect(root.ratio).toBeCloseTo(1 / 3);
   });
 
-  it("keeps unrelated panes intact when replacing the focused one", () => {
+  it("stacks multiple groups side by side", () => {
     let state = initialState;
-    state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id: "keep-1" }) });
-    state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id: "target-1" }) });
-    state = sessionReducer(state, { type: "INIT_PANE", sessionId: "keep-1" });
-    const keepPaneId = state.layout.focusedPaneId!;
-    state = sessionReducer(state, {
-      type: "SPLIT_PANE",
-      paneId: keepPaneId,
-      direction: "vertical",
-      newSessionId: "target-1",
-    });
-    // focus is now on target-1's pane — the group replaces it
-    state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id: "agent-3" }) });
-    state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id: "term-3" }) });
-    state = sessionReducer(state, {
-      type: "OPEN_SESSION_GROUP",
-      agentSessionId: "agent-3",
-      terminalSessionId: "term-3",
-    });
+    for (const id of ["a1", "t1", "a2", "t2"]) {
+      state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id }) });
+    }
+    state = sessionReducer(state, { type: "OPEN_SESSION_GROUP", agentSessionId: "a1", terminalSessionId: "t1" });
+    state = sessionReducer(state, { type: "OPEN_SESSION_GROUP", agentSessionId: "a2", terminalSessionId: "t2" });
 
     const sessions = collectPanes(state.layout.root!).map((p) => p.sessionId);
-    expect(sessions).toContain("keep-1");
-    expect(sessions).toContain("agent-3");
-    expect(sessions).toContain("term-3");
-    expect(sessions).not.toContain("target-1");
+    expect(sessions).toEqual(["a1", "t1", "a2", "t2"]);
+    expect(state.activeSessionId).toBe("a2");
+  });
+});
+
+describe("APPEND_PANE", () => {
+  it("tiles a new session beside the existing layout", () => {
+    let state = initialState;
+    state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id: "s1" }) });
+    state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id: "s2" }) });
+    state = sessionReducer(state, { type: "APPEND_PANE", sessionId: "s1" });
+    state = sessionReducer(state, { type: "APPEND_PANE", sessionId: "s2" });
+
+    const panes = collectPanes(state.layout.root!);
+    expect(panes.map((p) => p.sessionId)).toEqual(["s1", "s2"]);
+    expect(state.layout.focusedPaneId).toBe(panes[1].id);
+    expect(state.activeSessionId).toBe("s2");
+  });
+
+  it("becomes the root pane when no layout exists", () => {
+    let state = initialState;
+    state = sessionReducer(state, { type: "SESSION_UPDATED", session: makeSession({ id: "solo" }) });
+    state = sessionReducer(state, { type: "APPEND_PANE", sessionId: "solo" });
+    expect(state.layout.root?.type).toBe("pane");
+    expect(state.activeSessionId).toBe("solo");
   });
 });
 

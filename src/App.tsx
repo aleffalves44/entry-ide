@@ -1308,11 +1308,7 @@ function AppContent() {
                   terminalSessionId: result.terminal.id,
                 });
               } else if (result) {
-                if (!state.layout.root) {
-                  dispatch({ type: "INIT_PANE", sessionId: result.agent.id });
-                } else if (state.layout.focusedPaneId) {
-                  dispatch({ type: "SET_PANE_SESSION", paneId: state.layout.focusedPaneId, sessionId: result.agent.id });
-                }
+                dispatch({ type: "APPEND_PANE", sessionId: result.agent.id });
               }
               return;
             }
@@ -1322,14 +1318,12 @@ function AppContent() {
               const split = pendingSplit.current;
               pendingSplit.current = null;
               if (split && state.layout.root) {
-                // Split an existing pane
+                // Split an existing pane (explicit split request)
                 dispatch({ type: "SPLIT_PANE", paneId: split.paneId, direction: split.direction, newSessionId: session.id });
-              } else if (!state.layout.root) {
-                // First session — init pane
-                dispatch({ type: "INIT_PANE", sessionId: session.id });
-              } else if (state.layout.focusedPaneId) {
-                // Layout exists, no pending split — swap focused pane's session
-                dispatch({ type: "SET_PANE_SESSION", paneId: state.layout.focusedPaneId, sessionId: session.id });
+              } else {
+                // Tile the new session beside the existing layout so
+                // every open session stays visible side by side.
+                dispatch({ type: "APPEND_PANE", sessionId: session.id });
               }
             }
           }}
