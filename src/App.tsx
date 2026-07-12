@@ -568,13 +568,14 @@ function AppContent() {
       label: `${group} · terminal`,
       color: anchor.color,
       workingDirectory: anchor.working_directory,
+      skipActivate: true,
     });
     if (!terminal) return;
     const anchorPane = state.layout.root ? findPaneBySession(state.layout.root, anchor.id) : null;
     if (anchorPane) {
       dispatch({ type: "SPLIT_PANE", paneId: anchorPane.id, direction: "horizontal", newSessionId: terminal.id });
     } else {
-      dispatch({ type: "INIT_PANE", sessionId: terminal.id });
+      dispatch({ type: "APPEND_PANE", sessionId: terminal.id });
     }
   }, [sessions, createSession, state.layout.root, dispatch]);
 
@@ -785,15 +786,12 @@ function AppContent() {
 
   // ── Instant session creation (Cmd+N / Cmd+T) ──
   const createSessionDirect = useCallback(async () => {
-    const session = await createSession({});
+    const session = await createSession({ skipActivate: true });
     if (session) {
-      if (!state.layout.root) {
-        dispatch({ type: "INIT_PANE", sessionId: session.id });
-      } else if (state.layout.focusedPaneId) {
-        dispatch({ type: "SET_PANE_SESSION", paneId: state.layout.focusedPaneId, sessionId: session.id });
-      }
+      // Tile beside the existing layout — every new session stays visible
+      dispatch({ type: "APPEND_PANE", sessionId: session.id });
     }
-  }, [createSession, state.layout.root, state.layout.focusedPaneId, dispatch]);
+  }, [createSession, dispatch]);
 
   // ── Native menu bar event bridge ──
   useNativeMenuEvents({
@@ -1293,7 +1291,7 @@ function AppContent() {
             pendingSplit.current = null;
           }}
           onCreate={async (opts) => {
-            const session = await createSession(opts);
+            const session = await createSession({ ...opts, skipActivate: true });
             setSessionCreatorOpen(false);
             if (session) {
               const split = pendingSplit.current;

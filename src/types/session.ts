@@ -175,6 +175,11 @@ export interface CreateSessionOpts {
   sshIdentityFile?: string;
   /** Frontend-chosen session mode.  Defaults to `agent` for Claude, `terminal` otherwise. */
   mode?: SessionMode;
+  /** Skip the SET_ACTIVE dispatch inside createSession.  Callers that
+   *  place the session in the layout themselves (APPEND_PANE/SPLIT_PANE)
+   *  must pass true — SET_ACTIVE would otherwise auto-create or swap a
+   *  pane first, duplicating the session in the layout. */
+  skipActivate?: boolean;
 }
 
 // ─── Workspace Restore ──────────────────────────────────────────────

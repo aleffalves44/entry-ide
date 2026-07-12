@@ -1912,7 +1912,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         updateSessionGroup(session.id, opts.group).catch(console.error);
       }
       dispatch({ type: "SESSION_UPDATED", session });
-      dispatch({ type: "SET_ACTIVE", id: session.id });
+      if (!opts?.skipActivate) {
+        dispatch({ type: "SET_ACTIVE", id: session.id });
+      }
       trackSessionCreated({
         execution_mode: defaultModeRef.current,
         has_ai_provider: !!opts?.aiProvider,
