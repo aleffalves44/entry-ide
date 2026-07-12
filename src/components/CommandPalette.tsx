@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { SessionData } from "../state/SessionContext";
 import { useTextContextMenu } from "../hooks/useTextContextMenu";
 import { fmt } from "../utils/platform";
+import { openUsageWindow } from "../utils/usageWindow";
 
 interface CommandPaletteProps {
   onClose: () => void;
@@ -66,6 +67,7 @@ export function CommandPalette({
     })),
     { id: "workspace", label: "Folders", category: "App", action: () => { onOpenWorkspace(); onClose(); } },
     ...(onOpenCostDashboard ? [{ id: "cost-dashboard", label: "Cost Dashboard", category: "App", shortcut: fmt("{mod}$"), action: () => { onOpenCostDashboard(); onClose(); } }] : []),
+    { id: "usage-window", label: "Consumo Geral (janela separada)", category: "App", action: () => { void openUsageWindow(); onClose(); } },
     ...(onToggleFlowMode ? [{ id: "flow-mode", label: "Toggle Flow Mode", category: "View", shortcut: fmt("{mod}{shift}Z"), action: () => { onToggleFlowMode(); onClose(); } }] : []),
     ...(onAttachProject ? [{ id: "attach-project", label: "Add Folder...", category: "Folders", action: () => { onAttachProject(); onClose(); } }] : []),
     ...(onScanCwd ? [{ id: "scan-cwd", label: "Scan Current Directory", category: "Folders", action: () => { onScanCwd(); onClose(); } }] : []),

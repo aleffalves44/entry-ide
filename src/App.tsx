@@ -27,7 +27,8 @@ import { SessionList } from "./components/SessionList";
 import { ContextPanel } from "./components/ContextPanel";
 import { hideOpeningOverlay, showOpeningOverlay } from "./utils/sessionCreatorOverlay";
 import { UsagePanel } from "./components/UsagePanel";
-import { ActivityBar, SessionsIcon, ContextIcon, UsageIcon, WorkbenchIcon, PlusIcon, PluginsIcon, SettingsIcon } from "./components/ActivityBar";
+import { ActivityBar, SessionsIcon, ContextIcon, UsageIcon, WorkbenchIcon, PlusIcon, PluginsIcon, SettingsIcon, ConsumptionIcon } from "./components/ActivityBar";
+import { openUsageWindow } from "./utils/usageWindow";
 import { WorkbenchPanel } from "./components/WorkbenchPanel";
 import { workbenchPixelWidth } from "./utils/workbenchLayout";
 import type { SessionView } from "./components/SessionList";
@@ -914,6 +915,7 @@ function AppContent() {
             }}
             topAction={{ icon: PlusIcon, label: `New Session (${fmt("{mod}N")})`, onClick: () => setSessionCreatorOpen({}) }}
             bottomActions={[
+              { icon: ConsumptionIcon, label: "Consumo Geral (janela separada)", onClick: () => void openUsageWindow() },
               { icon: PluginsIcon, label: "Plugins", onClick: () => setSettingsOpen("plugins") },
               { icon: SettingsIcon, label: "Settings", onClick: () => setSettingsOpen("general") },
             ]}

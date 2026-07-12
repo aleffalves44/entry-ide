@@ -1,5 +1,5 @@
 import { type ReactNode, useRef, useState, useEffect } from "react";
-import { Blocks, Settings } from "lucide-react";
+import { BarChart3, Blocks, Settings } from "lucide-react";
 import "../styles/components/ActivityBar.css";
 
 export interface ActivityBarTab {
@@ -293,5 +293,7 @@ export const PlusIcon = (
 );
 
 export const PluginsIcon = <Blocks size={18} strokeWidth={1.5} />;
+
+export const ConsumptionIcon = <BarChart3 size={18} strokeWidth={1.5} />;
 
 export const SettingsIcon = <Settings size={18} strokeWidth={1.5} />;
