@@ -925,7 +925,21 @@ function AppContent() {
             }}
             topAction={{ icon: PlusIcon, label: `New Session (${fmt("{mod}N")})`, onClick: () => setSessionCreatorOpen({}) }}
             bottomActions={[
-              { icon: ConsumptionIcon, label: "Consumo Geral (janela separada)", onClick: () => void openUsageWindow() },
+              {
+                icon: ConsumptionIcon,
+                label: "Consumo Geral",
+                onClick: () => {
+                  // Docked by default (Workbench "Consumo" tab); falls
+                  // back to the separate window when there's no agent
+                  // session to host the right rail.
+                  if (activeSession?.mode === "agent") {
+                    dispatch({ type: "SET_WORKBENCH_OPEN", open: true });
+                    dispatch({ type: "SET_WORKBENCH_TAB", tab: "consumption" });
+                  } else {
+                    void openUsageWindow();
+                  }
+                },
+              },
               { icon: PluginsIcon, label: "Plugins", onClick: () => setSettingsOpen("plugins") },
               { icon: SettingsIcon, label: "Settings", onClick: () => setSettingsOpen("general") },
             ]}

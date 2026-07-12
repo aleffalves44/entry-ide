@@ -365,7 +365,7 @@ interface SessionState {
      *  `DEFAULT_PERSISTED_WORKBENCH` in `utils/workbenchLayout.ts`. */
     workbench: {
       open: boolean;
-      tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics";
+      tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics" | "consumption";
       ratio: number;
       filesNotesSplit: number;
     };
@@ -1104,11 +1104,12 @@ export const initialState: SessionState = {
     composerOpen: false,
     activeLeftTab: "terminal" as const,
     viewer: null,
-    // Right-rail Workbench (agent-mode only) — defaults to OPEN per
-    // user spec, 50/50 chat/workbench, Files tab active, files take 70%
-    // of the vertical space.  Persisted in saved_workspace.json.
+    // Right-rail Workbench (agent-mode only) — starts CLOSED (deselected)
+    // per user spec; opened on demand from the activity bar / ⌥⌘B / the
+    // Consumo icon.  50/50 chat/workbench, Files tab active, files take
+    // 70% of the vertical space.  Persisted in saved_workspace.json.
     workbench: {
-      open: true,
+      open: false,
       tab: "files" as const,
       ratio: 0.5,
       filesNotesSplit: 0.7,

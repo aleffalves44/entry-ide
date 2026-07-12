@@ -52,9 +52,9 @@ function stubSession(id: string): SessionData {
 }
 
 describe("Workbench reducer · initial state", () => {
-  it("opens by default with files tab, 50/50 ratio, 70% files split", () => {
+  it("starts CLOSED (deselected) with files tab, 50/50 ratio, 70% files split", () => {
     expect(initialState.ui.workbench).toEqual({
-      open: true,
+      open: false,
       tab: "files",
       ratio: DEFAULT_WORKBENCH_RATIO,
       filesNotesSplit: DEFAULT_FILES_NOTES_SPLIT,
@@ -68,9 +68,9 @@ describe("Workbench reducer · initial state", () => {
 describe("Workbench reducer · TOGGLE_WORKBENCH", () => {
   it("flips the open flag", () => {
     const next = sessionReducer(initialState, { type: "TOGGLE_WORKBENCH" });
-    expect(next.ui.workbench.open).toBe(false);
+    expect(next.ui.workbench.open).toBe(true);
     const back = sessionReducer(next, { type: "TOGGLE_WORKBENCH" });
-    expect(back.ui.workbench.open).toBe(true);
+    expect(back.ui.workbench.open).toBe(false);
   });
   it("does not touch tab / ratio / split when toggling", () => {
     const next = sessionReducer(initialState, { type: "TOGGLE_WORKBENCH" });
@@ -82,14 +82,13 @@ describe("Workbench reducer · TOGGLE_WORKBENCH", () => {
 
 describe("Workbench reducer · SET_WORKBENCH_OPEN", () => {
   it("sets to true when currently false", () => {
-    const closed = sessionReducer(initialState, { type: "TOGGLE_WORKBENCH" });
-    const reopened = sessionReducer(closed, { type: "SET_WORKBENCH_OPEN", open: true });
+    const reopened = sessionReducer(initialState, { type: "SET_WORKBENCH_OPEN", open: true });
     expect(reopened.ui.workbench.open).toBe(true);
   });
   it("returns the same reference when value matches (no-op)", () => {
     // Reference-equality check so consumers using useSyncExternalStore
     // don't re-render on a redundant set.
-    const next = sessionReducer(initialState, { type: "SET_WORKBENCH_OPEN", open: true });
+    const next = sessionReducer(initialState, { type: "SET_WORKBENCH_OPEN", open: false });
     expect(next).toBe(initialState);
   });
 });
