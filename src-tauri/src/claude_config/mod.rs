@@ -627,8 +627,74 @@ pub fn read_static_slash_commands(cwd: Option<String>) -> Vec<String> {
             }
         }
     }
+
+    // Installed plugin commands/skills — `~/.claude/plugins/cache/
+    // <marketplace>/<plugin>/<version>/{commands,skills}` — emitted in the
+    // same `plugin:command` form the SDK init uses.  Lets the UI (slash
+    // dropdown, Pipeline strip) know a plugin's commands exist BEFORE the
+    // init event lands; init stays authoritative once it arrives.
+    if let Ok(home) = std::env::var("HOME") {
+        let cache = PathBuf::from(home).join(".claude").join("plugins").join("cache");
+        for plugin_dir in walk_depth(&cache, 2) {
+            let plugin_name = match plugin_dir.file_name().and_then(|s| s.to_str()) {
+                Some(n) => n.to_string(),
+                None => continue,
+            };
+            for version_dir in walk_depth(&plugin_dir, 1) {
+                // commands/*.md → plugin:stem
+                if let Ok(entries) = fs::read_dir(version_dir.join("commands")) {
+                    for entry in entries.flatten() {
+                        let path = entry.path();
+                        if path.extension().and_then(|s| s.to_str()) != Some("md") {
+                            continue;
+                        }
+                        if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                            let cmd = format!("{}:{}", plugin_name, stem);
+                            if seen.insert(cmd.clone()) {
+                                commands.push(cmd);
+                            }
+                        }
+                    }
+                }
+                // skills/<name>/SKILL.md → plugin:name
+                if let Ok(entries) = fs::read_dir(version_dir.join("skills")) {
+                    for entry in entries.flatten() {
+                        let skill_dir = entry.path();
+                        if !skill_dir.join("SKILL.md").is_file() {
+                            continue;
+                        }
+                        if let Some(name) = skill_dir.file_name().and_then(|s| s.to_str()) {
+                            let cmd = format!("{}:{}", plugin_name, name);
+                            if seen.insert(cmd.clone()) {
+                                commands.push(cmd);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     commands.sort();
     commands
+}
+
+/// List directories exactly `depth` levels below `root` (depth 1 = direct
+/// children).  Missing/unreadable dirs yield an empty list.
+fn walk_depth(root: &Path, depth: u32) -> Vec<PathBuf> {
+    let entries = match fs::read_dir(root) {
+        Ok(e) => e,
+        Err(_) => return Vec::new(),
+    };
+    let dirs: Vec<PathBuf> = entries
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| p.is_dir())
+        .collect();
+    if depth <= 1 {
+        return dirs;
+    }
+    dirs.iter().flat_map(|d| walk_depth(d, depth - 1)).collect()
 }
 
 /// Read CLAUDE.md memory file paths that exist on disk.  Returns

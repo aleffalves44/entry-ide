@@ -8,6 +8,7 @@
  * `src/utils/pipelinePhases.ts`.
  */
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useAgentPrewarm } from "../agent/useAgentPrewarm";
 import { peekAgentSessionStore } from "../agent/agentSessionStore";
 import { commandFromUserText } from "../agent/frameworkMetrics";
 import { isTextBlock } from "../agent/types";
@@ -96,9 +97,18 @@ export function usePipelineState(session: SessionData): PipelineStateHook {
     [pipeline, runningPhase],
   );
 
+  // Plugin presence: the SDK only emits `init` after the FIRST user
+  // message, so a fresh session would hide the pipeline UI exactly when
+  // one-click phase dispatch is most useful.  Until init arrives, fall
+  // back to the static prewarm scan (which includes installed plugin
+  // commands).  Init stays authoritative once it lands — including for
+  // `pluginMissing`, which is only asserted from real init data.
+  const prewarm = useAgentPrewarm(workingDir);
   const init = snapshot?.state.initEvent ?? null;
   const pluginMissing = init !== null && !hasHarnessPlugin(init.slash_commands);
-  const pluginPresent = init !== null && hasHarnessPlugin(init.slash_commands);
+  const pluginPresent = init !== null
+    ? hasHarnessPlugin(init.slash_commands)
+    : hasHarnessPlugin(prewarm.slashCommands);
 
   return { phases, pipeline, loading, refresh, isStreaming, pluginMissing, pluginPresent };
 }
