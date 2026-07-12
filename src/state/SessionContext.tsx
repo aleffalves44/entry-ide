@@ -731,41 +731,6 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         layout: { root: newRoot, focusedPaneId: newPaneId },
       };
     }
-    case "OPEN_SESSION_GROUP": {
-      workspaceDirty = true;
-      const agentPane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.agentSessionId };
-      const termPane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.terminalSessionId };
-      const groupSplit: LayoutNode = {
-        type: "split",
-        id: nextSplitId(),
-        direction: "horizontal",
-        children: [agentPane, termPane],
-        ratio: 0.6,
-      };
-      if (!state.layout.root) {
-        return {
-          ...state,
-          activeSessionId: action.agentSessionId,
-          layout: { root: groupSplit, focusedPaneId: agentPane.id },
-        };
-      }
-      // Tile: the new group joins BESIDE the existing layout (never
-      // replaces a pane), so several agent sessions stay visible side by
-      // side.  Existing panes keep a share proportional to their count.
-      const existingCount = collectPanes(state.layout.root).length;
-      const newRoot: LayoutNode = {
-        type: "split",
-        id: nextSplitId(),
-        direction: "horizontal",
-        children: [state.layout.root, groupSplit],
-        ratio: existingCount / (existingCount + 2),
-      };
-      return {
-        ...state,
-        activeSessionId: action.agentSessionId,
-        layout: { root: newRoot, focusedPaneId: agentPane.id },
-      };
-    }
     case "APPEND_PANE": {
       workspaceDirty = true;
       const pane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.sessionId };

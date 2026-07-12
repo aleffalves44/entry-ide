@@ -50,7 +50,6 @@ import { AutoToast } from "./components/AutoToast";
 import { copyContextToClipboard } from "./utils/copyContextToClipboard";
 import { ProjectPicker } from "./components/ProjectPicker";
 import { SessionCreator } from "./components/SessionCreator";
-import { createTaskGroup } from "./state/taskGroup";
 import { PromptComposer } from "./components/PromptComposer";
 import { SessionComposer, getComposerTextarea } from "./components/SessionComposer";
 import { SplitLayout } from "./components/SplitLayout";
@@ -1294,24 +1293,6 @@ function AppContent() {
             pendingSplit.current = null;
           }}
           onCreate={async (opts) => {
-            // Task group: agent + companion terminal side by side in the
-            // same worktree.  When the terminal fails, the agent session
-            // survives and falls through to the single-session layout path.
-            if (opts?.companionTerminal && (opts.mode ?? "agent") === "agent") {
-              const result = await createTaskGroup(createSession, opts);
-              setSessionCreatorOpen(false);
-              pendingSplit.current = null;
-              if (result?.terminal) {
-                dispatch({
-                  type: "OPEN_SESSION_GROUP",
-                  agentSessionId: result.agent.id,
-                  terminalSessionId: result.terminal.id,
-                });
-              } else if (result) {
-                dispatch({ type: "APPEND_PANE", sessionId: result.agent.id });
-              }
-              return;
-            }
             const session = await createSession(opts);
             setSessionCreatorOpen(false);
             if (session) {

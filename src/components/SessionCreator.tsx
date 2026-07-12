@@ -135,11 +135,6 @@ export function SessionCreator({ onClose, onCreate, defaultGroup, initialMode, o
 
   // Project (group) assignment state
   const [selectedGroup, setSelectedGroup] = useState<string | null>(defaultGroup ?? null);
-
-  // Agent mode: open a companion terminal beside the agent, in the same
-  // working directory (worktree).  Defaults on — the multipane task-group
-  // flow is the primary way of working.
-  const [companionTerminal, setCompanionTerminal] = useState(true);
   const [newProjectName, setNewProjectName] = useState("");
   const [showNewProjectInput, setShowNewProjectInput] = useState(false);
 
@@ -586,7 +581,6 @@ export function SessionCreator({ onClose, onCreate, defaultGroup, initialMode, o
         workingDirectory: isLocal ? firstProjectPath : undefined,
         branchSelections: isLocal && Object.keys(branchSelections).length > 0 ? branchSelections : undefined,
         mode: resolvedSessionMode,
-        companionTerminal: isAgent ? companionTerminal : undefined,
         sshHost: mode === "ssh" ? sshHost : undefined,
         sshPort: mode === "ssh" ? (parseInt(sshPort) || 22) : undefined,
         sshUser: mode === "ssh" ? (sshUser || undefined) : undefined,
@@ -1587,22 +1581,6 @@ export function SessionCreator({ onClose, onCreate, defaultGroup, initialMode, o
                 ))}
               </div>
             </div>
-
-            {/* Companion terminal — agent + terminal side by side (task group) */}
-            {mode === "agent" && (
-              <div className="session-creator-channels">
-                <label className="session-creator-channel-item">
-                  <input
-                    type="checkbox"
-                    checked={companionTerminal}
-                    onChange={(e) => setCompanionTerminal(e.target.checked)}
-                  />
-                  <span className="session-creator-channel-name">
-                    Open a terminal beside the agent (same folder)
-                  </span>
-                </label>
-              </div>
-            )}
 
             {/* Channels (agent mode shows them here too — playbook §6 spec) */}
             {mode === "agent" && (
