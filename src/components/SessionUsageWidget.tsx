@@ -42,6 +42,28 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
 
       {expanded && (
         <div className="session-usage-detail" data-testid="session-usage-detail">
+          {usage.byCommand.length > 0 && (
+            <table className="session-usage-table">
+              <thead>
+                <tr>
+                  <th>Comando</th>
+                  <th>Turnos</th>
+                  <th>Tokens (out)</th>
+                  <th>Custo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usage.byCommand.map((c) => (
+                  <tr key={c.command}>
+                    <td>{c.command}</td>
+                    <td>{c.turns}</td>
+                    <td>{formatTokens(c.outputTokens)}</td>
+                    <td>{formatCost(c.costUsd)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
           {usage.byAgent.length > 0 && (
             <table className="session-usage-table">
               <thead>
@@ -49,6 +71,7 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
                   <th>Agente</th>
                   <th>Execuções</th>
                   <th>Tokens (out)</th>
+                  <th>Custo</th>
                 </tr>
               </thead>
               <tbody>
@@ -57,6 +80,7 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
                     <td>{a.agent}</td>
                     <td>{a.runs}</td>
                     <td>{formatTokens(a.outputTokens)}</td>
+                    <td>{formatCost(a.costUsd)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -1,27 +1,62 @@
 /**
  * useSessionUsage — this session's framework_usage rows, refreshed when a
  * turn completes (same `resultEventAt` edge as usePipelineState).  Feeds
- * the inline SessionUsageWidget with per-agent / per-model breakdowns.
+ * the inline SessionUsageWidget with per-command / per-agent / per-model
+ * breakdowns.
  */
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { peekAgentSessionStore } from "../agent/agentSessionStore";
 import { getFrameworkUsage, type FrameworkUsageEntry } from "../api/frameworkMetrics";
 import {
-  aggregateByAgent,
+  aggregateByCommand,
   aggregateByModel,
-  type AgentAggregate,
+  type CommandAggregate,
   type ModelAggregate,
 } from "../utils/frameworkAggregates";
 
 const EMPTY_SNAPSHOT = null;
+
+/** Per-agent line including the main agent (derived from turn rows —
+ *  note a turn's totals INCLUDE its subagents, so main ⊇ subagents;
+ *  the lines show relative weight, not disjoint partitions). */
+export interface SessionAgentLine {
+  agent: string;
+  runs: number;
+  outputTokens: number;
+  costUsd: number;
+}
 
 export interface SessionUsage {
   rows: FrameworkUsageEntry[];
   /** Totals from turn rows (a turn already includes its subagents). */
   totalCostUsd: number;
   totalTokens: number;
-  byAgent: AgentAggregate[];
+  byCommand: CommandAggregate[];
+  byAgent: SessionAgentLine[];
   byModel: ModelAggregate[];
+}
+
+export function deriveAgentLines(rows: FrameworkUsageEntry[]): SessionAgentLine[] {
+  const main: SessionAgentLine = { agent: "main", runs: 0, outputTokens: 0, costUsd: 0 };
+  const subs = new Map<string, SessionAgentLine>();
+  for (const r of rows) {
+    if (r.kind === "turn") {
+      main.runs += 1;
+      main.outputTokens += r.output_tokens;
+      main.costUsd += r.cost_usd;
+    } else if (r.kind === "agent") {
+      let line = subs.get(r.agent);
+      if (!line) {
+        line = { agent: r.agent, runs: 0, outputTokens: 0, costUsd: 0 };
+        subs.set(r.agent, line);
+      }
+      line.runs += 1;
+      line.outputTokens += r.output_tokens;
+      line.costUsd += r.cost_usd;
+    }
+  }
+  const sorted = [...subs.values()].sort((a, b) => b.outputTokens - a.outputTokens);
+  return main.runs > 0 ? [main, ...sorted] : sorted;
 }
 
 export function useSessionUsage(sessionId: string): SessionUsage {
@@ -60,7 +95,8 @@ export function useSessionUsage(sessionId: string): SessionUsage {
       rows,
       totalCostUsd,
       totalTokens,
-      byAgent: aggregateByAgent(rows),
+      byCommand: aggregateByCommand(rows),
+      byAgent: deriveAgentLines(rows),
       byModel: aggregateByModel(rows),
     };
   }, [rows]);

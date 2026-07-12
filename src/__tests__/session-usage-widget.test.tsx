@@ -12,8 +12,12 @@ import type { FrameworkUsageEntry } from "../api/frameworkMetrics";
 let mockRows: FrameworkUsageEntry[] = [];
 
 vi.mock("../hooks/useSessionUsage", async () => {
-  const { aggregateByAgent, aggregateByModel } = await import("../utils/frameworkAggregates");
+  const { aggregateByCommand, aggregateByModel } = await import("../utils/frameworkAggregates");
+  const actual = await vi.importActual<typeof import("../hooks/useSessionUsage")>(
+    "../hooks/useSessionUsage",
+  );
   return {
+    ...actual,
     useSessionUsage: () => {
       let totalCostUsd = 0;
       let totalTokens = 0;
@@ -26,7 +30,8 @@ vi.mock("../hooks/useSessionUsage", async () => {
         rows: mockRows,
         totalCostUsd,
         totalTokens,
-        byAgent: aggregateByAgent(mockRows),
+        byCommand: aggregateByCommand(mockRows),
+        byAgent: actual.deriveAgentLines(mockRows),
         byModel: aggregateByModel(mockRows),
       };
     },
@@ -80,17 +85,30 @@ describe("SessionUsageWidget", () => {
     expect(bar.textContent).toContain("2.0k tokens");
   });
 
-  it("expands into per-agent and per-model tables", () => {
+  it("expands into per-command, per-agent and per-model tables", () => {
     mockRows = [
-      row({ turn_uuid: "t1", model: "claude-opus-4-8", cost_usd: 1.2 }),
+      row({ turn_uuid: "t1", model: "claude-opus-4-8", cost_usd: 1.2, command: "harness-cmd:task" }),
       row({ kind: "agent", agent: "Build", output_tokens: 800 }),
       row({ kind: "agent", agent: "Reviewer", output_tokens: 300 }),
     ];
     render(<SessionUsageWidget sessionId="s1" />);
     fireEvent.click(screen.getByRole("button", { name: /CONSUMO/ }));
     const detail = screen.getByTestId("session-usage-detail");
+    // command executed
+    expect(detail.textContent).toContain("harness-cmd:task");
+    // main agent always listed, plus subagents
+    expect(detail.textContent).toContain("main");
     expect(detail.textContent).toContain("Build");
     expect(detail.textContent).toContain("Reviewer");
     expect(detail.textContent).toContain("claude-opus-4-8");
+  });
+
+  it("a plain turn with no subagents still shows main + (prose) command", () => {
+    mockRows = [row({ command: null })];
+    render(<SessionUsageWidget sessionId="s1" />);
+    fireEvent.click(screen.getByRole("button", { name: /CONSUMO/ }));
+    const detail = screen.getByTestId("session-usage-detail");
+    expect(detail.textContent).toContain("(prose)");
+    expect(detail.textContent).toContain("main");
   });
 });
