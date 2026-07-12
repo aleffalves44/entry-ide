@@ -35,6 +35,7 @@
     "process:allow-restart",
     "process:allow-exit",
     "core:webview:allow-create-webview-window",
-    "core:window:allow-create"
+    "core:window:allow-create",
+    "dialog:allow-message"
   ]
 }
