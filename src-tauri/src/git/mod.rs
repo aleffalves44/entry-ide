@@ -146,6 +146,7 @@ pub struct GitDiff {
     pub path: String,
     pub diff_text: String,
     pub is_binary: bool,
+    pub truncated: bool,
     pub additions: u32,
     pub deletions: u32,
 }
@@ -995,6 +996,66 @@ pub fn git_diff(
     let mut diff_opts = DiffOptions::new();
     diff_opts.pathspec(&file_path);
 
+    // ─── Untracked file: read content directly and format as pure addition ───
+    let index = repo.index().map_err(|e| e.to_string())?;
+    let full_path = std::path::Path::new(&project_path).join(&file_path);
+    let is_untracked = index
+        .get_path(std::path::Path::new(&file_path), 0)
+        .is_none()
+        && full_path.exists()
+        && !staged;
+
+    if is_untracked {
+        let raw = std::fs::read(&full_path)
+            .map_err(|e| format!("Failed to read untracked file: {}", e))?;
+
+        // Binary detection: presence of null bytes
+        let is_binary = raw.contains(&0u8);
+        if is_binary {
+            return Ok(GitDiff {
+                path: file_path,
+                diff_text: String::new(),
+                is_binary: true,
+                truncated: false,
+                additions: 0,
+                deletions: 0,
+            });
+        }
+
+        let content = String::from_utf8_lossy(&raw);
+        let truncated = raw.len() >= MAX_DIFF_BYTES;
+        let display_content = if truncated {
+            // Back off to the nearest UTF-8 char boundary so the slice
+            // can't panic mid-codepoint.
+            let mut cut = MAX_DIFF_BYTES.min(content.len());
+            while cut > 0 && !content.is_char_boundary(cut) {
+                cut -= 1;
+            }
+            &content[..cut]
+        } else {
+            &content
+        };
+
+        let mut diff_text = String::new();
+        let mut additions: u32 = 0;
+        for line in display_content.lines() {
+            diff_text.push('+');
+            diff_text.push_str(line);
+            diff_text.push('\n');
+            additions += 1;
+        }
+
+        return Ok(GitDiff {
+            path: file_path,
+            diff_text,
+            is_binary: false,
+            truncated,
+            additions,
+            deletions: 0,
+        });
+    }
+
+    // ─── Tracked file: use git2 diff ─────────────────────────────────────────
     let diff = if staged {
         let head_tree = repo.head().and_then(|h| h.peel_to_tree()).ok();
         repo.diff_tree_to_index(
@@ -1037,14 +1098,16 @@ pub fn git_diff(
     .map_err(|e| e.to_string())?;
 
     if truncated {
-        diff_text = "[Diff too large to display — use terminal]".to_string();
-        is_binary = true;
+        // RF-09: do NOT set is_binary = true for a truncated text file.
+        // The frontend uses `truncated` to display the appropriate message.
+        diff_text = String::new();
     }
 
     Ok(GitDiff {
         path: file_path,
         diff_text,
         is_binary,
+        truncated,
         additions: stats.insertions() as u32,
         deletions: stats.deletions() as u32,
     })

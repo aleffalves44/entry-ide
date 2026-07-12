@@ -20,6 +20,32 @@
   height: 100% !important;
 }
 
+/* ─── Git Gutter Markers ───────────────────────────────────── */
+/* Width-fixed so they don't shift line content (UI-03).       */
+
+.cm-git-gutter-add,
+.cm-git-gutter-mod,
+.cm-git-gutter-del {
+  width: 3px;
+  display: block;
+  border-radius: 1px;
+}
+
+.cm-git-gutter-add {
+  background: var(--green);
+}
+
+.cm-git-gutter-mod {
+  background: var(--yellow);
+}
+
+.cm-git-gutter-del {
+  background: var(--red);
+  /* Deletion marker: narrow bar at the boundary line */
+  height: 2px;
+  margin-top: -1px;
+}
+
 /* ─── Minimap ──────────────────────────────────────────────── */
 
 .cm-minimap {

@@ -1,0 +1,188 @@
+/* ─── Git Diff View — rich viewer styles ────────────────────────────── */
+/* Supplementary styles for the enriched GitDiffView component.          */
+/* Legacy base styles (.git-diff-overlay, .git-diff-modal, etc.) remain  */
+/* in GitPanel.css.                                                       */
+
+/* ─── Truncated diff banner ─────────────────────────────────────────── */
+
+.git-diff-truncated-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: color-mix(in srgb, var(--yellow) 12%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--yellow) 30%, transparent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--yellow);
+  flex-shrink: 0;
+}
+
+.git-diff-truncated-banner-icon {
+  font-size: var(--text-sm);
+  flex-shrink: 0;
+}
+
+/* ─── Staged / Unstaged toggle ──────────────────────────────────────── */
+
+.git-diff-staged-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.git-diff-staged-toggle-btn {
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 1px);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 2px 6px;
+  line-height: 1.4;
+  transition: background 0.1s, color 0.1s;
+}
+
+.git-diff-staged-toggle-btn:hover {
+  color: var(--text-0);
+}
+
+.git-diff-staged-toggle-btn.active {
+  background: var(--bg-active);
+  color: var(--text-0);
+}
+
+/* ─── View mode toggle (unified / side-by-side) ─────────────────────── */
+
+.git-diff-view-toggle {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 2px;
+  flex-shrink: 0;
+}
+
+.git-diff-view-toggle-btn {
+  background: none;
+  border: none;
+  border-radius: calc(var(--radius-sm) - 1px);
+  color: var(--text-2);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  padding: 2px 6px;
+  line-height: 1.4;
+  transition: background 0.1s, color 0.1s;
+}
+
+.git-diff-view-toggle-btn:hover {
+  color: var(--text-0);
+}
+
+.git-diff-view-toggle-btn.active {
+  background: var(--bg-active);
+  color: var(--text-0);
+}
+
+/* ─── Side-by-side layout ───────────────────────────────────────────── */
+
+.git-diff-side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.git-diff-side-col {
+  overflow-x: auto;
+  min-width: 0;
+}
+
+.git-diff-side-col + .git-diff-side-col {
+  border-left: 1px solid var(--border);
+}
+
+/* ─── Word-level diff highlights ────────────────────────────────────── */
+
+mark.git-diff-word-del {
+  background: color-mix(in srgb, var(--red) 40%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+mark.git-diff-word-add {
+  background: color-mix(in srgb, var(--green) 40%, transparent);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* ─── Side-by-side filler cell (unpaired del/add) ───────────────────── */
+
+.git-diff-line-empty {
+  background: color-mix(in srgb, var(--bg-2) 50%, transparent);
+}
+
+/* ─── Syntax highlight tokens (lezer classHighlighter) ─────────────── */
+/* Mirrors the editor palette in editorTheme.ts.                        */
+
+.git-diff-text .tok-keyword,
+.git-diff-text .tok-modifier,
+.git-diff-text .tok-operatorKeyword { color: var(--magenta); }
+
+.git-diff-text .tok-string,
+.git-diff-text .tok-regexp { color: var(--green); }
+
+.git-diff-text .tok-comment { color: var(--text-3); font-style: italic; }
+
+.git-diff-text .tok-number,
+.git-diff-text .tok-attributeName,
+.git-diff-text .tok-bool { color: var(--yellow); }
+
+.git-diff-text .tok-atom,
+.git-diff-text .tok-typeName,
+.git-diff-text .tok-className,
+.git-diff-text .tok-namespace { color: var(--cyan); }
+
+.git-diff-text .tok-function { color: var(--blue); }
+
+.git-diff-text .tok-operator,
+.git-diff-text .tok-punctuation { color: var(--text-2); }
+
+.git-diff-text .tok-propertyName,
+.git-diff-text .tok-tagName,
+.git-diff-text .tok-angleBracket { color: var(--red); }
+
+.git-diff-text .tok-variableName,
+.git-diff-text .tok-name { color: var(--text-1); }
+
+.git-diff-text .tok-heading,
+.git-diff-text .tok-strong { color: var(--text-0); font-weight: bold; }
+
+.git-diff-text .tok-link,
+.git-diff-text .tok-url { color: var(--accent); text-decoration: underline; }
+
+.git-diff-text .tok-meta { color: var(--text-3); }
+
+/* ─── Hunk header within unified view ──────────────────────────────── */
+
+.git-diff-line-hunk {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.git-diff-line-header {
+  color: var(--text-3);
+}

@@ -34,6 +34,7 @@ export interface GitDiff {
   path: string;
   diff_text: string;
   is_binary: boolean;
+  truncated: boolean;
   additions: number;
   deletions: number;
 }

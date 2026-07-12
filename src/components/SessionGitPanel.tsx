@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from "react";
 import { useGitStatus } from "../hooks/useGitStatus";
+import { useSession } from "../state/SessionContext";
 import { getSessionWorktreeInfo } from "../api/git";
 import { getSettings } from "../api/settings";
 import { GitProjectSection } from "./GitProjectSection";
-import { GitDiffView } from "./GitDiffView";
 import { WorktreeIndicator } from "./WorktreeIndicator";
 import type { GitFile, SessionWorktree } from "../types/git";
 import type { GitToast } from "./GitPanel";
@@ -25,7 +25,7 @@ interface SessionGitPanelProps {
 export function SessionGitPanel({ sessionId, projectId }: SessionGitPanelProps) {
   const [pollInterval, setPollInterval] = useState(3000);
   const { status, error, refresh } = useGitStatus(sessionId, true, pollInterval);
-  const [diffTarget, setDiffTarget] = useState<{ sessionId: string; projectId: string; file: GitFile } | null>(null);
+  const { dispatch } = useSession();
   const [toast, setToast] = useState<GitToast | null>(null);
   const [worktreeInfo, setWorktreeInfo] = useState<SessionWorktree | null>(null);
 
@@ -47,11 +47,6 @@ export function SessionGitPanel({ sessionId, projectId }: SessionGitPanelProps) 
       .catch(() => {});
   }, [sessionId, projectId]);
 
-  // Clear diff when session changes
-  useEffect(() => {
-    setDiffTarget(null);
-  }, [sessionId]);
-
   // Auto-dismiss toast
   useEffect(() => {
     if (!toast) return;
@@ -64,8 +59,8 @@ export function SessionGitPanel({ sessionId, projectId }: SessionGitPanelProps) 
   }, []);
 
   const handleDiffFile = useCallback((sid: string, rid: string, file: GitFile) => {
-    setDiffTarget({ sessionId: sid, projectId: rid, file });
-  }, []);
+    dispatch({ type: "SET_DIFF_VIEWER", sessionId: sid, projectId: rid, file });
+  }, [dispatch]);
 
   return (
     <div className="session-git-panel">
@@ -125,14 +120,6 @@ export function SessionGitPanel({ sessionId, projectId }: SessionGitPanelProps) 
         </div>
       )}
 
-      {diffTarget && (
-        <GitDiffView
-          sessionId={diffTarget.sessionId}
-          projectId={diffTarget.projectId}
-          file={diffTarget.file}
-          onClose={() => setDiffTarget(null)}
-        />
-      )}
     </div>
   );
 }

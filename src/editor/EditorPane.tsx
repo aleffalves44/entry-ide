@@ -16,6 +16,7 @@ import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
 import { search, searchKeymap, openSearchPanel, gotoLine, selectNextOccurrence } from "@codemirror/search";
 import { getLanguageSupport } from "./languageRegistry";
 import { createSyntaxHighlighting } from "./editorTheme";
+import { gitGutterExtension, type GitGutterMarkers } from "./gitGutter";
 import { Minimap } from "./Minimap";
 
 export interface CursorInfo {
@@ -40,6 +41,8 @@ interface EditorPaneProps {
   wordWrap?: boolean;
   indentConfig?: IndentConfig;
   minimap?: boolean;
+  /** Git line markers for the gutter — `null`/`undefined` hides it. */
+  gitMarkers?: GitGutterMarkers | null;
 }
 
 const baseTheme = EditorView.theme({
@@ -200,7 +203,7 @@ function buildIndentExtensions(config: IndentConfig) {
   ];
 }
 
-export function EditorPane({ content, language, onContentChange, onSave, onCursorChange, wordWrap, indentConfig, minimap }: EditorPaneProps) {
+export function EditorPane({ content, language, onContentChange, onSave, onCursorChange, wordWrap, indentConfig, minimap, gitMarkers }: EditorPaneProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [editorView, setEditorView] = useState<EditorView | null>(null);
@@ -212,6 +215,8 @@ export function EditorPane({ content, language, onContentChange, onSave, onCurso
   const themeCompartment = useRef(new Compartment());
   const wrapCompartment = useRef(new Compartment());
   const indentCompartment = useRef(new Compartment());
+  const gitGutterCompartment = useRef(new Compartment());
+  const gitMarkersRef = useRef(gitMarkers ?? null);
 
   // Keep callback refs up to date
   onContentChangeRef.current = onContentChange;
@@ -230,6 +235,7 @@ export function EditorPane({ content, language, onContentChange, onSave, onCurso
       doc: content,
       extensions: [
         lineNumbers(),
+        gitGutterCompartment.current.of(gitGutterExtension(gitMarkersRef.current)),
         highlightActiveLineGutter(),
         highlightSpecialChars(),
         history(),
@@ -379,6 +385,16 @@ export function EditorPane({ content, language, onContentChange, onSave, onCurso
       effects: languageCompartment.current.reconfigure(langSupport ? [langSupport] : []),
     });
   }, [language]);
+
+  // Reconfigure git gutter when markers change
+  useEffect(() => {
+    gitMarkersRef.current = gitMarkers ?? null;
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: gitGutterCompartment.current.reconfigure(gitGutterExtension(gitMarkers ?? null)),
+    });
+  }, [gitMarkers]);
 
   // Toggle word wrap
   useEffect(() => {

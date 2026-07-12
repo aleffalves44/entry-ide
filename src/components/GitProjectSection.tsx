@@ -221,9 +221,7 @@ export function GitProjectSection({ sessionId, projectId, project, onRefresh, on
   }, [sessionId, projectId]);
 
   const handleFileClick = useCallback((file: GitFile) => {
-    if (file.status !== "untracked") {
-      onDiffFile(sessionId, projectId, file);
-    }
+    onDiffFile(sessionId, projectId, file);
   }, [sessionId, projectId, onDiffFile]);
 
   // ─── Merge handlers ──────────────────────────────────────────────

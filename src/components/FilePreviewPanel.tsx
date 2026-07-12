@@ -5,6 +5,7 @@ import { writeToSession } from "../api/sessions";
 import { getSetting } from "../api/settings";
 import { useSession } from "../state/SessionContext";
 import { useFileEditor } from "../hooks/useFileEditor";
+import { useGitLineMarkers } from "../hooks/useGitLineMarkers";
 import { EditorPane } from "../editor/EditorPane";
 import type { CursorInfo, IndentConfig } from "../editor/EditorPane";
 import type { FileContent } from "../types/git";
@@ -189,6 +190,9 @@ export function FilePreviewPanel({ sessionId, projectId, filePath, onBack, fileH
     initialMtime: (file as FileContent)?.mtime ?? 0,
     isSSH,
   });
+
+  // Git gutter markers for the editor — refreshed after each save.
+  const gitMarkers = useGitLineMarkers(sessionId, projectId, filePath, editor.lastSavedAt);
 
   // Keep a ref so the disk-change handler always sees the latest dirty state
   const editorDirtyRef = useRef(editor.isDirty);
@@ -395,6 +399,7 @@ export function FilePreviewPanel({ sessionId, projectId, filePath, onBack, fileH
               wordWrap={wordWrap}
               indentConfig={indentConfig}
               minimap={showMinimap}
+              gitMarkers={gitMarkers}
             />
           </div>
           <div className="editor-statusbar">

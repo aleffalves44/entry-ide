@@ -363,6 +363,8 @@ export type SessionAction =
   // Per-session notes (1.1.14) — replaces or complements the
   // session-row description as a longer-form scratchpad.
   | { type: "SET_SESSION_NOTE"; sessionId: string; content: string }
+  // Diff view mode (unified / side-by-side) — persists across file switches
+  | { type: "SET_DIFF_VIEW_MODE"; mode: "unified" | "side-by-side" }
   // Workspace restore
   | { type: "RESTORE_LAYOUT"; root: unknown; focusedPaneId: string | null; activeSessionId: string | null }
   // Workbench restore — applied alongside RESTORE_LAYOUT after a saved

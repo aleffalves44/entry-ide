@@ -360,6 +360,9 @@ interface SessionState {
       | { kind: "file"; projectId: string; filePath: string }
       | { kind: "diff"; sessionId: string; projectId: string; file: import("../types/git").GitFile }
       | null;
+    /** Preferred diff rendering mode — persists across file switches within
+     *  a session.  Dispatched via `SET_DIFF_VIEW_MODE`. */
+    diffViewMode: "unified" | "side-by-side";
     /** Right-rail Workbench layout — open/tab/ratio/files-notes split.
      *  Agent-mode sessions only; ignored otherwise.  Defaults come from
      *  `DEFAULT_PERSISTED_WORKBENCH` in `utils/workbenchLayout.ts`. */
@@ -939,6 +942,8 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
       return { ...state, ui: { ...state.ui, viewer: { kind: "diff", sessionId: action.sessionId, projectId: action.projectId, file: action.file } } };
     case "CLOSE_FILE_PREVIEW":
       return state.ui.viewer ? { ...state, ui: { ...state.ui, viewer: null } } : state;
+    case "SET_DIFF_VIEW_MODE":
+      return { ...state, ui: { ...state.ui, diffViewMode: action.mode } };
 
     // ─── Workspace restore actions ───────────────────────────────────
     case "RESTORE_LAYOUT":
@@ -1080,6 +1085,7 @@ export const initialState: SessionState = {
     composerOpen: false,
     activeLeftTab: "terminal" as const,
     viewer: null,
+    diffViewMode: "unified" as const,
     // Right-rail Workbench (agent-mode only) — defaults to OPEN per
     // user spec, 50/50 chat/workbench, Files tab active, files take 70%
     // of the vertical space.  Persisted in saved_workspace.json.
