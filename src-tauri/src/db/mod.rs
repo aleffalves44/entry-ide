@@ -120,6 +120,23 @@ pub struct TokenUsageEntry {
     pub recorded_at: String,
 }
 
+/// Delivery milestone observed for a session (M5 — lead-time metrics).
+/// Rows are idempotent via the (session_id, event, pr_number) unique
+/// index — recording the same milestone twice is a no-op.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeliveryEventRow {
+    pub session_id: String,
+    pub repo_path: Option<String>,
+    pub branch: Option<String>,
+    /// task_started | first_commit | pr_opened | pr_merged
+    pub event: String,
+    pub pr_number: Option<i64>,
+    pub pr_url: Option<String>,
+    /// When the milestone happened.  None = now (observation time); PR
+    /// events pass gh's exact createdAt/mergedAt timestamps instead.
+    pub recorded_at: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FrameworkUsageRow {
     #[serde(default)]
@@ -295,6 +312,20 @@ impl Database {
             CREATE INDEX IF NOT EXISTS idx_framework_usage_session ON framework_usage(session_id);
             CREATE INDEX IF NOT EXISTS idx_framework_usage_command ON framework_usage(command);
             CREATE INDEX IF NOT EXISTS idx_framework_usage_date ON framework_usage(recorded_at);
+
+            CREATE TABLE IF NOT EXISTS delivery_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                session_id TEXT NOT NULL,
+                repo_path TEXT,
+                branch TEXT,
+                event TEXT NOT NULL,
+                pr_number INTEGER,
+                pr_url TEXT,
+                recorded_at TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_events_dedup
+                ON delivery_events(session_id, event, IFNULL(pr_number, 0));
+            CREATE INDEX IF NOT EXISTS idx_delivery_events_date ON delivery_events(recorded_at);
 
             CREATE TABLE IF NOT EXISTS cost_daily (
                 date TEXT NOT NULL,
@@ -952,6 +983,71 @@ impl Database {
                     duration_ms: row.get(12)?,
                     cost_usd: row.get(13)?,
                     recorded_at: row.get(14)?,
+                })
+            })
+            .map_err(|e| e.to_string())?;
+
+        let mut entries = Vec::new();
+        for row in rows {
+            entries.push(row.map_err(|e| e.to_string())?);
+        }
+        Ok(entries)
+    }
+
+    /// Insert a delivery milestone.  `INSERT OR IGNORE` + the unique index
+    /// on (session_id, event, pr_number) makes repeated observations of the
+    /// same milestone (pipeline refreshes, restarts) no-ops.  Returns true
+    /// when a new row was actually inserted.
+    pub fn record_delivery_event(&self, ev: &DeliveryEventRow) -> Result<bool, String> {
+        let n = self
+            .conn
+            .execute(
+                "INSERT OR IGNORE INTO delivery_events
+                     (session_id, repo_path, branch, event, pr_number, pr_url, recorded_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, COALESCE(?7, datetime('now')))",
+                params![
+                    ev.session_id,
+                    ev.repo_path,
+                    ev.branch,
+                    ev.event,
+                    ev.pr_number,
+                    ev.pr_url,
+                    ev.recorded_at,
+                ],
+            )
+            .map_err(|e| e.to_string())?;
+        Ok(n > 0)
+    }
+
+    /// Delivery events, newest first.  Lead-time math happens on the
+    /// frontend from raw rows.
+    pub fn get_delivery_events(
+        &self,
+        since: Option<&str>,
+    ) -> Result<Vec<DeliveryEventRow>, String> {
+        let mut sql = String::from(
+            "SELECT session_id, repo_path, branch, event, pr_number, pr_url, recorded_at
+             FROM delivery_events WHERE 1=1",
+        );
+        let mut args: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+        if let Some(s) = since {
+            sql.push_str(" AND recorded_at >= ?1");
+            args.push(Box::new(s.to_string()));
+        }
+        sql.push_str(" ORDER BY recorded_at DESC");
+
+        let mut stmt = self.conn.prepare(&sql).map_err(|e| e.to_string())?;
+        let params_ref: Vec<&dyn rusqlite::ToSql> = args.iter().map(|b| b.as_ref()).collect();
+        let rows = stmt
+            .query_map(params_ref.as_slice(), |row| {
+                Ok(DeliveryEventRow {
+                    session_id: row.get(0)?,
+                    repo_path: row.get(1)?,
+                    branch: row.get(2)?,
+                    event: row.get(3)?,
+                    pr_number: row.get(4)?,
+                    pr_url: row.get(5)?,
+                    recorded_at: row.get(6)?,
                 })
             })
             .map_err(|e| e.to_string())?;
@@ -2487,6 +2583,24 @@ pub fn export_framework_usage(
     }
     std::fs::write(&path, out).map_err(|e| e.to_string())?;
     Ok(rows.len())
+}
+
+#[tauri::command]
+pub fn record_delivery_event(
+    state: State<'_, AppState>,
+    event: DeliveryEventRow,
+) -> Result<bool, String> {
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+    db.record_delivery_event(&event)
+}
+
+#[tauri::command]
+pub fn get_delivery_events(
+    state: State<'_, AppState>,
+    since: Option<String>,
+) -> Result<Vec<DeliveryEventRow>, String> {
+    let db = state.db.lock().map_err(|e| e.to_string())?;
+    db.get_delivery_events(since.as_deref())
 }
 
 #[tauri::command]

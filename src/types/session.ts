@@ -175,6 +175,11 @@ export interface CreateSessionOpts {
   sshIdentityFile?: string;
   /** Frontend-chosen session mode.  Defaults to `agent` for Claude, `terminal` otherwise. */
   mode?: SessionMode;
+  /** Skip createSession's default layout placement (APPEND_PANE tiling).
+   *  Callers that place the session themselves — e.g. an explicit
+   *  SPLIT_PANE on a chosen pane — must pass true, otherwise the session
+   *  would appear twice in the layout. */
+  skipAutoPane?: boolean;
 }
 
 // ─── Workspace Restore ──────────────────────────────────────────────
@@ -323,6 +328,10 @@ export type SessionAction =
   // Layout actions
   | { type: "INIT_PANE"; sessionId: string }
   | { type: "SPLIT_PANE"; paneId: string; direction: SplitDirection; newSessionId: string; insertBefore?: boolean }
+  /** Tile a new pane beside the existing layout (right edge) instead of
+   *  swapping the focused pane — used by session creation so multiple
+   *  sessions stay visible side by side. */
+  | { type: "APPEND_PANE"; sessionId: string }
   | { type: "CLOSE_PANE"; paneId: string }
   | { type: "FOCUS_PANE"; paneId: string }
   | { type: "RESIZE_SPLIT"; splitId: string; ratio: number }
@@ -357,7 +366,7 @@ export type SessionAction =
   // `utils/workbenchLayout.ts` for the persisted shape.
   | { type: "TOGGLE_WORKBENCH" }
   | { type: "SET_WORKBENCH_OPEN"; open: boolean }
-  | { type: "SET_WORKBENCH_TAB"; tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics" }
+  | { type: "SET_WORKBENCH_TAB"; tab: "workflow" | "files" | "context" | "git" | "consumption" | "pipeline" | "metrics" }
   | { type: "SET_WORKBENCH_RATIO"; ratio: number }
   | { type: "SET_WORKBENCH_FILES_NOTES_SPLIT"; ratio: number }
   // Per-session notes (1.1.14) — replaces or complements the

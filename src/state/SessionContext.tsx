@@ -365,7 +365,7 @@ interface SessionState {
      *  `DEFAULT_PERSISTED_WORKBENCH` in `utils/workbenchLayout.ts`. */
     workbench: {
       open: boolean;
-      tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics";
+      tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics" | "consumption";
       ratio: number;
       filesNotesSplit: number;
     };
@@ -731,6 +731,30 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         layout: { root: newRoot, focusedPaneId: newPaneId },
       };
     }
+    case "APPEND_PANE": {
+      workspaceDirty = true;
+      const pane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.sessionId };
+      if (!state.layout.root) {
+        return {
+          ...state,
+          activeSessionId: action.sessionId,
+          layout: { root: pane, focusedPaneId: pane.id },
+        };
+      }
+      const paneCount = collectPanes(state.layout.root).length;
+      const appendedRoot: LayoutNode = {
+        type: "split",
+        id: nextSplitId(),
+        direction: "horizontal",
+        children: [state.layout.root, pane],
+        ratio: paneCount / (paneCount + 1),
+      };
+      return {
+        ...state,
+        activeSessionId: action.sessionId,
+        layout: { root: appendedRoot, focusedPaneId: pane.id },
+      };
+    }
     case "CLOSE_PANE": {
       workspaceDirty = true;
       if (!state.layout.root) return state;
@@ -1080,11 +1104,12 @@ export const initialState: SessionState = {
     composerOpen: false,
     activeLeftTab: "terminal" as const,
     viewer: null,
-    // Right-rail Workbench (agent-mode only) — defaults to OPEN per
-    // user spec, 50/50 chat/workbench, Files tab active, files take 70%
-    // of the vertical space.  Persisted in saved_workspace.json.
+    // Right-rail Workbench (agent-mode only) — starts CLOSED (deselected)
+    // per user spec; opened on demand from the activity bar / ⌥⌘B / the
+    // Consumo icon.  50/50 chat/workbench, Files tab active, files take
+    // 70% of the vertical space.  Persisted in saved_workspace.json.
     workbench: {
-      open: true,
+      open: false,
       tab: "files" as const,
       ratio: 0.5,
       filesNotesSplit: 0.7,
@@ -1888,7 +1913,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         updateSessionGroup(session.id, opts.group).catch(console.error);
       }
       dispatch({ type: "SESSION_UPDATED", session });
-      dispatch({ type: "SET_ACTIVE", id: session.id });
+      // Default placement for EVERY creation path: tile the new session
+      // beside the existing layout (APPEND_PANE also focuses/activates
+      // it).  Callers doing their own placement (explicit SPLIT_PANE)
+      // pass skipAutoPane to opt out.
+      if (!opts?.skipAutoPane) {
+        dispatch({ type: "APPEND_PANE", sessionId: session.id });
+      }
       trackSessionCreated({
         execution_mode: defaultModeRef.current,
         has_ai_provider: !!opts?.aiProvider,

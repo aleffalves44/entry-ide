@@ -21,6 +21,8 @@ import { AgentContextPanel } from "./AgentContextPanel";
 import { GitPanel } from "./GitPanel";
 import { PipelinePanel } from "./PipelinePanel";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
+import { ConsumptionView } from "./ConsumptionView";
+import { openUsageWindow } from "../utils/usageWindow";
 import { WorkflowTimelinePanel } from "./WorkflowTimelinePanel";
 import { WorkbenchNotes } from "./WorkbenchNotes";
 import {
@@ -170,7 +172,7 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
   }, [dispatch]);
 
   const setTab = useCallback(
-    (tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics") => {
+    (tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics" | "consumption") => {
       dispatch({ type: "SET_WORKBENCH_TAB", tab });
     },
     [dispatch],
@@ -318,6 +320,15 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
           >
             Metrics
           </button>
+          <button
+            type="button"
+            className="workbench-tab"
+            role="tab"
+            aria-selected={wb.tab === "consumption"}
+            onClick={() => setTab("consumption")}
+          >
+            Consumo
+          </button>
         </div>
       </header>
 
@@ -371,7 +382,19 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
         aria-label="Metrics"
         hidden={wb.tab !== "metrics"}
       >
-        <FrameworkMetricsView sessionId={session.id} />
+        <FrameworkMetricsView sessionId={session.id} showPopout />
+      </div>
+      <div
+        className="workbench-body"
+        role="tabpanel"
+        aria-label="Consumo"
+        hidden={wb.tab !== "consumption"}
+      >
+        <ConsumptionView
+          active={wb.tab === "consumption"}
+          onFocusSession={(id) => dispatch({ type: "SET_ACTIVE", id })}
+          onOpenWindow={() => void openUsageWindow()}
+        />
       </div>
 
       <div

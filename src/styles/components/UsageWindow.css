@@ -1,0 +1,90 @@
+/* ─────────────────────────────────────────────────────────────────
+ * UsageWindow — standalone "Consumo Geral" native window.
+ * ────────────────────────────────────────────────────────────────── */
+
+.usage-window {
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 16px 20px;
+  background: var(--bg-0);
+  color: var(--text-1);
+  font-size: 12px;
+  overflow-y: auto;
+}
+
+.usage-window-header {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.usage-window-header h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.usage-window-totals {
+  margin-left: auto;
+  font-family: var(--font-mono, monospace);
+  color: var(--text-2);
+}
+
+.usage-window-pin {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.usage-window-pin:hover {
+  opacity: 0.85;
+}
+.usage-window-pin.is-pinned {
+  opacity: 1;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.usage-window-title {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3, var(--text-2));
+  margin-bottom: 6px;
+}
+
+.usage-window-sessions {
+  margin-bottom: 18px;
+}
+
+.usage-window-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.usage-window-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-3, var(--text-2));
+  padding: 3px 12px 3px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.usage-window-table td {
+  padding: 4px 12px 4px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--rule) 50%, transparent);
+}
+.usage-window-table .mono {
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+}
+
+.usage-window-session-row {
+  cursor: pointer;
+}
+.usage-window-session-row:hover td {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}

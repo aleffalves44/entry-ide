@@ -122,7 +122,7 @@ export function CostDashboard({ onClose }: CostDashboardProps) {
           </div>
         ) : view === "framework" ? (
           <div className="cost-dashboard-body">
-            <FrameworkMetricsView days={days} />
+            <FrameworkMetricsView days={days} showPopout />
           </div>
         ) : isEmpty ? (
           <div className="cost-dashboard-empty">

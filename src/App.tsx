@@ -17,6 +17,7 @@ import "./styles/layout.css";
 import "./styles/themes.css";
 import "./styles/topbar.css";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { sendShortcutCommand } from "./terminal/TerminalPool";
 import { fmt, isActionMod, isMac } from "./utils/platform";
 import { createProject } from "./api/projects";
@@ -26,7 +27,8 @@ import { SessionList } from "./components/SessionList";
 import { ContextPanel } from "./components/ContextPanel";
 import { hideOpeningOverlay, showOpeningOverlay } from "./utils/sessionCreatorOverlay";
 import { UsagePanel } from "./components/UsagePanel";
-import { ActivityBar, SessionsIcon, ContextIcon, UsageIcon, WorkbenchIcon, PlusIcon, PluginsIcon, SettingsIcon } from "./components/ActivityBar";
+import { ActivityBar, SessionsIcon, ContextIcon, UsageIcon, WorkbenchIcon, PlusIcon, PluginsIcon, SettingsIcon, ConsumptionIcon } from "./components/ActivityBar";
+import { openUsageWindow } from "./utils/usageWindow";
 import { WorkbenchPanel } from "./components/WorkbenchPanel";
 import { workbenchPixelWidth } from "./utils/workbenchLayout";
 import type { SessionView } from "./components/SessionList";
@@ -55,7 +57,7 @@ import { SplitLayout } from "./components/SplitLayout";
 import { SessionGitPanel } from "./components/SessionGitPanel";
 import { PanelErrorBoundary } from "./components/PanelErrorBoundary";
 import { setSetting } from "./api/settings";
-import { SplitDirection, collectPanes } from "./state/layoutTypes";
+import { SplitDirection, collectPanes, findPaneBySession } from "./state/layoutTypes";
 import { getDraggedSession } from "./components/SplitPane";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { focusTerminal, refitActive } from "./terminal/TerminalPool";
@@ -147,6 +149,30 @@ function AppContent() {
   // Keep a ref to state so plugin callbacks always read fresh values
   const stateRef = useRef(state);
   stateRef.current = state;
+
+  // The Consumo Geral window is part of the setup: if it was open when
+  // the app last quit (usage_window_open = "1"), reopen it on launch.
+  useEffect(() => {
+    getSetting("usage_window_open")
+      .then((v) => {
+        if (v === "1") return openUsageWindow();
+      })
+      .catch(() => undefined);
+  }, []);
+
+  // Focus requests from the standalone Consumo Geral window — clicking a
+  // session row there focuses that session here.
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    let cancelled = false;
+    listen<{ sessionId: string }>("entry://focus-session", (e) => {
+      const id = e.payload?.sessionId;
+      if (id) setActive(id);
+    }).then((fn) => {
+      if (cancelled) { fn(); } else { unlisten = fn; }
+    });
+    return () => { cancelled = true; unlisten?.(); };
+  }, [setActive]);
 
   // ── Plugin System ──
   const [activePluginPanel, setActivePluginPanel] = useState<string | null>(null);
@@ -555,6 +581,48 @@ function AppContent() {
     });
   }, [closeSession, createSession]);
 
+  /** Open one more terminal inside a task group: same cwd (worktree) as
+   *  the group's agent session, split beside its pane when visible. */
+  const handleNewGroupTerminal = useCallback(async (group: string) => {
+    const groupSessions = sessions.filter((s) => s.group === group && s.phase !== "destroyed");
+    const anchor = groupSessions.find((s) => s.mode === "agent") ?? groupSessions[0];
+    if (!anchor) return;
+    // Split beside the agent's pane when visible; otherwise let
+    // createSession tile the terminal beside the layout as usual.
+    const anchorPane = state.layout.root ? findPaneBySession(state.layout.root, anchor.id) : null;
+    const terminal = await createSession({
+      mode: "terminal",
+      group,
+      label: `${group} · terminal`,
+      color: anchor.color,
+      workingDirectory: anchor.working_directory,
+      skipAutoPane: anchorPane !== null,
+    });
+    if (terminal && anchorPane) {
+      dispatch({ type: "SPLIT_PANE", paneId: anchorPane.id, direction: "horizontal", newSessionId: terminal.id });
+    }
+  }, [sessions, createSession, state.layout.root, dispatch]);
+
+  /** Close every session in a task group after one confirmation.
+   *  Terminals close first so the agent's worktree cleanup runs last —
+   *  no shell is left sitting in a directory the cleanup just removed. */
+  const handleCloseGroup = useCallback(async (group: string) => {
+    const groupSessions = sessions.filter((s) => s.group === group && s.phase !== "destroyed");
+    if (groupSessions.length === 0) return;
+    const confirmed = await ask(
+      `Close all ${groupSessions.length} session(s) in "${group}"?`,
+      { title: "Close group", kind: "warning" },
+    );
+    if (!confirmed) return;
+    const ordered = [
+      ...groupSessions.filter((s) => s.mode !== "agent"),
+      ...groupSessions.filter((s) => s.mode === "agent"),
+    ];
+    for (const s of ordered) {
+      await closeSession(s.id);
+    }
+  }, [sessions, closeSession]);
+
   const handleAutoExecute = useCallback(() => {
     if (!ui.autoToast) return;
     const { command, sessionId } = ui.autoToast;
@@ -741,16 +809,10 @@ function AppContent() {
   }, [dispatch]);
 
   // ── Instant session creation (Cmd+N / Cmd+T) ──
+  // createSession tiles the new session beside the layout by default.
   const createSessionDirect = useCallback(async () => {
-    const session = await createSession({});
-    if (session) {
-      if (!state.layout.root) {
-        dispatch({ type: "INIT_PANE", sessionId: session.id });
-      } else if (state.layout.focusedPaneId) {
-        dispatch({ type: "SET_PANE_SESSION", paneId: state.layout.focusedPaneId, sessionId: session.id });
-      }
-    }
-  }, [createSession, state.layout.root, state.layout.focusedPaneId, dispatch]);
+    await createSession({});
+  }, [createSession]);
 
   // ── Native menu bar event bridge ──
   useNativeMenuEvents({
@@ -863,6 +925,21 @@ function AppContent() {
             }}
             topAction={{ icon: PlusIcon, label: `New Session (${fmt("{mod}N")})`, onClick: () => setSessionCreatorOpen({}) }}
             bottomActions={[
+              {
+                icon: ConsumptionIcon,
+                label: "Consumo Geral",
+                onClick: () => {
+                  // Docked by default (Workbench "Consumo" tab); falls
+                  // back to the separate window when there's no agent
+                  // session to host the right rail.
+                  if (activeSession?.mode === "agent") {
+                    dispatch({ type: "SET_WORKBENCH_OPEN", open: true });
+                    dispatch({ type: "SET_WORKBENCH_TAB", tab: "consumption" });
+                  } else {
+                    void openUsageWindow();
+                  }
+                },
+              },
               { icon: PluginsIcon, label: "Plugins", onClick: () => setSettingsOpen("plugins") },
               { icon: SettingsIcon, label: "Settings", onClick: () => setSettingsOpen("general") },
             ]}
@@ -877,6 +954,8 @@ function AppContent() {
               onSelect={setActive}
               onClose={requestCloseSession}
               onNewSession={(group) => setSessionCreatorOpen({ group })}
+              onNewGroupTerminal={handleNewGroupTerminal}
+              onCloseGroup={handleCloseGroup}
               onReconnect={handleReconnect}
               activeView={
                 ui.searchPanelOpen ? "search" :
@@ -1248,22 +1327,20 @@ function AppContent() {
             pendingSplit.current = null;
           }}
           onCreate={async (opts) => {
-            const session = await createSession(opts);
-            setSessionCreatorOpen(false);
-            if (session) {
-              const split = pendingSplit.current;
-              pendingSplit.current = null;
-              if (split && state.layout.root) {
-                // Split an existing pane
+            const split = pendingSplit.current;
+            pendingSplit.current = null;
+            if (split && state.layout.root) {
+              // Explicit split request — place the session in the chosen pane
+              const session = await createSession({ ...opts, skipAutoPane: true });
+              setSessionCreatorOpen(false);
+              if (session) {
                 dispatch({ type: "SPLIT_PANE", paneId: split.paneId, direction: split.direction, newSessionId: session.id });
-              } else if (!state.layout.root) {
-                // First session — init pane
-                dispatch({ type: "INIT_PANE", sessionId: session.id });
-              } else if (state.layout.focusedPaneId) {
-                // Layout exists, no pending split — swap focused pane's session
-                dispatch({ type: "SET_PANE_SESSION", paneId: state.layout.focusedPaneId, sessionId: session.id });
               }
+              return;
             }
+            // Default: createSession tiles the new session beside the layout
+            await createSession(opts);
+            setSessionCreatorOpen(false);
           }}
         />
       )}

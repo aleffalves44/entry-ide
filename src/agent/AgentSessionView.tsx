@@ -25,6 +25,8 @@ import { ImageBlock } from "./blocks/ImageBlock";
 import { ResultFooter } from "./blocks/ResultFooter";
 import { SubagentMastheadChip } from "./SubagentMastheadChip";
 import { PipelineStrip } from "../components/PipelineStrip";
+import { SessionUsageWidget } from "../components/SessionUsageWidget";
+import { LoopBar } from "../components/LoopBar";
 import { selectWorkingState } from "./workingState";
 import { WorkingFootline } from "./WorkingFootline";
 import { MarginDraft } from "./MarginDraft";
@@ -212,6 +214,9 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
     return (
       <div className="agent-session-view">
         <AgentHeader state={state} sessionId={sessionId} workspacePathCount={workspacePathCount} />
+        {/* Pipeline strip renders pre-init too (static prewarm confirms
+            the plugin) — clicking a phase IS the natural first message. */}
+        {sessionEntryForPerm && <PipelineStrip session={sessionEntryForPerm} />}
         <div className="agent-session-empty">
           <span className="agent-empty-led" aria-hidden="true" />
           <span className="agent-empty-title">[ awaiting first signal ]</span>
@@ -390,6 +395,12 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
           );
         }}
       />
+      {/* Loop runner (M6) — repeat a prompt until stop condition, with
+          mandatory cost/iteration guardrails and an always-visible stop. */}
+      <LoopBar sessionId={sessionId} />
+      {/* Inline consumption readout — collapsed one-liner, expands into
+          per-agent / per-model breakdowns of this session's usage. */}
+      <SessionUsageWidget sessionId={sessionId} />
     </div>
   );
 }

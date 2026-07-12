@@ -20,8 +20,23 @@ if (import.meta.env.DEV) {
   });
 }
 
+// Secondary native windows share this bundle and select their root
+// component by hash (see src/utils/usageWindow.ts).  They deliberately
+// do NOT mount <App/> — no SessionContext, no PTYs, just SQLite reads.
+const isUsageWindow = window.location.hash.startsWith("#/usage");
+
+const LazyUsageWindow = React.lazy(() =>
+  import("./windows/UsageWindow").then((m) => ({ default: m.UsageWindow })),
+);
+
 ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
-    <App />
+    {isUsageWindow ? (
+      <React.Suspense fallback={null}>
+        <LazyUsageWindow />
+      </React.Suspense>
+    ) : (
+      <App />
+    )}
   </React.StrictMode>,
 );

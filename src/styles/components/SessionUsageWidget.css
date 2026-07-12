@@ -1,0 +1,72 @@
+/* ─────────────────────────────────────────────────────────────────
+ * SessionUsageWidget — collapsed consumption bar at the bottom of the
+ * agent pane; expands into per-agent / per-model tables.
+ * ────────────────────────────────────────────────────────────────── */
+
+.session-usage {
+  border-top: 1px solid var(--rule);
+  background: var(--bg-1, transparent);
+}
+
+.session-usage-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 3px 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 10.5px;
+  color: var(--text-3, var(--text-2));
+  text-align: left;
+}
+.session-usage-bar:hover {
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.session-usage-caret {
+  font-size: 9px;
+}
+
+.session-usage-tag {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.session-usage-totals {
+  margin-left: auto;
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+  color: var(--text-2);
+}
+
+.session-usage-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 6px 14px 10px;
+}
+
+.session-usage-table {
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.session-usage-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-3, var(--text-2));
+  padding: 2px 12px 2px 0;
+  border-bottom: 1px solid var(--rule);
+}
+.session-usage-table td {
+  padding: 2px 12px 2px 0;
+  color: var(--text-1);
+  font-family: var(--font-mono, monospace);
+}
+.session-usage-table td:first-child {
+  font-family: inherit;
+  color: var(--text-2);
+}

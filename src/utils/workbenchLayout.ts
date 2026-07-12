@@ -14,7 +14,7 @@
 
 // ─── Tabs ───────────────────────────────────────────────────────────
 
-export const WORKBENCH_TABS = ["workflow", "files", "context", "git", "pipeline", "metrics"] as const;
+export const WORKBENCH_TABS = ["workflow", "files", "context", "git", "pipeline", "metrics", "consumption"] as const;
 export type WorkbenchTab = (typeof WORKBENCH_TABS)[number];
 
 /** Default tab for an agent session whose init confirmed the harness-cmd
@@ -112,7 +112,9 @@ export interface PersistedWorkbenchLayout {
 }
 
 export const DEFAULT_PERSISTED_WORKBENCH: PersistedWorkbenchLayout = {
-  open: true,
+  // Deselected by default — the right rail opens on demand (activity
+  // bar / ⌥⌘B / the Consumo icon), not on every fresh session.
+  open: false,
   tab: DEFAULT_WORKBENCH_TAB,
   ratio: DEFAULT_WORKBENCH_RATIO,
   filesNotesSplit: DEFAULT_FILES_NOTES_SPLIT,

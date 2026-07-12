@@ -35,6 +35,10 @@ interface SessionListProps {
   onSelect: (id: string) => void;
   onClose: (id: string) => void;
   onNewSession?: (group?: string) => void;
+  /** Open one more terminal in this group's working directory (task group). */
+  onNewGroupTerminal?: (group: string) => void;
+  /** Close every session in this group (with confirmation). */
+  onCloseGroup?: (group: string) => void;
   onReconnect?: (session: SessionData) => void;
   /** Currently active sub-view panel for the active session */
   activeView: SessionView;
@@ -558,7 +562,7 @@ function InlineProjectNameEditor({
   );
 }
 
-export function SessionList({ sessions, activeSessionId, onSelect, onClose, onNewSession, onReconnect, activeView, onViewChange, gitBadge, pluginSessionActions, activePluginPanel, onPluginActionClick }: SessionListProps) {
+export function SessionList({ sessions, activeSessionId, onSelect, onClose, onNewSession, onNewGroupTerminal, onCloseGroup, onReconnect, activeView, onViewChange, gitBadge, pluginSessionActions, activePluginPanel, onPluginActionClick }: SessionListProps) {
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [renameSessionId, setRenameSessionId] = useState<string | null>(null);
   const [newGroupSessionId, setNewGroupSessionId] = useState<string | null>(null);
@@ -1133,11 +1137,25 @@ export function SessionList({ sessions, activeSessionId, onSelect, onClose, onNe
                   {groupCost > 0 && (
                     <span className="project-header-cost">{formatCost(groupCost)}</span>
                   )}
+                  {onNewGroupTerminal && groupSessions.some((s) => s.phase !== "destroyed") && (
+                    <button
+                      className="project-header-add-btn"
+                      onClick={(e) => { e.stopPropagation(); onNewGroupTerminal(group); }}
+                      title="New terminal in this group's folder"
+                    >⌨</button>
+                  )}
                   <button
                     className="project-header-add-btn"
                     onClick={(e) => { e.stopPropagation(); onNewSession?.(group); }}
                     title="New session in this project"
                   >+</button>
+                  {onCloseGroup && groupSessions.some((s) => s.phase !== "destroyed") && (
+                    <button
+                      className="project-header-add-btn"
+                      onClick={(e) => { e.stopPropagation(); onCloseGroup(group); }}
+                      title="Close all sessions in this group"
+                    >×</button>
+                  )}
                 </div>
               </div>
               {colorPickerGroup === group && (

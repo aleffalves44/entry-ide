@@ -612,6 +612,8 @@ pub fn run() {
             db::record_framework_usage,
             db::get_framework_usage,
             db::export_framework_usage,
+            db::record_delivery_event,
+            db::get_delivery_events,
             pipeline::get_pipeline_state,
             db::get_cost_history,
             db::save_memory,

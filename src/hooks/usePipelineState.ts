@@ -8,7 +8,9 @@
  * `src/utils/pipelinePhases.ts`.
  */
 import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useAgentPrewarm } from "../agent/useAgentPrewarm";
 import { peekAgentSessionStore } from "../agent/agentSessionStore";
+import { recordDeliveryEvent } from "../api/delivery";
 import { commandFromUserText } from "../agent/frameworkMetrics";
 import { isTextBlock } from "../agent/types";
 import { getPipelineState } from "../api/pipeline";
@@ -90,15 +92,72 @@ export function usePipelineState(session: SessionData): PipelineStateHook {
     return null;
   }, [messages]);
 
+  // ─── Delivery milestones (M5) ─────────────────────────────────────
+  // Observed facts become delivery_events rows; the backend dedupes on
+  // (session_id, event, pr_number), so firing on every refresh is safe.
+  // PR events carry gh's exact createdAt/mergedAt timestamps.
+  const hasUserMessage = (messages ?? []).some(
+    (m) => m.role === "user" && !m.parentToolUseId,
+  );
+  useEffect(() => {
+    const base = {
+      session_id: session.id,
+      repo_path: workingDir ?? null,
+      branch: pipeline?.branch ?? null,
+      pr_number: null,
+      pr_url: null,
+      recorded_at: null,
+    };
+    const fire = (ev: Parameters<typeof recordDeliveryEvent>[0]) =>
+      recordDeliveryEvent(ev).catch(() => undefined);
+
+    if (hasUserMessage) {
+      fire({ ...base, event: "task_started" });
+    }
+    if (!pipeline) return;
+    if ((pipeline.commits_ahead ?? 0) > 0) {
+      fire({ ...base, event: "first_commit" });
+    }
+    if (pipeline.pr_url) {
+      const pr = {
+        pr_number: pipeline.pr_number ?? null,
+        pr_url: pipeline.pr_url,
+      };
+      fire({
+        ...base,
+        ...pr,
+        event: "pr_opened",
+        recorded_at: pipeline.pr_created_at ?? null,
+      });
+      if (pipeline.pr_state === "MERGED") {
+        fire({
+          ...base,
+          ...pr,
+          event: "pr_merged",
+          recorded_at: pipeline.pr_merged_at ?? null,
+        });
+      }
+    }
+  }, [session.id, workingDir, pipeline, hasUserMessage]);
+
   const runningPhase = runningPhaseFromCommand(lastCommand, isStreaming);
   const phases = useMemo(
     () => derivePipelinePhases(pipeline, runningPhase),
     [pipeline, runningPhase],
   );
 
+  // Plugin presence: the SDK only emits `init` after the FIRST user
+  // message, so a fresh session would hide the pipeline UI exactly when
+  // one-click phase dispatch is most useful.  Until init arrives, fall
+  // back to the static prewarm scan (which includes installed plugin
+  // commands).  Init stays authoritative once it lands — including for
+  // `pluginMissing`, which is only asserted from real init data.
+  const prewarm = useAgentPrewarm(workingDir);
   const init = snapshot?.state.initEvent ?? null;
   const pluginMissing = init !== null && !hasHarnessPlugin(init.slash_commands);
-  const pluginPresent = init !== null && hasHarnessPlugin(init.slash_commands);
+  const pluginPresent = init !== null
+    ? hasHarnessPlugin(init.slash_commands)
+    : hasHarnessPlugin(prewarm.slashCommands);
 
   return { phases, pipeline, loading, refresh, isStreaming, pluginMissing, pluginPresent };
 }

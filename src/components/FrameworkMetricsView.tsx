@@ -13,6 +13,7 @@ import "../styles/components/FrameworkMetricsView.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { getFrameworkUsage, exportFrameworkUsage, type FrameworkUsageEntry } from "../api/frameworkMetrics";
+import { openUsageWindow } from "../utils/usageWindow";
 import {
   aggregateByAgent,
   aggregateByCommand,
@@ -35,9 +36,12 @@ interface FrameworkMetricsViewProps {
   days?: number;
   /** Refresh trigger — bump to refetch (e.g. on turn completion). */
   refreshToken?: number | null;
+  /** Show the "open in separate window" button (hidden when this view
+   *  is ALREADY inside the standalone usage window). */
+  showPopout?: boolean;
 }
 
-export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken }: FrameworkMetricsViewProps) {
+export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, showPopout }: FrameworkMetricsViewProps) {
   const [daysLocal, setDaysLocal] = useState(7);
   const days = daysProp ?? daysLocal;
   const [scope, setScope] = useState<"session" | "global">(sessionId ? "session" : "global");
@@ -113,6 +117,15 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken }
         <button className="fw-metrics-export" onClick={exportJsonl}>
           Export JSONL
         </button>
+        {showPopout && (
+          <button
+            className="fw-metrics-export"
+            onClick={() => void openUsageWindow()}
+            title="Abrir consumo geral em janela separada"
+          >
+            ⧉ Janela
+          </button>
+        )}
       </div>
       {exportStatus && <div className="fw-metrics-export-status">{exportStatus}</div>}
 
