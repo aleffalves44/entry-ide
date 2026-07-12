@@ -25,6 +25,7 @@ import { ImageBlock } from "./blocks/ImageBlock";
 import { ResultFooter } from "./blocks/ResultFooter";
 import { SubagentMastheadChip } from "./SubagentMastheadChip";
 import { PipelineStrip } from "../components/PipelineStrip";
+import { SessionUsageWidget } from "../components/SessionUsageWidget";
 import { selectWorkingState } from "./workingState";
 import { WorkingFootline } from "./WorkingFootline";
 import { MarginDraft } from "./MarginDraft";
@@ -393,6 +394,9 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
           );
         }}
       />
+      {/* Inline consumption readout — collapsed one-liner, expands into
+          per-agent / per-model breakdowns of this session's usage. */}
+      <SessionUsageWidget sessionId={sessionId} />
     </div>
   );
 }
