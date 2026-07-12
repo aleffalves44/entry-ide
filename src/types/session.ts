@@ -175,6 +175,10 @@ export interface CreateSessionOpts {
   sshIdentityFile?: string;
   /** Frontend-chosen session mode.  Defaults to `agent` for Claude, `terminal` otherwise. */
   mode?: SessionMode;
+  /** Agent mode only: also create a companion terminal session in the same
+   *  working directory (the agent's worktree) and open both side by side.
+   *  Frontend-only — never forwarded to the backend `create_session`. */
+  companionTerminal?: boolean;
 }
 
 // ─── Workspace Restore ──────────────────────────────────────────────
@@ -323,6 +327,10 @@ export type SessionAction =
   // Layout actions
   | { type: "INIT_PANE"; sessionId: string }
   | { type: "SPLIT_PANE"; paneId: string; direction: SplitDirection; newSessionId: string; insertBefore?: boolean }
+  /** Open an agent session and its companion terminal side by side as one
+   *  atomic layout change: agent pane left, terminal pane right.  Replaces
+   *  the focused pane when a layout exists; becomes the root otherwise. */
+  | { type: "OPEN_SESSION_GROUP"; agentSessionId: string; terminalSessionId: string }
   | { type: "CLOSE_PANE"; paneId: string }
   | { type: "FOCUS_PANE"; paneId: string }
   | { type: "RESIZE_SPLIT"; splitId: string; ratio: number }

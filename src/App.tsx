@@ -17,6 +17,7 @@ import "./styles/layout.css";
 import "./styles/themes.css";
 import "./styles/topbar.css";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { sendShortcutCommand } from "./terminal/TerminalPool";
 import { fmt, isActionMod, isMac } from "./utils/platform";
 import { createProject } from "./api/projects";
@@ -49,13 +50,14 @@ import { AutoToast } from "./components/AutoToast";
 import { copyContextToClipboard } from "./utils/copyContextToClipboard";
 import { ProjectPicker } from "./components/ProjectPicker";
 import { SessionCreator } from "./components/SessionCreator";
+import { createTaskGroup } from "./state/taskGroup";
 import { PromptComposer } from "./components/PromptComposer";
 import { SessionComposer, getComposerTextarea } from "./components/SessionComposer";
 import { SplitLayout } from "./components/SplitLayout";
 import { SessionGitPanel } from "./components/SessionGitPanel";
 import { PanelErrorBoundary } from "./components/PanelErrorBoundary";
 import { setSetting } from "./api/settings";
-import { SplitDirection, collectPanes } from "./state/layoutTypes";
+import { SplitDirection, collectPanes, findPaneBySession } from "./state/layoutTypes";
 import { getDraggedSession } from "./components/SplitPane";
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { focusTerminal, refitActive } from "./terminal/TerminalPool";
@@ -555,6 +557,48 @@ function AppContent() {
     });
   }, [closeSession, createSession]);
 
+  /** Open one more terminal inside a task group: same cwd (worktree) as
+   *  the group's agent session, split beside its pane when visible. */
+  const handleNewGroupTerminal = useCallback(async (group: string) => {
+    const groupSessions = sessions.filter((s) => s.group === group && s.phase !== "destroyed");
+    const anchor = groupSessions.find((s) => s.mode === "agent") ?? groupSessions[0];
+    if (!anchor) return;
+    const terminal = await createSession({
+      mode: "terminal",
+      group,
+      label: `${group} · terminal`,
+      color: anchor.color,
+      workingDirectory: anchor.working_directory,
+    });
+    if (!terminal) return;
+    const anchorPane = state.layout.root ? findPaneBySession(state.layout.root, anchor.id) : null;
+    if (anchorPane) {
+      dispatch({ type: "SPLIT_PANE", paneId: anchorPane.id, direction: "horizontal", newSessionId: terminal.id });
+    } else {
+      dispatch({ type: "INIT_PANE", sessionId: terminal.id });
+    }
+  }, [sessions, createSession, state.layout.root, dispatch]);
+
+  /** Close every session in a task group after one confirmation.
+   *  Terminals close first so the agent's worktree cleanup runs last —
+   *  no shell is left sitting in a directory the cleanup just removed. */
+  const handleCloseGroup = useCallback(async (group: string) => {
+    const groupSessions = sessions.filter((s) => s.group === group && s.phase !== "destroyed");
+    if (groupSessions.length === 0) return;
+    const confirmed = await ask(
+      `Close all ${groupSessions.length} session(s) in "${group}"?`,
+      { title: "Close group", kind: "warning" },
+    );
+    if (!confirmed) return;
+    const ordered = [
+      ...groupSessions.filter((s) => s.mode !== "agent"),
+      ...groupSessions.filter((s) => s.mode === "agent"),
+    ];
+    for (const s of ordered) {
+      await closeSession(s.id);
+    }
+  }, [sessions, closeSession]);
+
   const handleAutoExecute = useCallback(() => {
     if (!ui.autoToast) return;
     const { command, sessionId } = ui.autoToast;
@@ -877,6 +921,8 @@ function AppContent() {
               onSelect={setActive}
               onClose={requestCloseSession}
               onNewSession={(group) => setSessionCreatorOpen({ group })}
+              onNewGroupTerminal={handleNewGroupTerminal}
+              onCloseGroup={handleCloseGroup}
               onReconnect={handleReconnect}
               activeView={
                 ui.searchPanelOpen ? "search" :
@@ -1248,6 +1294,28 @@ function AppContent() {
             pendingSplit.current = null;
           }}
           onCreate={async (opts) => {
+            // Task group: agent + companion terminal side by side in the
+            // same worktree.  When the terminal fails, the agent session
+            // survives and falls through to the single-session layout path.
+            if (opts?.companionTerminal && (opts.mode ?? "agent") === "agent") {
+              const result = await createTaskGroup(createSession, opts);
+              setSessionCreatorOpen(false);
+              pendingSplit.current = null;
+              if (result?.terminal) {
+                dispatch({
+                  type: "OPEN_SESSION_GROUP",
+                  agentSessionId: result.agent.id,
+                  terminalSessionId: result.terminal.id,
+                });
+              } else if (result) {
+                if (!state.layout.root) {
+                  dispatch({ type: "INIT_PANE", sessionId: result.agent.id });
+                } else if (state.layout.focusedPaneId) {
+                  dispatch({ type: "SET_PANE_SESSION", paneId: state.layout.focusedPaneId, sessionId: result.agent.id });
+                }
+              }
+              return;
+            }
             const session = await createSession(opts);
             setSessionCreatorOpen(false);
             if (session) {

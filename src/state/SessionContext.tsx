@@ -731,6 +731,45 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
         layout: { root: newRoot, focusedPaneId: newPaneId },
       };
     }
+    case "OPEN_SESSION_GROUP": {
+      workspaceDirty = true;
+      const agentPane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.agentSessionId };
+      const termPane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.terminalSessionId };
+      const groupSplit: LayoutNode = {
+        type: "split",
+        id: nextSplitId(),
+        direction: "horizontal",
+        children: [agentPane, termPane],
+        ratio: 0.6,
+      };
+      if (!state.layout.root) {
+        return {
+          ...state,
+          activeSessionId: action.agentSessionId,
+          layout: { root: groupSplit, focusedPaneId: agentPane.id },
+        };
+      }
+      // Replace the focused pane with the group split; if no pane is
+      // focused (shouldn't happen with a non-null root), wrap the root.
+      const focusedId = state.layout.focusedPaneId;
+      const focusedPane = focusedId
+        ? collectPanes(state.layout.root).find((p) => p.id === focusedId)
+        : undefined;
+      const newRoot: LayoutNode = focusedPane
+        ? replaceNode(state.layout.root, focusedPane.id, groupSplit)
+        : {
+            type: "split",
+            id: nextSplitId(),
+            direction: "horizontal",
+            children: [state.layout.root, groupSplit],
+            ratio: 0.5,
+          };
+      return {
+        ...state,
+        activeSessionId: action.agentSessionId,
+        layout: { root: newRoot, focusedPaneId: agentPane.id },
+      };
+    }
     case "CLOSE_PANE": {
       workspaceDirty = true;
       if (!state.layout.root) return state;
