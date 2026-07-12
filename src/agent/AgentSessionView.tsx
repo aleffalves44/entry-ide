@@ -26,6 +26,7 @@ import { ResultFooter } from "./blocks/ResultFooter";
 import { SubagentMastheadChip } from "./SubagentMastheadChip";
 import { PipelineStrip } from "../components/PipelineStrip";
 import { SessionUsageWidget } from "../components/SessionUsageWidget";
+import { LoopBar } from "../components/LoopBar";
 import { selectWorkingState } from "./workingState";
 import { WorkingFootline } from "./WorkingFootline";
 import { MarginDraft } from "./MarginDraft";
@@ -394,6 +395,9 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
           );
         }}
       />
+      {/* Loop runner (M6) — repeat a prompt until stop condition, with
+          mandatory cost/iteration guardrails and an always-visible stop. */}
+      <LoopBar sessionId={sessionId} />
       {/* Inline consumption readout — collapsed one-liner, expands into
           per-agent / per-model breakdowns of this session's usage. */}
       <SessionUsageWidget sessionId={sessionId} />
