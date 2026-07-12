@@ -22,6 +22,7 @@ import { sendShortcutCommand } from "./terminal/TerminalPool";
 import { fmt, isActionMod, isMac } from "./utils/platform";
 import { createProject } from "./api/projects";
 import { SessionProvider, useSession, useActiveSession, useSessionList, useSidebarOrderedSessions, useAutonomousSettings } from "./state/SessionContext";
+import type { CreateSessionOpts } from "./types/session";
 import { getSetting } from "./api/settings";
 import { SessionList } from "./components/SessionList";
 import { ContextPanel } from "./components/ContextPanel";
@@ -51,6 +52,7 @@ import { AutoToast } from "./components/AutoToast";
 import { copyContextToClipboard } from "./utils/copyContextToClipboard";
 import { ProjectPicker } from "./components/ProjectPicker";
 import { SessionCreator } from "./components/SessionCreator";
+import { QuickSessionCreator } from "./components/QuickSessionCreator";
 import { PromptComposer } from "./components/PromptComposer";
 import { SessionComposer, getComposerTextarea } from "./components/SessionComposer";
 import { SplitLayout } from "./components/SplitLayout";
@@ -129,6 +131,11 @@ function AppContent() {
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [cmdPaletteShortcut, setCmdPaletteShortcut] = useState("cmd_k");
   const pendingSplit = useRef<{ paneId: string; direction: SplitDirection } | null>(null);
+  // One-screen session start — the DEFAULT new-session surface.  The
+  // full SessionCreator wizard stays reachable via "Avançado…" and the
+  // sidebar group "+" (which pre-selects a group).  Mounts instantly
+  // (light component), so no opening-overlay dance is needed.
+  const [quickCreatorOpen, setQuickCreatorOpen] = useState(false);
   const updater = useAutoUpdater();
   const activeGitSummary = useSessionGitSummary(state.activeSessionId, !!activeSession, activeSession?.working_directory);
 
@@ -808,16 +815,39 @@ function AppContent() {
     return () => { cancelled = true; unlisten?.(); };
   }, [dispatch]);
 
-  // ── Instant session creation (Cmd+N / Cmd+T) ──
-  // createSession tiles the new session beside the layout by default.
-  const createSessionDirect = useCallback(async () => {
-    await createSession({});
-  }, [createSession]);
+  // ── Cmd+N / Cmd+T — open the one-screen quick creator ──
+  // (Formerly instant creation with no project; the quick creator keeps
+  // the speed — Enter confirms — while landing in the right worktree.)
+  const createSessionDirect = useCallback(() => {
+    setQuickCreatorOpen(true);
+  }, []);
+
+  /** Shared create-and-place handler for BOTH creators (wizard + quick).
+   *  Honors an explicit pending split; otherwise createSession tiles the
+   *  new session beside the layout. */
+  const handleCreateFromCreator = useCallback(async (opts: CreateSessionOpts) => {
+    const split = pendingSplit.current;
+    pendingSplit.current = null;
+    const closeCreators = () => {
+      setSessionCreatorOpen(false);
+      setQuickCreatorOpen(false);
+    };
+    if (split && state.layout.root) {
+      const session = await createSession({ ...opts, skipAutoPane: true });
+      closeCreators();
+      if (session) {
+        dispatch({ type: "SPLIT_PANE", paneId: split.paneId, direction: split.direction, newSessionId: session.id });
+      }
+      return;
+    }
+    await createSession(opts);
+    closeCreators();
+  }, [createSession, state.layout.root, dispatch, setSessionCreatorOpen]);
 
   // ── Native menu bar event bridge ──
   useNativeMenuEvents({
     dispatch,
-    createSession: () => setSessionCreatorOpen({}),
+    createSession: () => setQuickCreatorOpen(true),
     createSessionDirect,
     requestCloseSession,
     activeSessionId: state.activeSessionId,
@@ -923,7 +953,7 @@ function AppContent() {
                 }
               }
             }}
-            topAction={{ icon: PlusIcon, label: `New Session (${fmt("{mod}N")})`, onClick: () => setSessionCreatorOpen({}) }}
+            topAction={{ icon: PlusIcon, label: `New Session (${fmt("{mod}N")})`, onClick: () => setQuickCreatorOpen(true) }}
             bottomActions={[
               {
                 icon: ConsumptionIcon,
@@ -1031,10 +1061,7 @@ function AppContent() {
                   ) : (
                     <EmptyState
                       recentSessions={state.recentSessions}
-                      onNew={() => {
-                        console.log("[opening-overlay] EmptyState 'New Session' clicked");
-                        setSessionCreatorOpen({});
-                      }}
+                      onNew={() => setQuickCreatorOpen(true)}
                       onRestore={(entry, restoreScrollback) => createSession({ label: entry.label, workingDirectory: entry.working_directory, restoreFromId: restoreScrollback ? entry.id : undefined })}
                     />
                   )}
@@ -1211,7 +1238,7 @@ function AppContent() {
           onClose={() => dispatch({ type: "TOGGLE_PALETTE" })}
           sessions={sessions}
           onSelectSession={setActive}
-          onNewSession={() => setSessionCreatorOpen({})}
+          onNewSession={() => setQuickCreatorOpen(true)}
           onToggleContext={() => dispatch({ type: "TOGGLE_CONTEXT" })}
           onToggleSessions={() => dispatch({ type: "TOGGLE_SIDEBAR" })}
           onOpenSettings={(tab) => setSettingsOpen(tab || "general")}
@@ -1326,21 +1353,17 @@ function AppContent() {
             setSessionCreatorOpen(false);
             pendingSplit.current = null;
           }}
-          onCreate={async (opts) => {
-            const split = pendingSplit.current;
-            pendingSplit.current = null;
-            if (split && state.layout.root) {
-              // Explicit split request — place the session in the chosen pane
-              const session = await createSession({ ...opts, skipAutoPane: true });
-              setSessionCreatorOpen(false);
-              if (session) {
-                dispatch({ type: "SPLIT_PANE", paneId: split.paneId, direction: split.direction, newSessionId: session.id });
-              }
-              return;
-            }
-            // Default: createSession tiles the new session beside the layout
-            await createSession(opts);
-            setSessionCreatorOpen(false);
+          onCreate={handleCreateFromCreator}
+        />
+      )}
+
+      {quickCreatorOpen && (
+        <QuickSessionCreator
+          onClose={() => setQuickCreatorOpen(false)}
+          onCreate={handleCreateFromCreator}
+          onAdvanced={() => {
+            setQuickCreatorOpen(false);
+            setSessionCreatorOpen({});
           }}
         />
       )}
