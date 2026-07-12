@@ -38,7 +38,9 @@ export function useSessionUsage(sessionId: string): SessionUsage {
     let cancelled = false;
     getFrameworkUsage({ sessionId })
       .then((r) => {
-        if (!cancelled) setRows(r);
+        // Defensive: a mocked/failed IPC can resolve to a non-array —
+        // keep the empty list rather than crashing the pane render.
+        if (!cancelled && Array.isArray(r)) setRows(r);
       })
       .catch(() => undefined);
     return () => {
