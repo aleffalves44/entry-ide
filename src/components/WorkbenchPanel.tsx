@@ -371,7 +371,7 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
         aria-label="Metrics"
         hidden={wb.tab !== "metrics"}
       >
-        <FrameworkMetricsView sessionId={session.id} />
+        <FrameworkMetricsView sessionId={session.id} showPopout />
       </div>
 
       <div

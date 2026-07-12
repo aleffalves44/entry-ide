@@ -2,7 +2,10 @@
   "$schema": "https://raw.githubusercontent.com/nicegui-org/nicegui/main/nicegui/static/tauri/capabilities-schema.json",
   "identifier": "default",
   "description": "Default capability for the main window",
-  "windows": ["main"],
+  "windows": [
+    "main",
+    "usage"
+  ],
   "permissions": [
     "core:default",
     "core:event:default",
@@ -30,6 +33,8 @@
     "core:window:allow-is-maximized",
     "updater:default",
     "process:allow-restart",
-    "process:allow-exit"
+    "process:allow-exit",
+    "core:webview:allow-create-webview-window",
+    "core:window:allow-create"
   ]
 }

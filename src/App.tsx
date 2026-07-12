@@ -149,6 +149,20 @@ function AppContent() {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // Focus requests from the standalone Consumo Geral window — clicking a
+  // session row there focuses that session here.
+  useEffect(() => {
+    let unlisten: (() => void) | null = null;
+    let cancelled = false;
+    listen<{ sessionId: string }>("entry://focus-session", (e) => {
+      const id = e.payload?.sessionId;
+      if (id) setActive(id);
+    }).then((fn) => {
+      if (cancelled) { fn(); } else { unlisten = fn; }
+    });
+    return () => { cancelled = true; unlisten?.(); };
+  }, [setActive]);
+
   // ── Plugin System ──
   const [activePluginPanel, setActivePluginPanel] = useState<string | null>(null);
   const [activeBottomPanel, setActiveBottomPanel] = useState<string | null>(null);
