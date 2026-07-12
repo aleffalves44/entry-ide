@@ -36,6 +36,7 @@
     "process:allow-exit",
     "core:webview:allow-create-webview-window",
     "core:window:allow-create",
-    "dialog:allow-message"
+    "dialog:allow-message",
+    "core:window:allow-set-always-on-top"
   ]
 }

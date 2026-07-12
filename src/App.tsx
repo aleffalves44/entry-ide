@@ -150,6 +150,16 @@ function AppContent() {
   const stateRef = useRef(state);
   stateRef.current = state;
 
+  // The Consumo Geral window is part of the setup: if it was open when
+  // the app last quit (usage_window_open = "1"), reopen it on launch.
+  useEffect(() => {
+    getSetting("usage_window_open")
+      .then((v) => {
+        if (v === "1") return openUsageWindow();
+      })
+      .catch(() => undefined);
+  }, []);
+
   // Focus requests from the standalone Consumo Geral window — clicking a
   // session row there focuses that session here.
   useEffect(() => {

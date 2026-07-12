@@ -16,6 +16,9 @@ import "../styles/components/UsageWindow.css";
 import { useEffect, useMemo, useState } from "react";
 import { emit } from "@tauri-apps/api/event";
 import { WebviewWindow } from "@tauri-apps/api/webviewWindow";
+import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getSettings, getSetting, setSetting } from "../api/settings";
+import { restorePrefixedWindowState } from "../utils/windowState";
 import { getSessions } from "../api/sessions";
 import { getFrameworkUsage, type FrameworkUsageEntry } from "../api/frameworkMetrics";
 import { getDeliveryEvents, type DeliveryEvent } from "../api/delivery";
@@ -41,6 +44,43 @@ export function UsageWindow() {
   const [rows, setRows] = useState<FrameworkUsageEntry[]>([]);
   const [deliveryEvents, setDeliveryEvents] = useState<DeliveryEvent[]>([]);
   const [tick, setTick] = useState(0);
+  const [pinned, setPinned] = useState(false);
+
+  // Part of the setup: restore this window's own geometry, apply the
+  // saved always-on-top pin, and remember open/closed across launches
+  // (App.tsx reopens the window on start when usage_window_open = "1").
+  useEffect(() => {
+    setSetting("usage_window_open", "1").catch(() => undefined);
+    getSettings()
+      .then((s) => restorePrefixedWindowState(s, "usage_window", { minW: 520, minH: 400 }))
+      .catch(() => undefined);
+    getSetting("usage_window_pinned")
+      .then((v) => {
+        const on = v === "1";
+        setPinned(on);
+        if (on) return getCurrentWindow().setAlwaysOnTop(true);
+      })
+      .catch(() => undefined);
+    let unlisten: (() => void) | null = null;
+    getCurrentWindow()
+      .onCloseRequested(() => {
+        setSetting("usage_window_open", "0").catch(() => undefined);
+      })
+      .then((fn) => {
+        unlisten = fn;
+      })
+      .catch(() => undefined);
+    return () => {
+      unlisten?.();
+    };
+  }, []);
+
+  const togglePin = () => {
+    const next = !pinned;
+    setPinned(next);
+    getCurrentWindow().setAlwaysOnTop(next).catch(() => undefined);
+    setSetting("usage_window_pinned", next ? "1" : "0").catch(() => undefined);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -103,6 +143,15 @@ export function UsageWindow() {
     <div className="usage-window" data-testid="usage-window">
       <header className="usage-window-header">
         <h1>Consumo Geral</h1>
+        <button
+          type="button"
+          className={`usage-window-pin${pinned ? " is-pinned" : ""}`}
+          onClick={togglePin}
+          title={pinned ? "Desafixar (deixa de ficar sobre as outras janelas)" : "Fixar sempre visível (always on top)"}
+          aria-pressed={pinned}
+        >
+          📌
+        </button>
         <div className="usage-window-totals">
           {live.length} {live.length === 1 ? "sessão ativa" : "sessões ativas"} ·{" "}
           {formatTokens(totalTokens)} tokens · <strong>{formatCost(totalCost)}</strong>

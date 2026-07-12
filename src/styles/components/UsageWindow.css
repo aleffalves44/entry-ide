@@ -30,6 +30,24 @@
   color: var(--text-2);
 }
 
+.usage-window-pin {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0.55;
+}
+.usage-window-pin:hover {
+  opacity: 0.85;
+}
+.usage-window-pin.is-pinned {
+  opacity: 1;
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
 .usage-window-title {
   font-size: 10px;
   font-weight: 700;

@@ -20,6 +20,24 @@ vi.mock("@tauri-apps/api/webviewWindow", () => ({
     getByLabel: vi.fn(() => Promise.resolve({ setFocus: setFocusMock })),
   },
 }));
+vi.mock("@tauri-apps/api/window", () => ({
+  getCurrentWindow: vi.fn(() => ({
+    setAlwaysOnTop: vi.fn(() => Promise.resolve()),
+    onCloseRequested: vi.fn(() => Promise.resolve(() => {})),
+    setSize: vi.fn(() => Promise.resolve()),
+    setPosition: vi.fn(() => Promise.resolve()),
+    onResized: vi.fn(),
+    onMoved: vi.fn(),
+    innerSize: vi.fn(() => Promise.resolve({ width: 760, height: 720 })),
+    outerPosition: vi.fn(() => Promise.resolve({ x: 0, y: 0 })),
+    scaleFactor: vi.fn(() => Promise.resolve(1)),
+  })),
+}));
+vi.mock("../api/settings", () => ({
+  getSettings: vi.fn(() => Promise.resolve({})),
+  getSetting: vi.fn(() => Promise.resolve(null)),
+  setSetting: vi.fn(() => Promise.resolve()),
+}));
 
 const sessions = [
   { id: "sess-agent-1", label: "checkout-fix", group: "TSDA-102", phase: "working", mode: "agent" },
