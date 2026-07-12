@@ -111,16 +111,25 @@
   color: var(--accent);
 }
 
-/* Briefly flash the row when single-click commits, so the user gets a
- * visible acknowledgement before the parent collapses the picker and
- * auto-expands the next project. */
+/* Flash on commit + PERSISTENT selected style.  The wizard collapses the
+ * picker right after a click, but the quick creator keeps it open — the
+ * selected row must stay visibly marked, not just flash. */
 @keyframes branch-selector-commit-flash {
   0%   { background: var(--accent-dim); }
-  100% { background: transparent; }
+  100% { background: color-mix(in srgb, var(--accent) 14%, transparent); }
 }
 
 .branch-selector-item.branch-selector-item-selected {
   animation: branch-selector-commit-flash 0.35s ease-out;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.branch-selector-item.branch-selector-item-selected .branch-selector-item-name {
+  color: var(--accent);
+  font-weight: 600;
+}
+.branch-selector-item.branch-selector-item-selected .branch-selector-item-name::after {
+  content: " ✓";
 }
 
 .branch-selector-item-current {
