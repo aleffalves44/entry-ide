@@ -562,20 +562,19 @@ function AppContent() {
     const groupSessions = sessions.filter((s) => s.group === group && s.phase !== "destroyed");
     const anchor = groupSessions.find((s) => s.mode === "agent") ?? groupSessions[0];
     if (!anchor) return;
+    // Split beside the agent's pane when visible; otherwise let
+    // createSession tile the terminal beside the layout as usual.
+    const anchorPane = state.layout.root ? findPaneBySession(state.layout.root, anchor.id) : null;
     const terminal = await createSession({
       mode: "terminal",
       group,
       label: `${group} · terminal`,
       color: anchor.color,
       workingDirectory: anchor.working_directory,
-      skipActivate: true,
+      skipAutoPane: anchorPane !== null,
     });
-    if (!terminal) return;
-    const anchorPane = state.layout.root ? findPaneBySession(state.layout.root, anchor.id) : null;
-    if (anchorPane) {
+    if (terminal && anchorPane) {
       dispatch({ type: "SPLIT_PANE", paneId: anchorPane.id, direction: "horizontal", newSessionId: terminal.id });
-    } else {
-      dispatch({ type: "APPEND_PANE", sessionId: terminal.id });
     }
   }, [sessions, createSession, state.layout.root, dispatch]);
 
@@ -785,13 +784,10 @@ function AppContent() {
   }, [dispatch]);
 
   // ── Instant session creation (Cmd+N / Cmd+T) ──
+  // createSession tiles the new session beside the layout by default.
   const createSessionDirect = useCallback(async () => {
-    const session = await createSession({ skipActivate: true });
-    if (session) {
-      // Tile beside the existing layout — every new session stays visible
-      dispatch({ type: "APPEND_PANE", sessionId: session.id });
-    }
-  }, [createSession, dispatch]);
+    await createSession({});
+  }, [createSession]);
 
   // ── Native menu bar event bridge ──
   useNativeMenuEvents({
@@ -1291,20 +1287,20 @@ function AppContent() {
             pendingSplit.current = null;
           }}
           onCreate={async (opts) => {
-            const session = await createSession({ ...opts, skipActivate: true });
-            setSessionCreatorOpen(false);
-            if (session) {
-              const split = pendingSplit.current;
-              pendingSplit.current = null;
-              if (split && state.layout.root) {
-                // Split an existing pane (explicit split request)
+            const split = pendingSplit.current;
+            pendingSplit.current = null;
+            if (split && state.layout.root) {
+              // Explicit split request — place the session in the chosen pane
+              const session = await createSession({ ...opts, skipAutoPane: true });
+              setSessionCreatorOpen(false);
+              if (session) {
                 dispatch({ type: "SPLIT_PANE", paneId: split.paneId, direction: split.direction, newSessionId: session.id });
-              } else {
-                // Tile the new session beside the existing layout so
-                // every open session stays visible side by side.
-                dispatch({ type: "APPEND_PANE", sessionId: session.id });
               }
+              return;
             }
+            // Default: createSession tiles the new session beside the layout
+            await createSession(opts);
+            setSessionCreatorOpen(false);
           }}
         />
       )}

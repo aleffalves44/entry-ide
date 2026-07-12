@@ -1912,8 +1912,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         updateSessionGroup(session.id, opts.group).catch(console.error);
       }
       dispatch({ type: "SESSION_UPDATED", session });
-      if (!opts?.skipActivate) {
-        dispatch({ type: "SET_ACTIVE", id: session.id });
+      // Default placement for EVERY creation path: tile the new session
+      // beside the existing layout (APPEND_PANE also focuses/activates
+      // it).  Callers doing their own placement (explicit SPLIT_PANE)
+      // pass skipAutoPane to opt out.
+      if (!opts?.skipAutoPane) {
+        dispatch({ type: "APPEND_PANE", sessionId: session.id });
       }
       trackSessionCreated({
         execution_mode: defaultModeRef.current,
