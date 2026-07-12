@@ -12,7 +12,8 @@
  */
 import "../styles/components/QuickSessionCreator.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getProjectsOrdered } from "../api/projects";
+import { open } from "@tauri-apps/plugin-dialog";
+import { getProjectsOrdered, createProject } from "../api/projects";
 import { SessionBranchSelector } from "./SessionBranchSelector";
 import type { CreateSessionOpts } from "../types/session";
 import type { ProjectOrdered } from "../types/project";
@@ -59,6 +60,27 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
     () => projects?.find((p) => p.id === selectedId) ?? null,
     [projects, selectedId],
   );
+
+  /** Native folder dialog → register the project → select it.  Same
+   *  backend flow as the wizard's Browse (create_project). */
+  const addFolder = useCallback(async () => {
+    const path = await open({ directory: true, multiple: false });
+    if (typeof path !== "string" || !path) return;
+    try {
+      const project = await createProject(path, null);
+      const ordered: ProjectOrdered = {
+        ...project,
+        session_count: 0,
+        last_opened_at: null,
+        path_exists: true,
+      };
+      setProjects((prev) => [ordered, ...(prev ?? []).filter((p) => p.id !== project.id)]);
+      setSelectedId(project.id);
+      setBranchSel(null);
+    } catch (err) {
+      console.error("[QuickSessionCreator] Failed to add folder:", err);
+    }
+  }, []);
 
   const create = useCallback(async () => {
     if (!selected || creatingRef.current) return;
@@ -122,7 +144,7 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
         ) : projects.length === 0 ? (
           <div className="quick-creator-empty">
             Nenhum projeto cadastrado ainda.
-            <button className="quick-creator-btn" onClick={onAdvanced}>
+            <button className="quick-creator-btn" onClick={() => void addFolder()}>
               Adicionar pasta…
             </button>
           </div>
@@ -154,6 +176,15 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
                   </option>
                 ))}
               </select>
+              <button
+                type="button"
+                className="quick-creator-btn quick-creator-add"
+                onClick={() => void addFolder()}
+                title="Adicionar pasta como projeto"
+                data-testid="quick-add-folder"
+              >
+                +
+              </button>
             </label>
 
             {selected && (

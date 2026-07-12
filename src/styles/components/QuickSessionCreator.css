@@ -63,6 +63,11 @@
   border-color: var(--accent);
 }
 
+.quick-creator-add {
+  padding: 6px 10px;
+  font-weight: 700;
+}
+
 .quick-creator-branch {
   flex: 1;
   min-height: 0;

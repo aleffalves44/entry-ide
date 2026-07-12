@@ -38,8 +38,17 @@ const projects = [
   },
 ];
 
+const createProjectMock = vi.fn((path: string) =>
+  Promise.resolve({ id: "proj-new", name: "new-folder", path }),
+);
 vi.mock("../api/projects", () => ({
   getProjectsOrdered: vi.fn(() => Promise.resolve(projects)),
+  createProject: (path: string, name: string | null) => createProjectMock(path, name),
+}));
+
+const openDialogMock = vi.fn(() => Promise.resolve("/repos/new-folder"));
+vi.mock("@tauri-apps/plugin-dialog", () => ({
+  open: (...args: unknown[]) => openDialogMock(...args),
 }));
 
 // Stub the heavy branch selector — its own behavior is covered
@@ -129,6 +138,21 @@ describe("QuickSessionCreator", () => {
     await screen.findByRole("combobox");
     fireEvent.click(screen.getByRole("button", { name: /Avançado/ }));
     expect(onAdvanced).toHaveBeenCalled();
+  });
+
+  it("+ adds a folder as project and selects it", async () => {
+    const { onCreate } = setup();
+    await screen.findByRole("combobox");
+    fireEvent.click(screen.getByTestId("quick-add-folder"));
+    await waitFor(() => {
+      expect(createProjectMock).toHaveBeenCalledWith("/repos/new-folder", null);
+    });
+    const select = screen.getByRole("combobox") as HTMLSelectElement;
+    expect(select.value).toBe("proj-new");
+    fireEvent.click(screen.getByTestId("quick-create-btn"));
+    await waitFor(() => expect(onCreate).toHaveBeenCalledTimes(1));
+    expect(onCreate.mock.calls[0][0].projectIds).toEqual(["proj-new"]);
+    expect(onCreate.mock.calls[0][0].workingDirectory).toBe("/repos/new-folder");
   });
 
   it("Escape closes", async () => {
