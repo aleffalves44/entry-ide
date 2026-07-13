@@ -48,7 +48,7 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
                 <tr>
                   <th>Comando</th>
                   <th>Turnos</th>
-                  <th>Tokens (out)</th>
+                  <th>Out</th>
                   <th>Custo</th>
                 </tr>
               </thead>
@@ -70,7 +70,8 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
                 <tr>
                   <th>Agente</th>
                   <th>Execuções</th>
-                  <th>Tokens (out)</th>
+                  <th>Out</th>
+                  <th>Total</th>
                   <th>Custo</th>
                 </tr>
               </thead>
@@ -80,6 +81,7 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
                     <td>{a.agent}</td>
                     <td>{a.runs}</td>
                     <td>{formatTokens(a.outputTokens)}</td>
+                    <td>{formatTokens(a.totalTokens)}</td>
                     <td>{formatCost(a.costUsd)}</td>
                   </tr>
                 ))}
@@ -92,7 +94,7 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
                 <tr>
                   <th>Modelo</th>
                   <th>Turnos</th>
-                  <th>Tokens (out)</th>
+                  <th>Out</th>
                   <th>Custo</th>
                 </tr>
               </thead>
@@ -108,6 +110,11 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
               </tbody>
             </table>
           )}
+          <p className="session-usage-caption">
+            1 turno = 1 result do SDK · 1 execução = 1 despacho de subagente ·
+            Out = tokens de saída · Total = in+out+cache (volume cobrado) ·
+            custo calculado do usage × preço do modelo de cada turno.
+          </p>
         </div>
       )}
     </div>

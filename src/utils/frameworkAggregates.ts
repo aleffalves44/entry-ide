@@ -26,6 +26,9 @@ export interface AgentAggregate {
   agent: string;
   runs: number;
   outputTokens: number;
+  /** in + out + cache_write + cache_read — the billed volume. */
+  totalTokens: number;
+  costUsd: number;
 }
 
 export interface ModelAggregate {
@@ -83,13 +86,16 @@ export function aggregateByAgent(rows: FrameworkUsageEntry[]): AgentAggregate[] 
     if (r.kind !== "agent") continue;
     let agg = map.get(r.agent);
     if (!agg) {
-      agg = { agent: r.agent, runs: 0, outputTokens: 0 };
+      agg = { agent: r.agent, runs: 0, outputTokens: 0, totalTokens: 0, costUsd: 0 };
       map.set(r.agent, agg);
     }
     agg.runs += 1;
     agg.outputTokens += r.output_tokens;
+    agg.totalTokens +=
+      r.input_tokens + r.output_tokens + r.cache_read_tokens + r.cache_creation_tokens;
+    agg.costUsd += r.cost_usd;
   }
-  return [...map.values()].sort((a, b) => b.outputTokens - a.outputTokens);
+  return [...map.values()].sort((a, b) => b.totalTokens - a.totalTokens);
 }
 
 export function aggregateByModel(rows: FrameworkUsageEntry[]): ModelAggregate[] {

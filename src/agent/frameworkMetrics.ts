@@ -33,6 +33,7 @@ import type { ResultEvent, ToolUseBlockData } from "./types";
 import { isTextBlock, isToolUseBlock } from "./types";
 import { isTaskTool, selectSubagentsForTool } from "./subagentSelectors";
 import { parseAgentResult, resultText } from "./agentResultParse";
+import { costForUsage } from "../utils/modelPricing";
 
 export interface FrameworkUsageRow {
   session_id: string;
@@ -52,6 +53,21 @@ export interface FrameworkUsageRow {
 }
 
 /* ─── command / phase attribution ──────────────────────────────────── */
+
+/** Last slash command seen per IDE session (D4).  A command's work often
+ *  spans multiple turns — and multiple RESUMES of the same logical
+ *  session — after the invocation turn.  Turns with no slash initiator
+ *  inherit the latched command instead of falling into "(prose)".
+ *  Keyed by the IDE session id (stable across respawns); workspace
+ *  restore seeds the latch from the predecessor session's rows via
+ *  `seedSessionCommand`. */
+const lastCommandBySession = new Map<string, string>();
+
+/** Seed the command latch for a session — used on workspace restore to
+ *  carry attribution across the old→new session id remap. */
+export function seedSessionCommand(sessionId: string, command: string | null): void {
+  if (command) lastCommandBySession.set(sessionId, command);
+}
 
 /** Extract the slash command that initiated the turn from the user
  *  message text: `/harness-cmd:task CRED-1234` → `harness-cmd:task`.
@@ -109,7 +125,12 @@ export function deriveTurnRows(
 ): FrameworkUsageRow[] {
   const uuid = typeof result.uuid === "string" ? result.uuid : null;
   const initiator = lastMainUserMessage(state);
-  const command = initiator ? commandFromUserText(textOf(initiator)) : null;
+  // D4: explicit slash wins and re-latches; otherwise inherit the
+  // session's active command (a /plan keeps attributing its follow-up
+  // turns and resumes until another slash arrives).
+  const explicitCommand = initiator ? commandFromUserText(textOf(initiator)) : null;
+  if (explicitCommand) lastCommandBySession.set(sessionId, explicitCommand);
+  const command = explicitCommand ?? lastCommandBySession.get(sessionId) ?? null;
   const phase = phaseFromCommand(command);
   const model = state.initEvent?.model ?? "unknown";
   const usage = result.usage as Record<string, unknown> | undefined;
@@ -123,19 +144,26 @@ export function deriveTurnRows(
     phase,
   };
 
-  // 1. Authoritative turn row.
+  // 1. Authoritative turn row.  Cost is COMPUTED from this turn's usage
+  //    decomposition × the model's rates (D3): result.total_cost_usd is
+  //    the session's CUMULATIVE cost, so persisting it per turn made
+  //    sums meaningless; and a single auditable cost function must apply
+  //    to main and subagent rows alike (D2).
+  const turnTokens = {
+    input_tokens: tok(usage, "input_tokens", "inputTokens"),
+    output_tokens: tok(usage, "output_tokens", "outputTokens"),
+    cache_read_tokens: tok(usage, "cache_read_input_tokens", "cacheReadInputTokens"),
+    cache_creation_tokens: tok(usage, "cache_creation_input_tokens", "cacheCreationInputTokens"),
+  };
   rows.push({
     ...base,
     turn_uuid: uuid,
     kind: "turn",
     model,
     agent: "main",
-    input_tokens: tok(usage, "input_tokens", "inputTokens"),
-    output_tokens: tok(usage, "output_tokens", "outputTokens"),
-    cache_read_tokens: tok(usage, "cache_read_input_tokens", "cacheReadInputTokens"),
-    cache_creation_tokens: tok(usage, "cache_creation_input_tokens", "cacheCreationInputTokens"),
+    ...turnTokens,
     duration_ms: typeof result.duration_ms === "number" ? result.duration_ms : null,
-    cost_usd: num(result.total_cost_usd),
+    cost_usd: costForUsage(model, turnTokens),
   });
 
   // 2. Per-model breakdown — only interesting when >1 model ran.
@@ -186,50 +214,70 @@ function subagentRows(
       ? input.subagent_type.trim()
       : null;
 
-  // Authoritative source: the Task tool_result carries a `<usage>` block
-  // (total_tokens, tool_uses, duration_ms) written by the harness when the
-  // subagent finishes.  Stream events only carry partial per-call usage —
-  // summing them undercounts by an order of magnitude (observed ~7%).
-  const result = state.toolResults.get(taskBlock.id);
-  const parsed = result ? parseAgentResult(resultText(result)) : null;
-  const totalTokens = parsed?.usage?.total_tokens ? parseInt(parsed.usage.total_tokens.replace(/[^\d]/g, ""), 10) : NaN;
-  const usageDuration = parsed?.usage?.duration_ms ? parseInt(parsed.usage.duration_ms, 10) : NaN;
-
   const threads = selectSubagentsForTool(state, taskBlock.id);
   const agentName = subagentType ?? threads[0]?.name ?? taskBlock.name;
 
-  // Fallback when the result has no <usage> block (plain agents, older
-  // harness): sum of per-message output tokens — a documented lower bound.
-  let fallbackOutput = 0;
-  let fallbackDuration: number | null = null;
+  // D1/D2: tokens and cost come from the subagent's OWN stream — every
+  // assistant message carries message.usage (in/out/cache) and
+  // message.model.  Summing per-message usage is the billed amount, and
+  // pricing each message by ITS model handles subagents running a
+  // different model than the main thread.  The old source (the Task
+  // result's <usage> handoff total_tokens) mixed in+out+cache into the
+  // output column — 6-9× the real output — and priced at $0.
+  const sums = {
+    input_tokens: 0,
+    output_tokens: 0,
+    cache_read_tokens: 0,
+    cache_creation_tokens: 0,
+  };
+  let costUsd = 0;
+  let dominantModel: string | null = null;
+  let duration: number | null = null;
   for (const thread of threads) {
     for (const m of thread.transcript) {
-      if (m.role !== "assistant") continue;
-      fallbackOutput += num(m.usage?.output_tokens);
+      if (m.role !== "assistant" || !m.usage) continue;
+      const u = {
+        input_tokens: num(m.usage.input_tokens),
+        output_tokens: num(m.usage.output_tokens),
+        cache_read_tokens: num(m.usage.cache_read_input_tokens),
+        cache_creation_tokens: num(m.usage.cache_creation_input_tokens),
+      };
+      sums.input_tokens += u.input_tokens;
+      sums.output_tokens += u.output_tokens;
+      sums.cache_read_tokens += u.cache_read_tokens;
+      sums.cache_creation_tokens += u.cache_creation_tokens;
+      const msgModel = m.model ?? ctx.model;
+      costUsd += costForUsage(msgModel, u);
+      dominantModel = msgModel;
     }
     if (thread.doneAt !== null && thread.since > 0) {
-      fallbackDuration = (fallbackDuration ?? 0) + Math.max(0, thread.doneAt - thread.since);
+      duration = (duration ?? 0) + Math.max(0, thread.doneAt - thread.since);
     }
   }
 
-  // One row per Task invocation ("execução").
+  // Duration fallback: the harness handoff <usage> block, when present.
+  // 0 counts as unknown — degenerate/missing thread timestamps, not a
+  // real sub-millisecond subagent run.
+  if (!duration) {
+    const result = state.toolResults.get(taskBlock.id);
+    const parsed = result ? parseAgentResult(resultText(result)) : null;
+    const parsedDuration = parsed?.usage?.duration_ms ? parseInt(parsed.usage.duration_ms, 10) : NaN;
+    if (Number.isFinite(parsedDuration)) duration = parsedDuration;
+  }
+
+  // One row per Task invocation ("execução" — see the Metrics caption).
   return [{
     session_id: sessionId,
     turn_uuid: ctx.uuid ? `${ctx.uuid}:agent:${taskBlock.id}` : null,
     kind: "agent",
     provider: "claude",
-    model: ctx.model,
+    model: dominantModel ?? ctx.model,
     command: ctx.command,
     agent: agentName,
     phase: ctx.phase,
-    input_tokens: 0,
-    // `output_tokens` holds the subagent's TOTAL tokens when the harness
-    // reported them (authoritative), else the stream-sum lower bound.
-    output_tokens: Number.isFinite(totalTokens) ? totalTokens : fallbackOutput,
-    cache_read_tokens: 0,
-    cache_creation_tokens: 0,
-    duration_ms: Number.isFinite(usageDuration) ? usageDuration : fallbackDuration,
-    cost_usd: 0,
+    ...sums,
+    duration_ms: duration,
+    cost_usd: costUsd,
   }];
 }
 
@@ -237,9 +285,10 @@ function subagentRows(
 
 const recordedTurns = new Set<string>();
 
-/** Test-only: reset the in-memory dedup guard. */
+/** Test-only: reset the in-memory dedup guard and the command latch. */
 export function _resetFrameworkMetricsForTest(): void {
   recordedTurns.clear();
+  lastCommandBySession.clear();
 }
 
 /**
