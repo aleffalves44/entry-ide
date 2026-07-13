@@ -13,13 +13,14 @@ let workspaceDirty = false;
 import {
   createSession as apiCreateSession, closeSession as apiCloseSession,
   getSessions, getRecentSessions, getSessionSnapshot,
-  updateSessionDescription, updateSessionGroup,
+  updateSessionDescription, updateSessionGroup, updateSessionLabel,
   saveAllSnapshots,
   addWorkspacePath,
 } from "../api/sessions";
 import { getProjects, getSessionProjects, attachSessionProject } from "../api/projects";
 import { autoAttachInsideProject } from "../utils/autoAttach";
 import { hasAddDirDrift } from "../utils/agentDrift";
+import { deriveSessionLabel, isDefaultSessionLabel } from "../utils/autoLabel";
 import { createWorktree, worktreeHasChanges, stashWorktree, getSessionWorktreeInfo } from "../api/git";
 import type { SessionWorktree } from "../types/git";
 import { getSettings, getSetting, setSetting } from "../api/settings";
@@ -546,16 +547,22 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           layout: { ...state.layout, focusedPaneId: existing.id },
         };
       }
-      // Otherwise, swap the focused pane's session
-      if (state.layout.focusedPaneId) {
-        const swapped = setPaneSession(state.layout.root, state.layout.focusedPaneId, action.id);
-        return {
-          ...state,
-          activeSessionId: action.id,
-          layout: { ...state.layout, root: swapped },
-        };
-      }
-      return { ...state, activeSessionId: action.id };
+      // No pane shows this session — tile it BESIDE the existing layout
+      // (multipane contract: activating a session never hides another).
+      const activatedPane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.id };
+      const paneCount = collectPanes(state.layout.root).length;
+      const tiledRoot: LayoutNode = {
+        type: "split",
+        id: nextSplitId(),
+        direction: "horizontal",
+        children: [state.layout.root, activatedPane],
+        ratio: paneCount / (paneCount + 1),
+      };
+      return {
+        ...state,
+        activeSessionId: action.id,
+        layout: { root: tiledRoot, focusedPaneId: activatedPane.id },
+      };
     }
     case "SET_RECENT":
       return { ...state, recentSessions: action.entries };
@@ -2467,6 +2474,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   ): Promise<void> => {
     const envelope = buildUserEnvelope(draft, attachments);
     if (!envelope) return;
+
+    // Auto-name the session from its first message (conversation
+    // subject).  Only while the label is still the backend default —
+    // a user-typed (or already derived) name is never overwritten.
+    // The backend emits `session-updated`, so the sidebar re-renders.
+    {
+      const current = stateRef.current.sessions[sessionId];
+      if (current && isDefaultSessionLabel(current.label)) {
+        const derived = deriveSessionLabel(draft);
+        if (derived) {
+          updateSessionLabel(sessionId, derived).catch(() => undefined);
+        }
+      }
+    }
 
     // Echo first so the user sees their own message immediately even if
     // we're about to respawn the subprocess.
