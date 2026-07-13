@@ -27,6 +27,7 @@ import { SubagentMastheadChip } from "./SubagentMastheadChip";
 import { PipelineStrip } from "../components/PipelineStrip";
 import { SessionUsageWidget } from "../components/SessionUsageWidget";
 import { LoopBar } from "../components/LoopBar";
+import { SessionIdContext } from "./SessionIdContext";
 import { selectWorkingState } from "./workingState";
 import { WorkingFootline } from "./WorkingFootline";
 import { MarginDraft } from "./MarginDraft";
@@ -250,6 +251,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
     ?? "default";
 
   return (
+    <SessionIdContext.Provider value={sessionId}>
     <div className="agent-session-view" data-session-id={sessionId}>
       <AgentHeader state={state} sessionId={sessionId} workspacePathCount={workspacePathCount} />
       {sessionEntryForPerm && <PipelineStrip session={sessionEntryForPerm} />}
@@ -402,6 +404,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
           per-agent / per-model breakdowns of this session's usage. */}
       <SessionUsageWidget sessionId={sessionId} />
     </div>
+    </SessionIdContext.Provider>
   );
 }
 

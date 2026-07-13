@@ -3746,3 +3746,80 @@ html[data-agent-timeline-style="classic"] .agent-message {
   opacity: 0.6;
   cursor: default;
 }
+
+/* ─── Flow visibility (live delegation + "now" hierarchy) ──────────── */
+
+/* Live activity strip under a RUNNING Task block — what the subagent
+ * is doing right now.  Kills the frozen-row feeling. */
+.agent-task-live {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 10px 5px 28px;
+  font-size: 11px;
+  color: var(--text-2);
+  overflow: hidden;
+}
+.agent-task-live-pulse {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  align-self: center;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: agent-task-live-pulse 1.4s ease-in-out infinite;
+}
+@keyframes agent-task-live-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.agent-task-live-elapsed {
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  color: var(--text-3, var(--text-2));
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.agent-task-live-action {
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.agent-task-live-narration {
+  font-style: italic;
+  color: var(--text-3, var(--text-2));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+/* "Now" hierarchy — the RUNNING block is where the action is: accent
+ * edge + full presence.  DONE blocks recede slightly so a long turn
+ * reads as history + one live focal point. */
+.agent-task-block[data-status="running"],
+.agent-tool-exec[data-status="running"],
+.agent-tool-file[data-status="running"],
+.agent-tool-search[data-status="running"],
+.agent-tool-web[data-status="running"],
+.agent-tool-generic[data-status="running"] {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.agent-task-block[data-status="done"],
+.agent-tool-exec[data-status="done"],
+.agent-tool-file[data-status="done"],
+.agent-tool-search[data-status="done"],
+.agent-tool-web[data-status="done"],
+.agent-tool-generic[data-status="done"] {
+  opacity: 0.82;
+}
+.agent-task-block[data-status="done"]:hover,
+.agent-tool-exec[data-status="done"]:hover,
+.agent-tool-file[data-status="done"]:hover,
+.agent-tool-search[data-status="done"]:hover,
+.agent-tool-web[data-status="done"]:hover,
+.agent-tool-generic[data-status="done"]:hover {
+  opacity: 1;
+}

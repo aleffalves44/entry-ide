@@ -345,3 +345,77 @@ export function selectSubagentCounts(
 
   return { running, done, totalEverSpawned };
 }
+
+/* ─── Live activity (flow-visibility) ────────────────────────────────
+ *
+ * What a RUNNING subagent is doing right now — feeds the TaskToolBlock
+ * live strip and the Footline detail, so delegation never looks frozen.
+ */
+
+export interface SubagentLiveActivity {
+  /** Subagent display name (Task input.description fallback chain). */
+  name: string;
+  /** ms timestamp of the subagent's first observed message. */
+  since: number;
+  /** Human line for the last tool call ("npm test", "src/x.ts", …). */
+  lastAction: string | null;
+  /** Most recent narration text (last non-empty line). */
+  lastNarration: string | null;
+  /** Total messages observed — a cheap "it's alive" tick source. */
+  messageCount: number;
+}
+
+/** Compact human target for a tool_use block — command, path, pattern,
+ *  or description, whichever the tool carries. */
+function describeToolCall(block: ToolUseBlockData): string {
+  const input = (block.input ?? {}) as Record<string, unknown>;
+  const pick = (k: string) =>
+    typeof input[k] === "string" && (input[k] as string).trim()
+      ? (input[k] as string).trim()
+      : null;
+  const target =
+    pick("command") ?? pick("file_path") ?? pick("path") ?? pick("pattern") ??
+    pick("query") ?? pick("url") ?? pick("description") ?? null;
+  const label = target
+    ? target.length > 64 ? `${target.slice(0, 61)}…` : target
+    : null;
+  return label ? `${block.name}: ${label}` : block.name;
+}
+
+/**
+ * Live activity of the most recent subagent under a Task tool_use.
+ * Null when the Task has no observed subagent messages yet (spawn gap).
+ */
+export function selectSubagentLiveActivity(
+  state: AgentSessionState,
+  toolUseId: string,
+): SubagentLiveActivity | null {
+  const rows = selectSubagentsForTool(state, toolUseId);
+  if (rows.length === 0) return null;
+  // The active thread is the newest one (spawn order preserved).
+  const row = rows[rows.length - 1];
+
+  let lastAction: string | null = null;
+  let lastNarration: string | null = null;
+  let messageCount = 0;
+  for (const m of row.transcript) {
+    messageCount += 1;
+    if (m.role !== "assistant") continue;
+    for (const block of m.blocks) {
+      if (isToolUseBlock(block)) {
+        lastAction = describeToolCall(block);
+      } else if (isTextBlock(block) && block.text.trim()) {
+        const lines = block.text.trim().split("\n").filter((l) => l.trim());
+        if (lines.length > 0) lastNarration = lines[lines.length - 1].trim();
+      }
+    }
+  }
+
+  return {
+    name: row.name,
+    since: row.since,
+    lastAction,
+    lastNarration,
+    messageCount,
+  };
+}
