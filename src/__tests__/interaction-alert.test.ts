@@ -15,10 +15,16 @@ vi.mock("@tauri-apps/plugin-notification", () => ({
   requestPermission: vi.fn(() => Promise.resolve("granted")),
   sendNotification: (...args: unknown[]) => sendNotificationMock(...args),
 }));
+vi.mock("../api/settings", () => ({
+  getSetting: vi.fn(() => Promise.resolve(null)),
+  setSetting: vi.fn(() => Promise.resolve()),
+}));
 
 import {
   alertInteractionNeeded,
+  areNotificationsMuted,
   initNotifications,
+  setNotificationsMuted,
 } from "../utils/notifications";
 
 describe("alertInteractionNeeded", () => {
@@ -51,5 +57,16 @@ describe("alertInteractionNeeded", () => {
   it("never throws when audio is unavailable (jsdom has no AudioContext)", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(true);
     expect(() => alertInteractionNeeded("ExitPlanMode")).not.toThrow();
+  });
+
+  it("muted → no alert of any kind; unmute restores", () => {
+    vi.spyOn(document, "hasFocus").mockReturnValue(false);
+    setNotificationsMuted(true);
+    expect(areNotificationsMuted()).toBe(true);
+    alertInteractionNeeded("Bash");
+    expect(sendNotificationMock).not.toHaveBeenCalled();
+    setNotificationsMuted(false);
+    alertInteractionNeeded("Bash");
+    expect(sendNotificationMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -1,9 +1,43 @@
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
+import { getSetting, setSetting } from "../api/settings";
 import { isMac, isWin } from "./platform";
 
 let permissionGranted = false;
 
+// ─── Global mute (pause notifications) ───────────────────────────────
+// Silences EVERY audible/native alert (interaction chime, native
+// banners, long-running-done).  Persisted so it survives restarts.
+// Tiny external store so the StatusBar button re-renders on toggle.
+let muted = false;
+const muteListeners = new Set<() => void>();
+
+export function areNotificationsMuted(): boolean {
+  return muted;
+}
+
+export function setNotificationsMuted(value: boolean): void {
+  if (muted === value) return;
+  muted = value;
+  setSetting("notifications_muted", value ? "1" : "0").catch(() => undefined);
+  for (const fn of muteListeners) fn();
+}
+
+export function subscribeNotificationsMuted(fn: () => void): () => void {
+  muteListeners.add(fn);
+  return () => {
+    muteListeners.delete(fn);
+  };
+}
+
 export async function initNotifications(): Promise<void> {
+  getSetting("notifications_muted")
+    .then((v) => {
+      if (v === "1") {
+        muted = true;
+        for (const fn of muteListeners) fn();
+      }
+    })
+    .catch(() => undefined);
   permissionGranted = await isPermissionGranted();
   if (!permissionGranted) {
     const permission = await requestPermission();
@@ -12,6 +46,7 @@ export async function initNotifications(): Promise<void> {
 }
 
 export function notifyLongRunningDone(sessionLabel: string): void {
+  if (muted) return;
   if (!permissionGranted) return;
   sendNotification({
     title: "Task completed",
@@ -72,6 +107,7 @@ function nativeNotificationSound(): string {
 }
 
 export function alertInteractionNeeded(toolName: string, sessionLabel?: string): void {
+  if (muted) return;
   const focused = typeof document !== "undefined" && document.hasFocus();
   playInteractionChime();
   if (focused) return;

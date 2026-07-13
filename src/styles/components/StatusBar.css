@@ -543,3 +543,9 @@
   letter-spacing: 0.5px;
   padding: 4px 10px 2px;
 }
+
+/* Mute-notifications toggle — accent when paused */
+.status-mute-active {
+  color: var(--accent);
+  opacity: 1;
+}
