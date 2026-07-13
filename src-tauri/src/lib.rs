@@ -615,6 +615,7 @@ pub fn run() {
             db::record_delivery_event,
             db::get_delivery_events,
             pipeline::get_pipeline_state,
+            pipeline::check_pr_merged,
             db::get_cost_history,
             db::save_memory,
             db::get_all_memory,

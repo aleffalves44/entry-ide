@@ -73,6 +73,41 @@ export function deriveDeliveryLines(events: DeliveryEvent[]): DeliveryLine[] {
   return lines.sort((a, b) => (parseTs(b.startedAt) ?? 0) - (parseTs(a.startedAt) ?? 0));
 }
 
+export interface PendingMergeCheck {
+  sessionId: string;
+  repoPath: string;
+  prNumber: number;
+  prUrl: string | null;
+  branch: string | null;
+}
+
+/** Lines whose PR is open with no merge recorded — the set worth asking
+ *  gh about when the Consumo Geral view opens.  Requires repo path and
+ *  PR number (without either, there's nothing actionable to query). */
+export function pendingMergeChecks(
+  events: DeliveryEvent[],
+): PendingMergeCheck[] {
+  const prNumbers = new Map<string, number>();
+  for (const e of events) {
+    if (e.event === "pr_opened" && e.pr_number !== null) {
+      prNumbers.set(e.session_id, e.pr_number);
+    }
+  }
+  return deriveDeliveryLines(events)
+    .filter((l) => l.prOpenedAt !== null && l.prMergedAt === null && l.repoPath)
+    .flatMap((l) => {
+      const prNumber = prNumbers.get(l.sessionId);
+      if (prNumber === undefined) return [];
+      return [{
+        sessionId: l.sessionId,
+        repoPath: l.repoPath!,
+        prNumber,
+        prUrl: l.prUrl,
+        branch: l.branch,
+      }];
+    });
+}
+
 export function medianLeadMs(lines: DeliveryLine[]): number | null {
   const leads = lines
     .map((l) => l.leadMs)

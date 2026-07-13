@@ -6,6 +6,7 @@ import {
   deriveDeliveryLines,
   medianLeadMs,
   formatLead,
+  pendingMergeChecks,
 } from "../utils/deliveryMetrics";
 import type { DeliveryEvent } from "../api/delivery";
 
@@ -79,6 +80,32 @@ describe("medianLeadMs", () => {
     ]);
     // leads: 1h, 3h → median 2h
     expect(medianLeadMs(lines)).toBe(2 * 3_600_000);
+  });
+});
+
+describe("pendingMergeChecks", () => {
+  it("returns only opened-but-unmerged PRs with repo and number", () => {
+    const events = [
+      // a: opened + merged — settled, not pending
+      ev({ session_id: "a", event: "task_started" }),
+      ev({ session_id: "a", event: "pr_opened", pr_number: 1, pr_url: "u1" }),
+      ev({ session_id: "a", event: "pr_merged", pr_number: 1 }),
+      // b: opened, unmerged — PENDING
+      ev({ session_id: "b", event: "task_started" }),
+      ev({ session_id: "b", event: "pr_opened", pr_number: 2, pr_url: "u2" }),
+      // c: no PR at all
+      ev({ session_id: "c", event: "task_started" }),
+      // d: opened but pr_number missing — nothing actionable to query
+      ev({ session_id: "d", event: "pr_opened", pr_number: null }),
+    ];
+    const pending = pendingMergeChecks(events);
+    expect(pending).toHaveLength(1);
+    expect(pending[0]).toMatchObject({
+      sessionId: "b",
+      repoPath: "/repo",
+      prNumber: 2,
+      prUrl: "u2",
+    });
   });
 });
 
