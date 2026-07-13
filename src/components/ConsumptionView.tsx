@@ -5,27 +5,18 @@
  *   • Workbench → "Consumo" tab (docked in the IDE, part of the setup)
  *   • UsageWindow (standalone native window, second-monitor use)
  *
- * Reads ONLY via Tauri commands (get_sessions, get_framework_usage,
- * get_delivery_events) on a light poll — no SessionContext dependency,
+ * Reads ONLY via Tauri commands (get_sessions, get_framework_usage)
+ * on a light poll — no SessionContext dependency,
  * so both hosts share identical behavior.  Focusing a session is the
  * host's business (in-app dispatch vs cross-window event) — injected
  * via `onFocusSession`.
  */
 import "../styles/components/UsageWindow.css";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { getSessions } from "../api/sessions";
 import { getFrameworkUsage, type FrameworkUsageEntry } from "../api/frameworkMetrics";
-import {
-  checkPrMerged,
-  getDeliveryEvents,
-  recordDeliveryEvent,
-  type DeliveryEvent,
-} from "../api/delivery";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
 import { formatTokens } from "../utils/frameworkAggregates";
-import {
-  pendingMergeChecks,
-} from "../utils/deliveryMetrics";
 import type { SessionData } from "../types/session";
 
 const POLL_MS = 4000;
@@ -54,7 +45,6 @@ export function ConsumptionView({
 }: ConsumptionViewProps) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [rows, setRows] = useState<FrameworkUsageEntry[]>([]);
-  const [deliveryEvents, setDeliveryEvents] = useState<DeliveryEvent[]>([]);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -71,11 +61,6 @@ export function ConsumptionView({
           if (!cancelled && Array.isArray(r)) setRows(r);
         })
         .catch(() => undefined);
-      getDeliveryEvents()
-        .then((d) => {
-          if (!cancelled && Array.isArray(d)) setDeliveryEvents(d);
-        })
-        .catch(() => undefined);
     };
     load();
     const id = setInterval(() => {
@@ -87,46 +72,6 @@ export function ConsumptionView({
       clearInterval(id);
     };
   }, [active]);
-
-  // On OPEN (mount / tab activation), settle pending merges: PRs we saw
-  // open but whose merge was never observed (session closed before the
-  // merge).  One pass per open — not per poll tick — capped to avoid a
-  // gh storm; failures are silent and simply retry on the next open.
-  const mergeSweepDone = useRef(false);
-  useEffect(() => {
-    if (!active) {
-      mergeSweepDone.current = false;
-      return;
-    }
-    if (mergeSweepDone.current || deliveryEvents.length === 0) return;
-    mergeSweepDone.current = true;
-    const pending = pendingMergeChecks(deliveryEvents).slice(0, 10);
-    if (pending.length === 0) return;
-    (async () => {
-      let recorded = 0;
-      for (const p of pending) {
-        const mergedAt = await checkPrMerged(p.repoPath, p.prNumber).catch(() => null);
-        if (!mergedAt) continue;
-        await recordDeliveryEvent({
-          session_id: p.sessionId,
-          repo_path: p.repoPath,
-          branch: p.branch,
-          event: "pr_merged",
-          pr_number: p.prNumber,
-          pr_url: p.prUrl,
-          recorded_at: mergedAt,
-        }).catch(() => undefined);
-        recorded += 1;
-      }
-      if (recorded > 0) {
-        getDeliveryEvents()
-          .then((d) => {
-            if (Array.isArray(d)) setDeliveryEvents(d);
-          })
-          .catch(() => undefined);
-      }
-    })();
-  }, [active, deliveryEvents]);
 
   // Lifetime cost + tokens per session (turn rows only — a turn already
   // includes its subagents).
@@ -206,10 +151,8 @@ export function ConsumptionView({
         </section>
       )}
 
-      {/* Delivery/lead-time is DATA-ONLY inside the IDE: capture keeps
-          running (usePipelineState) and the on-open merge sweep above
-          keeps the dataset complete, but the table was removed — the
-          numbers are meant for external analysis, not this screen. */}
+      {/* Delivery/lead-time is capture-only (usePipelineState writes
+          delivery_events); this screen neither shows nor fetches it. */}
       <section className="usage-window-metrics">
         <FrameworkMetricsView refreshToken={tick} />
       </section>
