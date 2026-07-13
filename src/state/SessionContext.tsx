@@ -61,7 +61,7 @@ import {
 } from "../utils/workbenchLayout";
 import { spawnAgentSession, closeAgentSession, sendAgentInput, updateEntryState, setAgentPermissionMode } from "../api/agent";
 import { reportAgentSpawnFailure } from "../utils/agentSpawnFailure";
-import { destroyAgentSessionStore } from "../agent/agentSessionStore";
+import { destroyAgentSessionStore, peekAgentSessionStore } from "../agent/agentSessionStore";
 import { cleanupSessionRefs } from "../utils/sessionRefCleanup";
 import { cacheAgentInit, clearAgentInitCache, peekAgentInitCache } from "../agent/useAgentInit";
 import {
@@ -1316,7 +1316,36 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           }
         },
       );
-      initListeners.current.set(sessionId, unlisten);
+      // Also watch exits: when the subprocess dies because `--resume`
+      // pointed at a conversation Claude no longer has ("No conversation
+      // found" on stderr), the stored uuid is DEAD.  Without dropping it
+      // here, every subsequent revive respawns with the same defunct
+      // --resume and fails identically — the "Couldn't resume that
+      // conversation" banner on loop.  Dropping the uuid makes the next
+      // submit spawn a FRESH conversation (UI history is preserved in
+      // the store; Claude-side context is gone either way).
+      const unlistenExit = await listen<{ code: number | null; signal: string | null }>(
+        `agent-exit-${sessionId}`,
+        (msg) => {
+          const code = msg.payload?.code;
+          if (code === null || code === 0) return;
+          const stderrText =
+            peekAgentSessionStore(sessionId)?.getSnapshot().stderr ?? "";
+          if (stderrText.toLowerCase().includes("no conversation found")) {
+            const stale = claudeUuids.current.get(sessionId);
+            if (stale) {
+              console.warn(
+                `[SessionContext] dropping stale resume uuid ${stale} for ${sessionId} — Claude has no record of it`,
+              );
+              claudeUuids.current.delete(sessionId);
+            }
+          }
+        },
+      );
+      initListeners.current.set(sessionId, () => {
+        try { unlisten(); } catch { /* already detached */ }
+        try { unlistenExit(); } catch { /* already detached */ }
+      });
     } catch (err) {
       console.warn("[SessionContext] failed to attach init listener:", err);
     }
