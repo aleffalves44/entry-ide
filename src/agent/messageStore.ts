@@ -53,6 +53,10 @@ export interface RenderedMessage {
   role: "user" | "assistant";
   blocks: ContentBlock[];
   usage?: AssistantEvent["message"]["usage"];
+  /** Model that produced this assistant message — subagents can run a
+   *  different model than the main thread (accounting needs per-turn
+   *  model to price usage correctly). */
+  model?: string;
   parentToolUseId?: string | null;
   /**
    * Unix ms timestamp captured when the message was first observed by the
@@ -194,6 +198,7 @@ function upsertAssistant(
       role: "assistant",
       blocks: [...incomingBlocks],
       usage: event.message.usage,
+      model: typeof event.message.model === "string" ? event.message.model : undefined,
       parentToolUseId: event.parent_tool_use_id ?? null,
       timestamp: Date.now(),
     };
@@ -212,6 +217,7 @@ function upsertAssistant(
     blocks: mergedBlocks,
     // Latest usage wins (Claude reports cumulative usage on the latest event).
     usage: event.message.usage ?? existing.usage,
+    model: (typeof event.message.model === "string" ? event.message.model : undefined) ?? existing.model,
   };
   const out = messages.slice();
   out[existingIdx] = merged;

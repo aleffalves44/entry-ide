@@ -70,3 +70,10 @@
   font-family: inherit;
   color: var(--text-2);
 }
+
+.session-usage-caption {
+  flex-basis: 100%;
+  margin: 2px 0 0;
+  font-size: 9.5px;
+  color: var(--text-3, var(--text-2));
+}

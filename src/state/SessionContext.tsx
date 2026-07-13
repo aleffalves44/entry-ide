@@ -21,6 +21,8 @@ import { getProjects, getSessionProjects, attachSessionProject } from "../api/pr
 import { autoAttachInsideProject } from "../utils/autoAttach";
 import { hasAddDirDrift } from "../utils/agentDrift";
 import { deriveSessionLabel, isDefaultSessionLabel } from "../utils/autoLabel";
+import { seedSessionCommand } from "../agent/frameworkMetrics";
+import { getFrameworkUsage } from "../api/frameworkMetrics";
 import { createWorktree, worktreeHasChanges, stashWorktree, getSessionWorktreeInfo } from "../api/git";
 import type { SessionWorktree } from "../types/git";
 import { getSettings, getSetting, setSetting } from "../api/settings";
@@ -1713,6 +1715,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
               dispatch({ type: "SESSION_UPDATED", session: newSession });
               oldToNew.set(saved.id, newSession.id);
+
+              // Carry command attribution across the id remap (audit D4):
+              // a /plan resumed after restart keeps attributing its turns
+              // to the command instead of falling into "(prose)".  Seed
+              // from the OLD session's most recent commanded row.
+              getFrameworkUsage({ sessionId: saved.id })
+                .then((rows) => {
+                  const last = rows.find((r) => r.command);
+                  if (last?.command) seedSessionCommand(newSession.id, last.command);
+                })
+                .catch(() => undefined);
             } catch (err) {
               console.warn("[SessionContext] Failed to restore session:", saved.label, err);
               // Clean up the terminal that was pre-created for this failed session

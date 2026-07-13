@@ -64,7 +64,7 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, 
   const agentAggs = useMemo(() => aggregateByAgent(rows), [rows]);
   const modelAggs = useMemo(() => aggregateByModel(rows), [rows]);
   const maxCommandCost = commandAggs.length > 0 ? Math.max(...commandAggs.map((c) => c.costUsd)) : 0;
-  const maxAgentTokens = agentAggs.length > 0 ? Math.max(...agentAggs.map((a) => a.outputTokens)) : 0;
+  const maxAgentTokens = agentAggs.length > 0 ? Math.max(...agentAggs.map((a) => a.totalTokens)) : 0;
   const totalCost = commandAggs.reduce((n, c) => n + c.costUsd, 0);
   const totalTurns = commandAggs.reduce((n, c) => n + c.turns, 0);
 
@@ -167,17 +167,17 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, 
 
           {agentAggs.length > 0 && (
             <div className="fw-metrics-section">
-              <div className="fw-metrics-title">Por agente (tokens totais)</div>
+              <div className="fw-metrics-title">Por agente (total = in+out+cache · custo do usage×modelo)</div>
               {agentAggs.map((a) => (
-                <div key={a.agent} className="fw-metrics-row" title={`${a.runs} execuções`}>
+                <div key={a.agent} className="fw-metrics-row" title={`${a.runs} execuções · ${formatTokens(a.outputTokens)} out`}>
                   <span className="fw-metrics-label truncate">{a.agent.replace(/^harness-cmd:/, "")}</span>
                   <div className="fw-metrics-track">
                     <div
                       className="fw-metrics-fill fw-metrics-fill-agent"
-                      style={{ width: `${maxAgentTokens > 0 ? (a.outputTokens / maxAgentTokens) * 100 : 0}%` }}
+                      style={{ width: `${maxAgentTokens > 0 ? (a.totalTokens / maxAgentTokens) * 100 : 0}%` }}
                     />
                   </div>
-                  <span className="fw-metrics-value mono">{formatTokens(a.outputTokens)}</span>
+                  <span className="fw-metrics-value mono">{formatTokens(a.totalTokens)} · {formatCost(a.costUsd)}</span>
                 </div>
               ))}
             </div>
