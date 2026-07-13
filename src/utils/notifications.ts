@@ -1,4 +1,5 @@
 import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
+import { isMac, isWin } from "./platform";
 
 let permissionGranted = false;
 
@@ -29,6 +30,10 @@ export function playInteractionChime(): void {
       (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!Ctx) return;
     const ctx = new Ctx();
+    // Autoplay policies can hand out a suspended context (varies by
+    // webview/platform) — resume unconditionally; by the time an agent
+    // asks for permission the user has long since interacted.
+    if (ctx.state === "suspended") void ctx.resume().catch(() => undefined);
     const gain = ctx.createGain();
     gain.gain.value = 0.08;
     gain.connect(ctx.destination);
@@ -53,6 +58,19 @@ export function playInteractionChime(): void {
  * system sound) so it cuts through other apps; focused → just the
  * chime, since the modal is already on screen somewhere.
  */
+/** Per-platform sound identifier for native notifications.  The WebAudio
+ *  chime is the GUARANTEED audible cue on every platform (it plays even
+ *  when the window is unfocused); the native sound is best-effort:
+ *    macOS   — system alert sound name ("Ping" ships with every macOS)
+ *    Windows — ms-winsoundevent toast audio id
+ *    Linux   — freedesktop sound-theme event id (daemon support varies)
+ */
+function nativeNotificationSound(): string {
+  if (isMac) return "Ping";
+  if (isWin) return "ms-winsoundevent:Notification.Default";
+  return "message-new-instant";
+}
+
 export function alertInteractionNeeded(toolName: string, sessionLabel?: string): void {
   const focused = typeof document !== "undefined" && document.hasFocus();
   playInteractionChime();
@@ -63,7 +81,6 @@ export function alertInteractionNeeded(toolName: string, sessionLabel?: string):
     body: sessionLabel
       ? `"${sessionLabel}" aguarda aprovação: ${toolName}`
       : `Sessão aguarda aprovação: ${toolName}`,
-    // macOS plays the default alert sound; harmlessly ignored elsewhere.
-    sound: "default",
+    sound: nativeNotificationSound(),
   });
 }

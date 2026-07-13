@@ -28,14 +28,18 @@ describe("alertInteractionNeeded", () => {
   });
   afterEach(() => vi.restoreAllMocks());
 
-  it("unfocused window → native notification with sound", () => {
+  it("unfocused window → native notification with a platform sound id", () => {
     vi.spyOn(document, "hasFocus").mockReturnValue(false);
     alertInteractionNeeded("Bash", "checkout-fix");
     expect(sendNotificationMock).toHaveBeenCalledTimes(1);
     const arg = sendNotificationMock.mock.calls[0][0] as Record<string, unknown>;
     expect(arg.body).toContain("Bash");
     expect(arg.body).toContain("checkout-fix");
-    expect(arg.sound).toBe("default");
+    // Platform-dependent (Ping / ms-winsoundevent / freedesktop id) —
+    // assert one of the known ids is always present.
+    expect(["Ping", "ms-winsoundevent:Notification.Default", "message-new-instant"]).toContain(
+      arg.sound,
+    );
   });
 
   it("focused window → no native notification (chime only)", () => {
