@@ -152,8 +152,8 @@
   height: 7px;
   border-radius: 50%;
   background: var(--text-3);
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.5) inset;
-  transition: background-color 200ms ease, box-shadow 200ms ease;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--shadow-tint) 50%, transparent);
+  transition: background-color var(--dur-quick) ease, box-shadow var(--dur-quick) ease;
 }
 
 .agent-session-status-dot[data-state="ready"] {
@@ -260,7 +260,7 @@
   font-weight: 500;
   letter-spacing: -0.005em;
   cursor: pointer;
-  transition: background 150ms ease, color 150ms ease, transform 80ms ease;
+  transition: background var(--dur-quick) ease, color var(--dur-quick) ease, transform var(--dur-tap) ease;
 }
 
 .agent-session-stop:hover {
@@ -537,7 +537,7 @@
   align-items: center;
   justify-content: center;
   position: relative;
-  transition: transform 120ms ease, background 120ms ease;
+  transition: transform var(--dur-quick) ease, background var(--dur-quick) ease;
 }
 
 .agent-message-avatar[data-role="user"] {
@@ -642,7 +642,7 @@
   color: var(--ink-tertiary);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition: opacity var(--dur-quick) ease, color var(--dur-quick) ease, border-color var(--dur-quick) ease;
 }
 
 .agent-message:hover .agent-message-raw-toggle,
@@ -677,7 +677,7 @@
   color: var(--ink-tertiary);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 150ms ease, color 150ms ease;
+  transition: opacity var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 
 .agent-message-raw:hover .agent-message-raw-copy {
@@ -997,7 +997,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   cursor: pointer;
   padding: 2px 4px;
   opacity: 0;
-  transition: opacity 150ms ease, color 150ms ease;
+  transition: opacity var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 
 .agent-code-fence:hover .agent-code-fence-copy {
@@ -1073,8 +1073,8 @@ html[data-theme="newsprint"] .agent-md-h2 {
   padding: 4px 12px;
   border-radius: 4px;
   cursor: pointer;
-  z-index: 1;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  z-index: var(--z-base);
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 
 .agent-code-fence-show-more:hover {
@@ -1111,7 +1111,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   padding: 4px 12px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 
 .agent-code-fence-show-less:hover {
@@ -1145,7 +1145,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   text-transform: inherit;
   color: var(--ink-secondary);
   cursor: pointer;
-  transition: color 150ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .agent-code-fence-toggle:hover {
@@ -1167,7 +1167,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   text-transform: inherit;
   color: var(--ink-tertiary);
   cursor: pointer;
-  transition: color 150ms ease;
+  transition: color var(--dur-quick) ease;
   opacity: 0;
 }
 
@@ -1205,7 +1205,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   text-transform: inherit;
   color: var(--ink-tertiary);
   cursor: pointer;
-  transition: color 150ms ease, opacity 150ms ease;
+  transition: color var(--dur-quick) ease, opacity var(--dur-quick) ease;
   opacity: 0;
 }
 
@@ -1262,7 +1262,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   text-transform: inherit;
   color: var(--ink-tertiary);
   cursor: pointer;
-  transition: color 150ms ease, opacity 150ms ease;
+  transition: color var(--dur-quick) ease, opacity var(--dur-quick) ease;
   opacity: 0;
 }
 
@@ -1287,7 +1287,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
 .agent-expand-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: stretch;
   justify-content: stretch;
@@ -1299,7 +1299,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   padding: 44px 24px 24px;
   background: color-mix(in srgb, #000 70%, transparent);
   backdrop-filter: blur(3px);
-  animation: agent-expand-fade-in 120ms ease-out;
+  animation: agent-expand-fade-in var(--dur-quick) ease-out;
 }
 
 @keyframes agent-expand-fade-in {
@@ -1356,7 +1356,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 
 .agent-expand-zoom:hover:not(:disabled) {
@@ -1404,7 +1404,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 
 .agent-expand-pan:hover {
@@ -1432,7 +1432,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   border-radius: 4px;
   cursor: pointer;
   margin-left: 4px;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 
 .agent-expand-reset:hover {
@@ -1453,7 +1453,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease, color var(--dur-quick) ease;
   margin-left: 4px;
 }
 
@@ -2577,7 +2577,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   letter-spacing: 0.04em;
-  transition: color 200ms ease;
+  transition: color var(--dur-quick) ease;
   opacity: 0.7;
 }
 
@@ -2730,7 +2730,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: background 150ms ease, color 150ms ease;
+  transition: background var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 
 .agent-exit-action:hover {
@@ -2754,7 +2754,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-tertiary);
-  transition: color 150ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .agent-stderr-details summary:hover {
@@ -2807,7 +2807,7 @@ html[data-theme="newsprint"] .agent-md-h2 {
   overflow: hidden;
   background: var(--bg-1);
   text-decoration: none;
-  transition: border-color 120ms ease;
+  transition: border-color var(--dur-quick) ease;
   max-width: 100%;
 }
 
@@ -2945,7 +2945,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
   border-radius: 4px;
   background: transparent;
   font-style: normal;
-  animation: agent-task-block-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: agent-task-block-in var(--dur-base) var(--ease-out-expo) both;
 }
 
 @keyframes agent-task-block-in {
@@ -2977,7 +2977,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
   font: var(--text-base) / var(--leading-snug) var(--font-ui);
   color: var(--text-1);
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease;
 }
 .agent-task-block-row:hover {
   background: var(--bg-2);
@@ -3072,7 +3072,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
   border-left: 2px solid var(--voice-agent, var(--accent));
   background: var(--bg-2);
   border-radius: 0 4px 4px 0;
-  animation: agent-task-body-in 200ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: agent-task-body-in var(--dur-quick) var(--ease-out-expo) both;
 }
 
 /* Brass thread from the row's dot down to the body rail. */
@@ -3189,7 +3189,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
   font: var(--text-base) / var(--leading-snug) var(--font-ui);
   color: var(--text-1);
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease;
 }
 
 .agent-subagent-row:hover {
@@ -3366,7 +3366,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
 .agent-subagent-chip-wrap {
   position: relative;
   display: inline-flex;
-  animation: agent-subagent-chip-in 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: agent-subagent-chip-in var(--dur-base) var(--ease-out-expo) both;
 }
 
 @keyframes agent-subagent-chip-in {
@@ -3397,7 +3397,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
   letter-spacing: 0.06em;
   cursor: pointer;
   text-transform: lowercase;
-  transition: border-color 160ms ease, background 160ms ease;
+  transition: border-color var(--dur-quick) ease, background var(--dur-quick) ease;
 }
 .agent-subagent-chip:hover {
   border-color: var(--brass, var(--accent));
@@ -3427,7 +3427,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
   position: absolute;
   top: calc(100% + 8px);
   right: 0;
-  z-index: 200;
+  z-index: var(--z-popover);
   min-width: 280px;
   max-width: 360px;
   /* Solid floating-panel surface.  Matches every other popover in the
@@ -3446,7 +3446,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
     0 0 0 1px rgba(0, 0, 0, 0.35);
   padding: 10px;
   transform-origin: top right;
-  animation: agent-subagent-popover-in 180ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: agent-subagent-popover-in var(--dur-quick) var(--ease-out-expo) both;
 }
 
 @keyframes agent-subagent-popover-in {
@@ -3500,7 +3500,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
   cursor: pointer;
   font: var(--text-base) / 1.3 var(--font-ui);
   color: var(--text-1);
-  transition: background 120ms ease;
+  transition: background var(--dur-quick) ease;
 }
 .agent-subagent-popover-row:hover {
   background: var(--bg-2);
@@ -3724,7 +3724,7 @@ html[data-agent-timeline-style="classic"] .agent-message {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: border-color 180ms ease, color 180ms ease;
+  transition: border-color var(--dur-quick) ease, color var(--dur-quick) ease;
 }
 .agent-footline-stop:hover {
   border-color: var(--danger, var(--red));

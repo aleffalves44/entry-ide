@@ -8,10 +8,10 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 12px 16px;
-  z-index: 60;
+  z-index: var(--z-overlay);
   min-width: 280px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  animation: slideInRight 0.2s ease-out;
+  box-shadow: var(--shadow-3);
+  animation: slideInRight var(--dur-quick) ease-out;
 }
 
 .auto-toast-header {
@@ -38,7 +38,7 @@
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   font-family: var(--font-ui);
-  transition: background 0.1s, color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap);
 }
 .auto-toast-cancel:hover { color: var(--text-0); background: var(--bg-3); }
 

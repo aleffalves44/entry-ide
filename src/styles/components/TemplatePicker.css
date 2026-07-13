@@ -16,7 +16,7 @@
   font-weight: 600;
   cursor: pointer;
   color: var(--bg-0);
-  transition: filter 0.15s;
+  transition: filter var(--dur-quick);
 }
 .template-picker-btn:hover {
   filter: brightness(1.1);
@@ -32,10 +32,10 @@
   background: var(--bg-1);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+  box-shadow: var(--shadow-3);
   width: 420px;
   max-height: min(70vh, 560px);
-  z-index: 9999;
+  z-index: var(--z-picker);
   display: flex;
   flex-direction: column;
 }
@@ -58,7 +58,7 @@
   font-family: var(--font-ui);
   padding: 7px 30px 7px 10px;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--dur-quick);
 }
 .template-picker-search:focus {
   border-color: var(--accent);
@@ -103,7 +103,7 @@
   font-size: var(--text-md);
   padding: 6px 12px;
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+  transition: color var(--dur-quick), border-color var(--dur-quick);
   white-space: nowrap;
   display: flex;
   align-items: center;
@@ -158,14 +158,14 @@
 }
 
 .template-picker-category-chevron {
-  font-family: monospace;
+  font-family: var(--font-code);
   font-size: var(--text-sm);
   color: var(--text-3);
   width: 10px;
 }
 
 .template-picker-category-icon {
-  font-family: monospace;
+  font-family: var(--font-code);
   font-size: var(--text-md);
   color: var(--text-2);
   width: 14px;
@@ -200,7 +200,7 @@
   font-size: var(--text-md);
   color: var(--text-1);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--dur-tap);
 }
 .template-picker-item:hover {
   background: var(--bg-hover);
@@ -229,7 +229,7 @@
   padding: 2px 4px;
   flex-shrink: 0;
   filter: grayscale(1);
-  transition: opacity 0.1s, filter 0.1s;
+  transition: opacity var(--dur-tap), filter var(--dur-tap);
 }
 .template-picker-item:hover .template-picker-item-pin {
   opacity: 1;
@@ -248,7 +248,7 @@
   color: var(--text-3);
   cursor: pointer;
   font-size: var(--text-sm);
-  font-family: monospace;
+  font-family: var(--font-code);
   opacity: 0;
   padding: 2px 4px;
   flex-shrink: 0;
@@ -266,7 +266,7 @@
   color: var(--text-3);
   cursor: pointer;
   font-size: var(--text-sm);
-  font-family: monospace;
+  font-family: var(--font-code);
   opacity: 0;
   padding: 2px 4px;
   flex-shrink: 0;
@@ -343,7 +343,7 @@
   font-family: var(--font-ui);
   padding: 4px 10px;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap);
 }
 .template-picker-bundle-btn:hover {
   background: var(--bg-hover);
@@ -369,7 +369,7 @@
   padding: 2px 4px;
   flex-shrink: 0;
   filter: grayscale(1);
-  transition: opacity 0.1s, filter 0.1s;
+  transition: opacity var(--dur-tap), filter var(--dur-tap);
 }
 .template-picker-item:hover .template-picker-item-move { opacity: 1; }
 .template-picker-item-move:hover { filter: none; }
@@ -383,11 +383,11 @@
   background: var(--bg-1);
   border: 1px solid var(--border-light);
   border-radius: var(--radius);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  box-shadow: var(--shadow-2);
   min-width: 140px;
   max-height: 200px;
   overflow-y: auto;
-  z-index: 10001;
+  z-index: var(--z-picker);
   padding: 4px 0;
 }
 
@@ -415,7 +415,7 @@
   gap: 2px;
   margin-left: auto;
   opacity: 0;
-  transition: opacity 0.1s;
+  transition: opacity var(--dur-tap);
 }
 .template-picker-group-header:hover .template-picker-group-actions { opacity: 1; }
 
@@ -465,7 +465,7 @@
   padding: 5px 10px;
   cursor: pointer;
   text-align: left;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
 }
 .template-picker-new-group-btn:hover {
   background: var(--bg-hover);

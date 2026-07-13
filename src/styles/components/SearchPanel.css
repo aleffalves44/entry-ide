@@ -22,8 +22,8 @@
   width: 3px;
   height: 100%;
   cursor: col-resize;
-  z-index: 10;
-  transition: background 0.15s;
+  z-index: var(--z-raised);
+  transition: background var(--dur-quick);
 }
 
 .search-panel-resize-handle:hover {
@@ -79,7 +79,7 @@
   font-size: var(--text-sm);
   font-family: var(--font-mono);
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap), color var(--dur-tap);
 }
 
 .search-toggle:hover {

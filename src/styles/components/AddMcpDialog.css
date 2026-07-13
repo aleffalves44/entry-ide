@@ -6,7 +6,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: var(--z-popover);
 }
 
 .add-mcp-overlay {
@@ -130,7 +130,7 @@
   font-size: 11px;
   color: var(--ink-tertiary, var(--text-3));
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .add-mcp-link:hover:not(:disabled) { color: var(--ink-secondary, var(--text-2)); }

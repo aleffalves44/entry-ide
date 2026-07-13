@@ -8,11 +8,11 @@
   max-height: min(70vh, calc(100vh - 80px));
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-4);
   overflow: hidden;
   align-self: flex-start;
   margin-top: min(16vh, 80px);
-  animation: paletteIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: paletteIn var(--dur-quick) var(--ease-out-expo);
 }
 
 .project-picker-header {
@@ -49,7 +49,7 @@
   padding: 8px 10px;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--dur-tap);
 }
 .project-picker-item:hover { background: var(--bg-hover); }
 .project-picker-item-attached { background: var(--accent-dim); }
@@ -112,7 +112,7 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-ui);
   opacity: 0.4;
-  transition: background 0.1s, color 0.1s, opacity 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), opacity var(--dur-tap);
   flex-shrink: 0;
   align-self: flex-start;
   margin-top: 2px;
@@ -142,7 +142,7 @@
   font-weight: 600;
   font-family: var(--font-ui);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-quick);
   flex-shrink: 0;
 }
 .project-picker-done:hover {
@@ -201,7 +201,7 @@
   color: var(--text-2);
   cursor: pointer;
   font-family: var(--font-ui);
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
 }
 .project-action-btn:hover {
   background: var(--bg-hover);

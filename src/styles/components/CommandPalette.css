@@ -7,7 +7,7 @@
   display: flex;
   justify-content: center;
   padding-top: 16vh;
-  z-index: 100;
+  z-index: var(--z-popover);
   backdrop-filter: blur(2px);
 }
 
@@ -19,10 +19,10 @@
   max-height: 380px;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-4);
   overflow: hidden;
   align-self: flex-start;
-  animation: paletteIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: paletteIn var(--dur-quick) var(--ease-out-expo);
 }
 
 .command-palette-input {

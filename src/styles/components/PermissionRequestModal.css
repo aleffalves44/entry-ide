@@ -113,7 +113,7 @@
   font-weight: 500;
   color: var(--ink-secondary, var(--text-2));
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease, color var(--dur-quick) ease, transform var(--dur-tap) ease;
   white-space: nowrap;
   letter-spacing: -0.005em;
 }
@@ -137,7 +137,7 @@
   color: #1a1208;
   font-weight: 600;
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--brass, var(--accent)) 35%, transparent);
-  animation: perm-link-attract 1.6s ease-out 1;
+  animation: perm-link-attract var(--dur-slow) ease-out 1;
 }
 
 .perm-link-primary:hover:not(:disabled) {

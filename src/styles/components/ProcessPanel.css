@@ -22,8 +22,8 @@
   width: 3px;
   height: 100%;
   cursor: col-resize;
-  z-index: 10;
-  transition: background 0.15s;
+  z-index: var(--z-raised);
+  transition: background var(--dur-quick);
 }
 
 .process-panel-resize-handle:hover {
@@ -79,7 +79,7 @@
   font-size: var(--text-sm);
   font-family: var(--font-mono);
   cursor: pointer;
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap), color var(--dur-tap);
 }
 
 .process-toggle:hover {
@@ -233,7 +233,7 @@
 }
 
 .process-row-new {
-  animation: processRowFadeIn 0.3s ease-out;
+  animation: processRowFadeIn var(--dur-slow) ease-out;
 }
 
 @keyframes processRowFadeIn {
@@ -287,7 +287,7 @@
   font-size: 9px;
   font-family: var(--font-mono);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--dur-tap);
 }
 
 .process-action-btn:hover:not(:disabled) {

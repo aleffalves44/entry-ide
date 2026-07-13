@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  animation: slideInRight 0.15s ease-out;
+  animation: slideInRight var(--dur-quick) ease-out;
 }
 
 .context-panel-body {
@@ -153,7 +153,7 @@
   height: 100%;
   background: var(--accent);
   border-radius: var(--radius-sm);
-  transition: width 0.3s ease;
+  transition: width var(--dur-slow) ease;
   opacity: 0.7;
 }
 .ctx-tool-count {
@@ -195,7 +195,7 @@
   font-family: var(--font-ui);
   font-size: var(--text-base);
   color: var(--text-1);
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap), color var(--dur-tap);
 }
 .ctx-action-chip:hover {
   background: var(--accent-dim);
@@ -261,7 +261,7 @@
   padding: 0 2px;
   border-radius: var(--radius-sm);
   opacity: 0;
-  transition: opacity 0.1s, color 0.1s, background 0.1s;
+  transition: opacity var(--dur-tap), color var(--dur-tap), background var(--dur-tap);
   flex-shrink: 0;
 }
 .ctx-memory-row:hover .ctx-memory-delete { opacity: 1; }
@@ -278,7 +278,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
 }
 .ctx-memory-add-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
 .ctx-memory-add-form {
@@ -313,7 +313,7 @@
   cursor: pointer;
   font-size: var(--text-base);
   font-family: var(--font-ui);
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
 }
 .ctx-memory-save-btn:hover { background: var(--accent-dim); color: var(--accent); border-color: var(--accent); }
 .ctx-memory-cancel-btn:hover { background: var(--bg-hover); }
@@ -369,7 +369,7 @@
   border-radius: var(--radius-sm);
   font-size: var(--text-md);
   color: var(--text-1);
-  transition: background 0.1s;
+  transition: background var(--dur-tap);
 }
 .ctx-workspace-compact:hover { background: var(--bg-hover); }
 
@@ -495,7 +495,7 @@
   padding: 1px 4px;
   border-radius: var(--radius-sm);
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-quick);
   flex-shrink: 0;
 }
 .ctx-file:hover .ctx-pin-btn,
@@ -545,7 +545,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
   padding: 0;
   line-height: 1;
 }
@@ -564,7 +564,7 @@
   color: var(--text-2);
   cursor: pointer;
   font-family: var(--font-ui);
-  transition: background 0.1s, color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap);
 }
 .ctx-copy-btn:hover { background: var(--bg-3); color: var(--text-0); }
 .ctx-copy-btn-done {
@@ -600,7 +600,7 @@
 .ctx-perf-fill {
   height: 100%;
   border-radius: var(--radius-sm);
-  transition: width 0.3s ease;
+  transition: width var(--dur-slow) ease;
 }
 
 .ctx-perf-fast { background: var(--green); }
@@ -629,7 +629,7 @@
   min-width: 2px;
   max-width: 6px;
   border-radius: 1px 1px 0 0;
-  transition: height 0.2s ease;
+  transition: height var(--dur-quick) ease;
 }
 
 /* File tree */
@@ -683,7 +683,7 @@
   height: 8px;
   border-radius: 50%;
   cursor: pointer;
-  transition: transform 0.1s;
+  transition: transform var(--dur-tap);
   flex-shrink: 0;
 }
 .ctx-tool-dot:hover { transform: scale(1.5); }
@@ -697,7 +697,7 @@
   font-size: var(--text-sm);
   color: var(--text-1);
   white-space: nowrap;
-  z-index: 10;
+  z-index: var(--z-raised);
   pointer-events: none;
 }
 

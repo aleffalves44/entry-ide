@@ -55,7 +55,7 @@
   font-weight: 500;
   color: var(--yellow);
   cursor: pointer;
-  transition: background 120ms ease, border-color 120ms ease, transform 80ms ease;
+  transition: background var(--dur-quick) ease, border-color var(--dur-quick) ease, transform var(--dur-tap) ease;
   white-space: nowrap;
   flex-shrink: 0;
 }
