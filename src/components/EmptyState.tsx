@@ -27,6 +27,9 @@ import { fmt } from "../utils/platform";
 interface EmptyStateProps {
   recentSessions: SessionHistoryEntry[];
   onNew: () => void;
+  /** Open an EXISTING project for browsing (session on the current
+   *  branch + Workbench on the Files tab). */
+  onOpenProject?: () => void;
   onRestore: (entry: SessionHistoryEntry, restoreScrollback: boolean) => void;
 }
 
@@ -56,7 +59,7 @@ function projectName(path: string): string {
 
 const TITLE_CHARS = "Entry IDE".split("");
 
-export function EmptyState({ recentSessions, onNew, onRestore }: EmptyStateProps) {
+export function EmptyState({ recentSessions, onNew, onOpenProject, onRestore }: EmptyStateProps) {
   return (
     <div className="es-stage">
       {/* Atmospheric layer — soft brass + cool orbs and a faint paper
@@ -123,6 +126,22 @@ export function EmptyState({ recentSessions, onNew, onRestore }: EmptyStateProps
               </div>
               <kbd className="es-tile-kbd">{fmt("{mod}N")}</kbd>
             </button>
+
+            {onOpenProject && (
+              <button
+                className="es-tile es-tile-primary"
+                onClick={onOpenProject}
+                type="button"
+              >
+                <span className="es-tile-marker" aria-hidden="true">▤</span>
+                <div className="es-tile-text">
+                  <span className="es-tile-title">Open project</span>
+                  <span className="es-tile-desc">
+                    Browse an existing project — session plus file tree, no setup.
+                  </span>
+                </div>
+              </button>
+            )}
 
             <div className="es-tile es-tile-secondary">
               <span className="es-tile-marker" aria-hidden="true">▢</span>

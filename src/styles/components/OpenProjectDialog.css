@@ -1,0 +1,101 @@
+/* ─────────────────────────────────────────────────────────────────
+ * OpenProjectDialog — pick an existing project for browsing.
+ * ────────────────────────────────────────────────────────────────── */
+
+.open-project {
+  display: flex;
+  flex-direction: column;
+  width: min(520px, 92vw);
+  max-height: 70vh;
+  background: var(--bg-1, var(--bg-0));
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.open-project-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px 6px;
+}
+.open-project-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-1);
+}
+.open-project-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text-3, var(--text-2));
+  cursor: pointer;
+}
+.open-project-close:hover {
+  color: var(--text-1);
+}
+
+.open-project-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 8px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.open-project-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+.open-project-item:hover,
+.open-project-item:focus {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  outline: none;
+}
+.open-project-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-1);
+  white-space: nowrap;
+}
+.open-project-path {
+  font-size: 11px;
+  color: var(--text-3, var(--text-2));
+  font-family: var(--font-mono, monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.open-project-footer {
+  padding: 8px 16px 12px;
+  border-top: 1px solid var(--rule);
+}
+.open-project-add {
+  background: none;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: var(--text-1);
+  cursor: pointer;
+}
+.open-project-add:hover {
+  border-color: var(--accent);
+}
+
+.open-project-empty {
+  padding: 20px 16px;
+  font-size: 12px;
+  color: var(--text-2);
+  text-align: center;
+}
