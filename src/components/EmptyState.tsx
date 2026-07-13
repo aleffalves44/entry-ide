@@ -143,27 +143,6 @@ export function EmptyState({ recentSessions, onNew, onOpenProject, onRestore }: 
               </button>
             )}
 
-            <div className="es-tile es-tile-secondary">
-              <span className="es-tile-marker" aria-hidden="true">▢</span>
-              <div className="es-tile-text">
-                <span className="es-tile-title">Command palette</span>
-                <span className="es-tile-desc">
-                  Jump to settings, themes, recent sessions, anywhere.
-                </span>
-              </div>
-              <kbd className="es-tile-kbd">{fmt("{mod}K")}</kbd>
-            </div>
-
-            <div className="es-tile es-tile-secondary">
-              <span className="es-tile-marker" aria-hidden="true">◇</span>
-              <div className="es-tile-text">
-                <span className="es-tile-title">Context panel</span>
-                <span className="es-tile-desc">
-                  MCP servers, memory, permissions — show or hide.
-                </span>
-              </div>
-              <kbd className="es-tile-kbd">{fmt("{mod}E")}</kbd>
-            </div>
           </div>
 
           <p className="es-hint">
