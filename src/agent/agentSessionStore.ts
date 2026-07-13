@@ -46,6 +46,7 @@ import type { AgentEvent, ResultEvent } from "./types";
 import { emptyState, freezePendingThinking, reduceEvent } from "./messageStore";
 import type { AgentSessionState } from "./messageStore";
 import { isPermRequest, type PermRequest } from "../utils/permissionRequest";
+import { alertInteractionNeeded } from "../utils/notifications";
 import { recordFrameworkUsageForResult } from "./frameworkMetrics";
 
 export interface AgentExitInfo {
@@ -137,6 +138,10 @@ export class AgentSessionStore {
       // session close.
       if (isPermRequest(payload)) {
         this.snapshot = { ...this.snapshot, pendingPermRequest: payload };
+        // Audible/native alert — the agent is BLOCKED on the user.
+        // Fires here (store level) so hidden panes and background
+        // sessions alert too, not just the mounted view.
+        alertInteractionNeeded(payload.toolName);
         // Don't fold perm-request envelopes into the message stream —
         // they're metadata, not chat content.  Notify and exit.
         this.notify();
