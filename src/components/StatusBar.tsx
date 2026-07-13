@@ -1,5 +1,10 @@
 import "../styles/components/StatusBar.css";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
+import {
+  areNotificationsMuted,
+  setNotificationsMuted,
+  subscribeNotificationsMuted,
+} from "../utils/notifications";
 import { open } from "@tauri-apps/plugin-shell";
 import { setSetting } from "../api/settings";
 import { useActiveSession, useSessionList, useTotalCost, useTotalTokens, useExecutionMode, useSession, ExecutionMode } from "../state/SessionContext";
@@ -9,6 +14,28 @@ import { fmt } from "../utils/platform";
 // Theme switching moved to Settings → Appearance in 1.1.15.  The
 // status bar is for state, not configuration; keeping the picker
 // out of here removes a redundant entry point.
+
+/** Pause/resume every audible+native alert (interaction chime, banners,
+ *  task-done).  Persisted; lives in the status bar so it's one click
+ *  away when a burst of sessions gets noisy. */
+function MuteNotificationsButton() {
+  const muted = useSyncExternalStore(
+    subscribeNotificationsMuted,
+    areNotificationsMuted,
+    areNotificationsMuted, // server snapshot — tests render via renderToString
+  );
+  return (
+    <button
+      className={`status-bug-btn${muted ? " status-mute-active" : ""}`}
+      onClick={() => setNotificationsMuted(!muted)}
+      title={muted ? "Notificações pausadas — clique para reativar" : "Pausar notificações (som e banners)"}
+      aria-pressed={muted}
+      data-testid="mute-notifications-btn"
+    >
+      {muted ? "🔕" : "🔔"}
+    </button>
+  );
+}
 
 function formatTokens(n: number): string {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -222,6 +249,7 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
         {/* ThemePicker removed in 1.1.15 — theme switching now lives
             in Settings → Appearance, the single source of truth.  The
             status bar should communicate state, not configuration. */}
+        <MuteNotificationsButton />
         <button
           className="status-bug-btn"
           onClick={() => {
