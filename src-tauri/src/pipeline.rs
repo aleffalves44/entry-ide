@@ -174,6 +174,48 @@ pub async fn get_pipeline_state(working_dir: String) -> Result<PipelineState, St
         .map_err(|e| e.to_string())
 }
 
+/// On-demand merge check for a SPECIFIC PR number (delivery metrics —
+/// fired when the Consumo Geral view opens, for PRs whose merge wasn't
+/// observed while a session was alive).  Returns gh's exact `mergedAt`
+/// when the PR is merged, None otherwise.  Missing repo dir, gh absent,
+/// or network failure all degrade to Ok(None) — the check retries on
+/// the next open.
+#[tauri::command]
+pub async fn check_pr_merged(
+    repo_path: String,
+    pr_number: u64,
+) -> Result<Option<String>, String> {
+    tokio::task::spawn_blocking(move || {
+        let root = Path::new(&repo_path);
+        if !root.is_dir() {
+            return None;
+        }
+        let out = std::process::Command::new("gh")
+            .args([
+                "pr",
+                "view",
+                &pr_number.to_string(),
+                "--json",
+                "state,mergedAt",
+            ])
+            .current_dir(root)
+            .output()
+            .ok()?;
+        if !out.status.success() {
+            return None;
+        }
+        let v = serde_json::from_slice::<serde_json::Value>(&out.stdout).ok()?;
+        if v.get("state").and_then(|s| s.as_str()) != Some("MERGED") {
+            return None;
+        }
+        v.get("mergedAt")
+            .and_then(|m| m.as_str())
+            .map(String::from)
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

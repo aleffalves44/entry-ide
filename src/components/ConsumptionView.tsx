@@ -12,15 +12,21 @@
  * via `onFocusSession`.
  */
 import "../styles/components/UsageWindow.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getSessions } from "../api/sessions";
 import { getFrameworkUsage, type FrameworkUsageEntry } from "../api/frameworkMetrics";
-import { getDeliveryEvents, type DeliveryEvent } from "../api/delivery";
+import {
+  checkPrMerged,
+  getDeliveryEvents,
+  recordDeliveryEvent,
+  type DeliveryEvent,
+} from "../api/delivery";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
 import { formatTokens } from "../utils/frameworkAggregates";
 import {
   deriveDeliveryLines,
   medianLeadMs,
+  pendingMergeChecks,
   formatLead,
 } from "../utils/deliveryMetrics";
 import type { SessionData } from "../types/session";
@@ -84,6 +90,46 @@ export function ConsumptionView({
       clearInterval(id);
     };
   }, [active]);
+
+  // On OPEN (mount / tab activation), settle pending merges: PRs we saw
+  // open but whose merge was never observed (session closed before the
+  // merge).  One pass per open — not per poll tick — capped to avoid a
+  // gh storm; failures are silent and simply retry on the next open.
+  const mergeSweepDone = useRef(false);
+  useEffect(() => {
+    if (!active) {
+      mergeSweepDone.current = false;
+      return;
+    }
+    if (mergeSweepDone.current || deliveryEvents.length === 0) return;
+    mergeSweepDone.current = true;
+    const pending = pendingMergeChecks(deliveryEvents).slice(0, 10);
+    if (pending.length === 0) return;
+    (async () => {
+      let recorded = 0;
+      for (const p of pending) {
+        const mergedAt = await checkPrMerged(p.repoPath, p.prNumber).catch(() => null);
+        if (!mergedAt) continue;
+        await recordDeliveryEvent({
+          session_id: p.sessionId,
+          repo_path: p.repoPath,
+          branch: p.branch,
+          event: "pr_merged",
+          pr_number: p.prNumber,
+          pr_url: p.prUrl,
+          recorded_at: mergedAt,
+        }).catch(() => undefined);
+        recorded += 1;
+      }
+      if (recorded > 0) {
+        getDeliveryEvents()
+          .then((d) => {
+            if (Array.isArray(d)) setDeliveryEvents(d);
+          })
+          .catch(() => undefined);
+      }
+    })();
+  }, [active, deliveryEvents]);
 
   // Lifetime cost + tokens per session (turn rows only — a turn already
   // includes its subagents).
