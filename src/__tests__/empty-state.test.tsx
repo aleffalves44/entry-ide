@@ -56,13 +56,21 @@ describe("EmptyState — workshop-atelier hero (v1.1 redesign)", () => {
     expect(html).toContain(">II.<");
   });
 
-  it("renders the three primary tiles", () => {
+  it("renders the action tiles (session + open project), no info clutter", () => {
     const html = renderToString(
-      <EmptyState recentSessions={[]} onNew={() => {}} onRestore={() => {}} />,
+      <EmptyState
+        recentSessions={[]}
+        onNew={() => {}}
+        onOpenProject={() => {}}
+        onRestore={() => {}}
+      />,
     );
     expect(html).toContain("New session");
-    expect(html).toContain("Command palette");
-    expect(html).toContain("Context panel");
+    expect(html).toContain("Open project");
+    // Informational tiles were removed — shortcuts still work, but they
+    // don't earn start-page space.
+    expect(html).not.toContain("Command palette");
+    expect(html).not.toContain("Context panel");
   });
 
   it("renders the marginalia logbook numbers when recent sessions exist", () => {

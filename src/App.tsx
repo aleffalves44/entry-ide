@@ -1087,7 +1087,20 @@ function AppContent() {
                       recentSessions={state.recentSessions}
                       onNew={() => setQuickCreatorOpen(true)}
                       onOpenProject={() => setOpenProjectOpen(true)}
-                      onRestore={(entry, restoreScrollback) => createSession({ label: entry.label, workingDirectory: entry.working_directory, restoreFromId: restoreScrollback ? entry.id : undefined })}
+                      onRestore={(entry, restoreScrollback) =>
+                        // Reopen as an AGENT session in the same directory.
+                        // History entries don't record a mode, and without
+                        // aiProvider the backend defaulted to terminal —
+                        // clicking a recent session dropped the user into a
+                        // bare shell instead of the agent.
+                        createSession({
+                          label: entry.label,
+                          workingDirectory: entry.working_directory,
+                          mode: "agent",
+                          aiProvider: "claude",
+                          restoreFromId: restoreScrollback ? entry.id : undefined,
+                        })
+                      }
                     />
                   )}
                 </div>
