@@ -46,7 +46,21 @@ interface PerQuestionState {
 }
 
 export function AskUserQuestionCard({ input, onAllow, onDeny, dialogId }: Props) {
-  const questions = input.questions;
+  // Normalize defensively: the SDK delivers AskUserQuestion's input via
+  // canUseTool as a complete, validated object, but a malformed/partial
+  // envelope (or a future schema drift) can arrive with `questions`
+  // missing or a question whose `options` is undefined/empty.  Without
+  // this guard, `q.options.map` / `q.options.some` throw on `undefined`
+  // and the card crashes mid-render — the symptom the user reported as
+  // "the Claude question selector shows up empty."  Coerce every question
+  // to a safe shape so the render path never throws, then surface the
+  // degenerate case explicitly below instead of rendering a blank
+  // selector (the project rule prohibits a silent default).
+  const rawQuestions = Array.isArray(input?.questions) ? input.questions : [];
+  const questions = rawQuestions.map((q) => ({
+    ...q,
+    options: Array.isArray(q?.options) ? q.options : [],
+  }));
   const [state, setState] = useState<PerQuestionState[]>(() =>
     questions.map(() => ({ selected: [], otherText: "" })),
   );
@@ -58,10 +72,19 @@ export function AskUserQuestionCard({ input, onAllow, onDeny, dialogId }: Props)
   // change.  Set just below, where `handleSubmit` is declared.
   const submitActionRef = useRef<() => void>(() => {});
 
-  // Degenerate input: empty questions array → nothing to ask, auto-deny.
+  // A question with no usable options (empty/missing) is unusable — the
+  // "Other" freeform row alone is not a meaningful selector.  Detect this
+  // once so both the auto-deny effect and the render path agree.
+  const degenerate =
+    questions.length === 0 || questions.some((q) => q.options.length === 0);
+
+  // Degenerate input: nothing usable to render, auto-deny so the turn
+  // doesn't hang.  Mirrors the prior empty-questions behaviour but now
+  // also covers empty-options questions (the real "empty selector"
+  // symptom).
   useEffect(() => {
-    if (questions.length === 0) onDenyRef.current();
-  }, [questions.length]);
+    if (degenerate) onDenyRef.current();
+  }, [degenerate]);
 
   // Global shortcuts.  Esc cancels; Cmd/Ctrl+Enter submits (when the
   // form is valid — the ref's wrapper short-circuits on disabled state
@@ -102,7 +125,43 @@ export function AskUserQuestionCard({ input, onAllow, onDeny, dialogId }: Props)
     });
   }, [questions, state]);
 
+  // Nothing to render at all (no questions).  The auto-deny effect above
+  // already cancelled the turn; don't paint an empty card.
   if (questions.length === 0) return null;
+
+  // A question exists but has no options.  The auto-deny effect has
+  // already fired (the turn is being cancelled), but render an explicit
+  // notice for the brief moment the card is on screen — NEVER a blank
+  // selector (the project rule: no silent default).
+  const emptyOptionQuestion = questions.find((q) => q.options.length === 0);
+  if (emptyOptionQuestion) {
+    return (
+      <div
+        className="aq-card aq-card-degenerate"
+        data-dialog-id={dialogId}
+        role="dialog"
+        aria-label="Entry IDE received an empty question"
+      >
+        <div className="aq-card-bar" aria-hidden="true" />
+        <div className="aq-card-body">
+          <div className="aq-card-header">ENTRY IS WAITING FOR YOU</div>
+          <div className="aq-degenerate-notice">
+            Claude sent a question with no options to pick from.
+            {typeof emptyOptionQuestion.question === "string"
+              && emptyOptionQuestion.question.trim() !== "" && (
+                <span className="aq-degenerate-question">
+                  {emptyOptionQuestion.question}
+                </span>
+              )}
+            <span className="aq-degenerate-hint">
+              Cancelling the question so Claude can continue — no answer
+              was silently chosen for you.
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   function handleSelect(qIndex: number, label: string, multi: boolean) {
     setState((prev) => {

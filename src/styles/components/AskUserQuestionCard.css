@@ -179,6 +179,32 @@
   font-size: 11px;
 }
 
+/* Degenerate input — a question arrived with no options.  Shown for the
+ * brief moment before the auto-deny effect cancels the turn, so the user
+ * never sees a blank selector with no explanation. */
+.aq-degenerate-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 0 4px 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-secondary, var(--text-2));
+  line-height: 1.5;
+}
+
+.aq-degenerate-question {
+  font-family: var(--font-mono);
+  font-style: italic;
+  color: var(--ink-tertiary, var(--text-3));
+  font-size: 11px;
+}
+
+.aq-degenerate-hint {
+  color: var(--ink-tertiary, var(--text-3));
+  font-size: 11px;
+}
+
 .aq-actions {
   display: flex;
   justify-content: flex-end;

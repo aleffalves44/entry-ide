@@ -403,6 +403,65 @@ describe("AskUserQuestionCard — failure modes (aq-13..aq-21)", () => {
     expect(onDeny).toHaveBeenCalled();
   });
 
+  it("aq-13-b: a question with empty options → onDeny auto-fires (empty selector)", () => {
+    const onDeny = vi.fn();
+    render(
+      <AskUserQuestionCard
+        input={{
+          questions: [
+            {
+              question: "Which way?",
+              header: "Q1",
+              multiSelect: false,
+              options: [],
+            },
+          ],
+        }}
+        onAllow={() => {}}
+        onDeny={onDeny}
+      />,
+    );
+    expect(onDeny).toHaveBeenCalled();
+  });
+
+  it("aq-13-c: a question with missing options → onDeny auto-fires, no render crash", () => {
+    const onDeny = vi.fn();
+    // `options` intentionally absent — must not throw in `.map`/`.some`.
+    const malformed = {
+      questions: [
+        { question: "Which way?", header: "Q1", multiSelect: false },
+      ],
+    } as unknown as Parameters<typeof AskUserQuestionCard>[0]["input"];
+    expect(() =>
+      render(
+        <AskUserQuestionCard input={malformed} onAllow={() => {}} onDeny={onDeny} />,
+      ),
+    ).not.toThrow();
+    expect(onDeny).toHaveBeenCalled();
+  });
+
+  it("aq-13-d: empty-options question surfaces an explicit notice, never a blank selector", () => {
+    render(
+      <AskUserQuestionCard
+        input={{
+          questions: [
+            {
+              question: "Pick one",
+              header: "Q1",
+              multiSelect: false,
+              options: [],
+            },
+          ],
+        }}
+        onAllow={() => {}}
+        onDeny={() => {}}
+      />,
+    );
+    // No option radios exist (only the degenerate notice).
+    expect(screen.queryByRole("radio")).toBeNull();
+    expect(screen.getByText(/no options to pick from/i)).toBeInTheDocument();
+  });
+
   it("aq-14: 3-question input renders all three (legend + question text per question)", () => {
     render(
       <AskUserQuestionCard
