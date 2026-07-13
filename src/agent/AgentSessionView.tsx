@@ -896,7 +896,9 @@ export function classifyExit(
   const lc = (stderr ?? "").toLowerCase();
   if (lc.includes("no conversation found")) {
     return {
-      label: "Couldn't resume that conversation — Claude no longer has a record of it",
+      label:
+        "Couldn't resume that conversation — Claude no longer has a record of it. "
+        + "Your next message starts a fresh conversation (the history above is kept).",
       kind: "no-conversation",
     };
   }
