@@ -129,9 +129,17 @@ function ObjectPreview({
     return (
       <span className="agent-footline-object">
         <span className="agent-footline-object-path">
-          {counts.running} of {counts.running + counts.done} subagents
+          {object.subagentDetail
+            ? object.subagentDetail
+            : `${counts.running} of ${counts.running + counts.done} subagents`}
         </span>
-        {counts.done > 0 && (
+        {object.subagentDetail && counts.running + counts.done > 1 && (
+          <span className="agent-footline-object-alt">
+            {" · "}
+            {counts.running} of {counts.running + counts.done}
+          </span>
+        )}
+        {!object.subagentDetail && counts.done > 0 && (
           <span className="agent-footline-object-alt">
             {" · "}
             {counts.done} done

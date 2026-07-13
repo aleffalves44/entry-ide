@@ -20,6 +20,7 @@ import type { ContentBlock, ToolUseBlockData } from "./types";
 import { isTextBlock, isThinkingBlock, isToolUseBlock } from "./types";
 import {
   selectSubagentCounts,
+  selectSubagentLiveActivity,
   type SubagentCounts,
 } from "./subagentSelectors";
 
@@ -51,6 +52,9 @@ export interface WorkingObject {
   descriptor?: string;
   /** Subagent aggregate ("2 of 3 subagents · 1 done"). */
   subagents?: SubagentCounts;
+  /** Live detail of the ACTIVE subagent ("Build · npm test") so
+   *  coordinating never reads as an opaque count. */
+  subagentDetail?: string;
   /** Free-form fallback. */
   raw?: string;
 }
@@ -249,11 +253,20 @@ export function selectWorkingState(state: AgentSessionState): WorkingState {
   if (runningTool) {
     const verb = verbForTool(runningTool.name);
     // Special-cased: if the verb is "coordinating", surface aggregate
-    // subagent counts instead of the Task tool's input.description.
-    const object: WorkingObject =
-      verb === "coordinating"
-        ? { subagents: counts }
-        : objectForTool(runningTool);
+    // subagent counts PLUS what the active subagent is doing right now
+    // ("Build · npm test") — a bare count reads as frozen.
+    let object: WorkingObject;
+    if (verb === "coordinating") {
+      const live = selectSubagentLiveActivity(state, runningTool.id);
+      object = {
+        subagents: counts,
+        subagentDetail: live
+          ? `${live.name}${live.lastAction ? ` · ${live.lastAction}` : ""}`
+          : undefined,
+      };
+    } else {
+      object = objectForTool(runningTool);
+    }
     const streamingMsg = findStreamingMessage(state);
     const since =
       streamingMsg?.timestamp
