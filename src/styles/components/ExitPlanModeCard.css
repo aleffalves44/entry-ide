@@ -87,7 +87,7 @@
   font-size: 11px;
   color: var(--ink-secondary, var(--text-2));
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .ep-reject:hover {
@@ -103,7 +103,7 @@
   font-size: 11px;
   color: var(--brass, var(--accent));
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: all var(--dur-quick) ease;
 }
 
 .ep-approve:hover {

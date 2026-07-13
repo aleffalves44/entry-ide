@@ -4,12 +4,12 @@
   position: fixed;
   inset: 0;
   z: 999;
-  z-index: 999;
+  z-index: var(--z-modal);
 }
 
 .commands-popover {
   position: fixed;
-  z-index: 1000;
+  z-index: var(--z-modal);
   width: 280px;
   max-height: 300px;
   display: flex;
@@ -17,7 +17,7 @@
   background: var(--bg-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-3);
   overflow: hidden;
 }
 

@@ -7,7 +7,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: var(--z-popover);
   backdrop-filter: blur(2px);
 }
 
@@ -17,8 +17,8 @@
   border-radius: var(--radius-lg);
   width: 440px;
   padding: 20px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-  animation: overlayIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-4);
+  animation: overlayIn var(--dur-quick) var(--ease-out-expo);
 }
 
 .update-dialog-header {
@@ -79,7 +79,7 @@
   height: 100%;
   background: var(--accent);
   border-radius: 2px;
-  transition: width 0.2s ease;
+  transition: width var(--dur-quick) ease;
 }
 
 .update-dialog-progress-fill.update-dialog-progress-stalled {
@@ -131,7 +131,7 @@
   cursor: pointer;
   font-size: var(--text-lg);
   font-family: var(--font-ui);
-  transition: background 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap);
 }
 
 .update-dialog-btn:hover {

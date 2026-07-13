@@ -93,7 +93,7 @@
   padding: 2px 8px;
   border-radius: var(--radius);
   flex-shrink: 0;
-  transition: background 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap);
 }
 .file-preview-open-btn:hover {
   background: var(--bg-hover);
@@ -232,7 +232,7 @@
   white-space: pre;
   overflow: hidden;
   color: transparent;
-  z-index: 1;
+  z-index: var(--z-base);
 }
 
 .file-editor-highlight-overlay mark {
@@ -251,7 +251,7 @@
 
 .file-editor-textarea {
   position: relative;
-  z-index: 2;
+  z-index: var(--z-base);
   width: 100%;
   height: 100%;
   background: transparent;
@@ -308,7 +308,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 30;
+  z-index: var(--z-overlay);
 }
 
 .file-editor-confirm-dialog {
@@ -320,7 +320,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-3);
 }
 
 .file-editor-confirm-title {
@@ -350,7 +350,7 @@
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap);
 }
 
 .file-editor-confirm-btn:hover {
@@ -460,8 +460,8 @@
   border-radius: var(--radius);
   padding: var(--space-1) 0;
   min-width: 120px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 20;
+  box-shadow: var(--shadow-2);
+  z-index: var(--z-overlay);
 }
 
 .editor-indent-menu-section {

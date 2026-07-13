@@ -32,7 +32,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink-secondary, var(--text-2));
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .mcp-row-header:hover { color: var(--ink-primary, var(--text-0)); }
@@ -109,7 +109,7 @@
   font-size: 10px;
   color: var(--ink-secondary, var(--text-2));
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .mcp-action:hover { color: var(--brass, var(--accent)); }
@@ -137,7 +137,7 @@
   letter-spacing: 0.02em;
   color: var(--brass, var(--accent));
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
   align-self: flex-start;
 }
 
@@ -336,7 +336,7 @@
   content: "▸ ";
   display: inline-block;
   margin-right: 2px;
-  transition: transform 120ms ease;
+  transition: transform var(--dur-quick) ease;
 }
 
 .mcp-legend[open] > summary::before {

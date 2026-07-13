@@ -2,8 +2,8 @@
 
 .pub {
   flex-shrink: 0;
-  z-index: 50;
-  animation: pub-slideDown 0.2s ease-out;
+  z-index: var(--z-overlay);
+  animation: pub-slideDown var(--dur-quick) ease-out;
 }
 
 @keyframes pub-slideDown {
@@ -75,7 +75,7 @@
   padding: 3px 10px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
 }
 
 .pub-btn:hover {
@@ -111,7 +111,7 @@
   font-size: var(--text-lg);
   padding: 0 2px;
   line-height: 1;
-  transition: color 0.1s;
+  transition: color var(--dur-tap);
 }
 
 .pub-close:hover {
@@ -129,7 +129,7 @@
   gap: 2px;
   max-height: 200px;
   overflow-y: auto;
-  animation: pm-expand 0.12s ease-out;
+  animation: pm-expand var(--dur-quick) ease-out;
 }
 
 .pub-detail-row {

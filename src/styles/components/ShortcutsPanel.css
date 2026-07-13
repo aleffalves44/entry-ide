@@ -7,7 +7,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 100;
+  z-index: var(--z-popover);
   backdrop-filter: blur(2px);
 }
 
@@ -19,9 +19,9 @@
   max-height: 70vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-4);
   overflow: hidden;
-  animation: paletteIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: paletteIn var(--dur-quick) var(--ease-out-expo);
 }
 
 .shortcuts-header {

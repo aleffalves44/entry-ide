@@ -690,7 +690,9 @@ html[data-theme="newsprint"] {
   --text-0: #0a0a0a;
   --text-1: #2a2a2a;
   --text-2: #5a5a5a;
-  --text-3: #6a6a6a;            /* lifted from #8a8a8a for AA */
+  --text-3: #5e5e5e;            /* lifted from #6a6a6a → AA on all reading
+                                  * surfaces (bg-0/bg-1/bg-2 ≥5.3:1); still
+                                  * lighter than --text-2 to keep hierarchy */
   /* Duotone: brass becomes the live accent; true ink stays for body. */
   --ink-emphasis: #0a0a0a;
   --voice-user:  #b8862a;

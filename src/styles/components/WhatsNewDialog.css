@@ -24,10 +24,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 200;
+  z-index: var(--z-popover);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
-  animation: whatsnew-backdrop-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: whatsnew-backdrop-in var(--dur-base) var(--ease-out-expo);
 }
 
 @keyframes whatsnew-backdrop-in {
@@ -48,7 +48,7 @@
   box-shadow:
     0 30px 80px rgba(0, 0, 0, 0.45),
     0 0 0 1px color-mix(in srgb, var(--accent) 8%, transparent);
-  animation: whatsnew-dialog-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: whatsnew-dialog-in var(--dur-slow) var(--ease-out-expo);
 }
 
 @keyframes whatsnew-dialog-in {
@@ -82,7 +82,7 @@
   position: absolute;
   inset: -20%;
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-base);
 }
 
 .whatsnew-hero-orb {
@@ -141,7 +141,7 @@
 
 .whatsnew-hero-content {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-base);
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -194,7 +194,7 @@
   border-radius: 10px;
   opacity: 0;
   transform: translateY(8px);
-  animation: whatsnew-section-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: whatsnew-section-in var(--dur-slow) var(--ease-out-expo) forwards;
 }
 
 @keyframes whatsnew-section-in {
@@ -255,7 +255,7 @@
   letter-spacing: -0.003em;
   opacity: 0;
   transform: translateX(4px);
-  animation: whatsnew-item-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: whatsnew-item-in var(--dur-slow) var(--ease-out-expo) forwards;
 }
 
 @keyframes whatsnew-item-in {
@@ -338,7 +338,7 @@
   letter-spacing: -0.005em;
   opacity: 0;
   transform: translateX(4px);
-  animation: whatsnew-item-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: whatsnew-item-in var(--dur-slow) var(--ease-out-expo) forwards;
 }
 
 .whatsnew-flat-bullet {
@@ -395,7 +395,7 @@
   font: 13px/1 var(--font-display, var(--font-ui));
   font-weight: 600;
   letter-spacing: -0.005em;
-  transition: background 0.12s ease, color 0.12s ease, transform 0.08s ease;
+  transition: background var(--dur-quick) ease, color var(--dur-quick) ease, transform var(--dur-tap) ease;
 }
 
 .whatsnew-btn:hover {

@@ -12,9 +12,9 @@
 	display: flex;
 	align-items: center;
 	gap: 10px;
-	z-index: 1000;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-	animation: branch-mismatch-slide-down 0.2s ease-out;
+	z-index: var(--z-modal);
+	box-shadow: var(--shadow-2);
+	animation: branch-mismatch-slide-down var(--dur-quick) ease-out;
 	max-width: 500px;
 	pointer-events: auto;
 	font-size: var(--text-sm);
@@ -77,7 +77,7 @@
 	padding: 0 2px;
 	line-height: 1;
 	flex-shrink: 0;
-	transition: color 0.1s;
+	transition: color var(--dur-tap);
 }
 
 .branch-mismatch-session-name {

@@ -28,7 +28,7 @@
   white-space: nowrap;
   font-family: var(--font-ui);
   font-weight: 600;
-  transition: background 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap);
   flex-shrink: 0;
 }
 
@@ -63,7 +63,7 @@
   white-space: nowrap;
   color: var(--text-2);
   font-family: var(--font-mono);
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap), color var(--dur-tap);
   flex-shrink: 0;
 }
 
@@ -95,7 +95,7 @@
   white-space: nowrap;
   color: var(--text-2);
   font-family: var(--font-ui);
-  transition: background 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap);
   flex-shrink: 0;
 }
 

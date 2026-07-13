@@ -7,7 +7,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 150;
+  z-index: var(--z-popover);
   backdrop-filter: blur(2px);
 }
 
@@ -19,9 +19,9 @@
   max-height: 75vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-4);
   overflow: hidden;
-  animation: paletteIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: paletteIn var(--dur-quick) var(--ease-out-expo);
 }
 
 .workspace-header {
@@ -73,7 +73,7 @@
   font-weight: 500;
   cursor: pointer;
   font-family: var(--font-ui);
-  transition: filter 0.15s;
+  transition: filter var(--dur-quick);
   /* The Browse / Scan buttons live in a flex row next to a flexible
    * input; refusing to shrink keeps their labels intact in narrow
    * dialogs.  Pairs with `min-width: 0` on `.workspace-scan-input`
@@ -107,7 +107,7 @@
   font-size: var(--text-lg);
   font-family: var(--font-ui);
   margin-top: 12px;
-  transition: background 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap);
 }
 .workspace-scan-home-btn:hover { background: var(--bg-hover); border-color: var(--text-3); }
 
@@ -128,7 +128,7 @@
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  transition: border-color 0.1s;
+  transition: border-color var(--dur-tap);
 }
 .workspace-project:hover { border-color: var(--accent); }
 

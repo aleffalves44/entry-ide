@@ -208,6 +208,32 @@
   --shadow-4: 0 16px 48px rgba(0, 0, 0, 0.5);
 
   /* ─────────────────────────────────────────────────────────
+   * STACKING — z-index scale
+   *
+   * One named layer per stratum. Components MUST use a token, never a
+   * literal, so the stacking order is auditable and never accidentally
+   * inverted. The ladder preserves the relative order the codebase
+   * already used (pickers/toasts above modals, drag-capture on top).
+   *
+   *   --z-base      atmosphere, frames, dividers, resize handles
+   *   --z-raised    panel chrome: activity bar, minimap, loading veil
+   *   --z-overlay   local floating UI: find/replace, dropdowns, FAB
+   *   --z-popover   lightweight modal panels: palette, settings overlay
+   *   --z-modal      full dialogs: branch conflict, dirty worktree
+   *   --z-picker     pickers (role/style/effort/model/template) + toasts
+   *   --z-toast      toast container (above modals + pickers)
+   *   --z-drag       drag-capture / opening overlay (always on top)
+   * ───────────────────────────────────────────────────────── */
+  --z-base:    1;
+  --z-raised:  10;
+  --z-overlay: 50;
+  --z-popover: 150;
+  --z-modal:   1000;
+  --z-picker:  9998;
+  --z-toast:   9999;
+  --z-drag:    99999;
+
+  /* ─────────────────────────────────────────────────────────
    * FOCUS RING
    * ───────────────────────────────────────────────────────── */
 

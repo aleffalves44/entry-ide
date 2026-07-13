@@ -148,7 +148,7 @@
   color: var(--ink-primary, var(--text-0));
   resize: vertical;
   outline: none;
-  transition: border-color 120ms ease;
+  transition: border-color var(--dur-quick) ease;
 }
 
 .aq-other-textarea:focus {
@@ -198,7 +198,7 @@
   font-size: 11px;
   color: var(--ink-tertiary, var(--text-3));
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
   /* The button text is "Esc cancel" with a literal space.  An
    * inherited `word-spacing: 0` from a parent flexbox + zero-width
    * fonts can collapse the space visually.  Force a real word gap. */
@@ -236,7 +236,7 @@
   font-size: 11px;
   color: var(--brass, var(--accent));
   cursor: pointer;
-  transition: all 120ms ease;
+  transition: all var(--dur-quick) ease;
   letter-spacing: 0.02em;
 }
 

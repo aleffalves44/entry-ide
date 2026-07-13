@@ -6,8 +6,8 @@
   background: var(--bg-2);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
-  z-index: 9999;
+  box-shadow: var(--shadow-3);
+  z-index: var(--z-picker);
   padding: var(--space-1);
   font-family: var(--font-ui);
 }
@@ -35,7 +35,7 @@
   font-family: var(--font-ui);
   font-size: var(--text-md);
   text-transform: lowercase;
-  transition: background 100ms ease;
+  transition: background var(--dur-tap) ease;
   user-select: none;
 }
 
@@ -67,7 +67,7 @@
   border-radius: 1px;
   background: var(--text-3);
   opacity: 0.45;
-  transition: background 200ms ease, opacity 200ms ease, box-shadow 200ms ease;
+  transition: background var(--dur-quick) ease, opacity var(--dur-quick) ease, box-shadow var(--dur-quick) ease;
 }
 
 .effort-picker-bars span:nth-child(1) { height: 5px; }

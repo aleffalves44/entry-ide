@@ -4,11 +4,11 @@
 	position: absolute;
 	top: 8px;
 	right: 16px;
-	z-index: 20;
+	z-index: var(--z-overlay);
 	background: var(--bg-1);
 	border: 1px solid var(--border-light);
 	border-radius: var(--radius);
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+	box-shadow: var(--shadow-2);
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -61,7 +61,7 @@
 	padding: 5px 10px;
 	cursor: pointer;
 	white-space: nowrap;
-	transition: background 0.1s, color 0.1s;
+	transition: background var(--dur-tap), color var(--dur-tap);
 	flex-shrink: 0;
 }
 

@@ -10,8 +10,8 @@
   background: var(--bg-2);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  z-index: 50;
+  box-shadow: var(--shadow-2);
+  z-index: var(--z-overlay);
   font-family: var(--font-mono);
   padding: var(--space-1);
 }

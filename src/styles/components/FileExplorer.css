@@ -45,7 +45,7 @@
   font-size: var(--text-sm);
   padding: 2px 6px;
   border-radius: var(--radius);
-  transition: background 0.1s, border-color 0.1s, color 0.1s;
+  transition: background var(--dur-tap), border-color var(--dur-tap), color var(--dur-tap);
 }
 .file-explorer-toggle:hover {
   background: var(--bg-hover);
@@ -127,7 +127,7 @@
 .file-tree-chevron {
   color: var(--text-3);
   font-size: var(--text-sm);
-  transition: transform 0.15s;
+  transition: transform var(--dur-quick);
   flex-shrink: 0;
   width: 12px;
   text-align: center;
@@ -273,7 +273,7 @@
   padding: 0 2px;
   margin-left: auto;
   opacity: 0;
-  transition: opacity 0.1s;
+  transition: opacity var(--dur-tap);
   display: flex;
   align-items: center;
   flex-shrink: 0;

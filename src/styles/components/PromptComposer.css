@@ -8,10 +8,10 @@
   max-height: 80vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-4);
   overflow: hidden;
   align-self: flex-start;
-  animation: paletteIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: paletteIn var(--dur-quick) var(--ease-out-expo);
 }
 
 .prompt-composer-header {
@@ -91,7 +91,7 @@
   padding: 8px 10px;
   resize: vertical;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color var(--dur-quick);
   line-height: 1.5;
 }
 .prompt-composer-field textarea:focus {
@@ -160,7 +160,7 @@
   font-size: var(--text-md);
   padding: 6px 12px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--dur-quick);
 }
 .prompt-composer-btn:hover:not(:disabled) {
   background: var(--bg-active);
@@ -256,7 +256,7 @@
 }
 
 .prompt-composer-advanced-chevron {
-  font-family: monospace;
+  font-family: var(--font-code);
   font-size: var(--text-sm);
 }
 
@@ -278,7 +278,7 @@
   border: 1px dashed var(--accent);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--dur-quick), border-color var(--dur-quick);
   text-align: left;
 }
 .prompt-composer-empty-cta:hover {
