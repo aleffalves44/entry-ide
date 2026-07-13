@@ -8,6 +8,7 @@ import { useFileEditor } from "../hooks/useFileEditor";
 import { EditorPane } from "../editor/EditorPane";
 import type { CursorInfo, IndentConfig } from "../editor/EditorPane";
 import type { FileContent } from "../types/git";
+import { MarkdownBody } from "../agent/blocks/MarkdownBody";
 
 import type { FileHandlerProps } from "../plugins/types";
 
@@ -270,14 +271,25 @@ export function FilePreviewPanel({ sessionId, projectId, filePath, onBack, fileH
     }
   }, [sessionId, projectId, filePath, isSSH, sshInfo, onBack]);
 
-  // Auto-enter edit mode for non-binary, non-large text files
+  const isMarkdown =
+    file?.language === "markdown" || /\.(md|markdown)$/i.test(filePath);
+
+  // Auto-enter edit mode for non-binary, non-large text files — EXCEPT
+  // markdown, which opens rendered (IntelliJ-style preview, including
+  // ```mermaid``` diagrams via MarkdownBody) with an explicit Edit toggle.
   useEffect(() => {
-    if (file && !file.is_binary && file.content && file.size <= MAX_DISPLAY_SIZE) {
+    if (
+      file &&
+      !file.is_binary &&
+      file.content &&
+      file.size <= MAX_DISPLAY_SIZE &&
+      !isMarkdown
+    ) {
       setEditMode(true);
     } else {
       setEditMode(false);
     }
-  }, [file]);
+  }, [file, isMarkdown]);
 
   // Close indent menu on click outside
   useEffect(() => {
@@ -361,6 +373,26 @@ export function FilePreviewPanel({ sessionId, projectId, filePath, onBack, fileH
         {editMode && editor.isSaving && <span className="file-editor-saving">Saving...</span>}
         {editMode && editor.saveError && <span className="file-editor-error" title={editor.saveError}>Save failed</span>}
         <span className="file-preview-lang">{file.language}</span>
+        {isMarkdown && !file.is_binary && !isTooLarge && (
+          <div className="file-preview-md-toggle" role="tablist" aria-label="Markdown view">
+            <button
+              className={`file-preview-md-tab${!editMode ? " is-active" : ""}`}
+              role="tab"
+              aria-selected={!editMode}
+              onClick={() => setEditMode(false)}
+            >
+              Preview
+            </button>
+            <button
+              className={`file-preview-md-tab${editMode ? " is-active" : ""}`}
+              role="tab"
+              aria-selected={editMode}
+              onClick={() => setEditMode(true)}
+            >
+              Editar
+            </button>
+          </div>
+        )}
         {editMode && (
           <button className="file-preview-open-btn" onClick={() => editor.save()} disabled={!editor.isDirty} title="Save (Cmd+S)">
             Save
@@ -475,6 +507,16 @@ export function FilePreviewPanel({ sessionId, projectId, filePath, onBack, fileH
             </div>
           </div>
         </>
+      ) : isMarkdown ? (
+        <div
+          className="file-preview-content file-preview-markdown"
+          data-testid="file-preview-markdown"
+        >
+          {/* Rendered markdown (GFM + ```mermaid``` diagrams) — the same
+              MarkdownBody the chat uses.  Renders the editor buffer when
+              there are unsaved edits, so Preview reflects what Editar has. */}
+          <MarkdownBody source={editor.content || file.content} />
+        </div>
       ) : (
         <div className="file-preview-content">
           <pre className="file-preview-code">
