@@ -53,6 +53,8 @@ import { copyContextToClipboard } from "./utils/copyContextToClipboard";
 import { ProjectPicker } from "./components/ProjectPicker";
 import { SessionCreator } from "./components/SessionCreator";
 import { QuickSessionCreator } from "./components/QuickSessionCreator";
+import { OpenProjectDialog } from "./components/OpenProjectDialog";
+import type { ProjectOrdered } from "./types/project";
 import { PromptComposer } from "./components/PromptComposer";
 import { SessionComposer, getComposerTextarea } from "./components/SessionComposer";
 import { SplitLayout } from "./components/SplitLayout";
@@ -136,6 +138,9 @@ function AppContent() {
   // sidebar group "+" (which pre-selects a group).  Mounts instantly
   // (light component), so no opening-overlay dance is needed.
   const [quickCreatorOpen, setQuickCreatorOpen] = useState(false);
+  // "Open project" — browse an existing codebase: agent session on the
+  // current branch (no worktree) + Workbench landing on the Files tab.
+  const [openProjectOpen, setOpenProjectOpen] = useState(false);
   const updater = useAutoUpdater();
   const activeGitSummary = useSessionGitSummary(state.activeSessionId, !!activeSession, activeSession?.working_directory);
 
@@ -630,6 +635,25 @@ function AppContent() {
     }
   }, [sessions, closeSession]);
 
+  /** Open an existing project for browsing: agent session on the
+   *  project's current branch (no branch dialog, no worktree — this is
+   *  navigation, not a new isolated task), then land the Workbench on
+   *  the Files tab so the tree is immediately visible. */
+  const handleOpenProject = useCallback(async (project: ProjectOrdered) => {
+    setOpenProjectOpen(false);
+    const session = await createSession({
+      mode: "agent",
+      aiProvider: "claude",
+      projectIds: [project.id],
+      workingDirectory: project.path,
+      group: project.name,
+    });
+    if (session) {
+      dispatch({ type: "SET_WORKBENCH_OPEN", open: true });
+      dispatch({ type: "SET_WORKBENCH_TAB", tab: "files" });
+    }
+  }, [createSession, dispatch]);
+
   const handleAutoExecute = useCallback(() => {
     if (!ui.autoToast) return;
     const { command, sessionId } = ui.autoToast;
@@ -1062,6 +1086,7 @@ function AppContent() {
                     <EmptyState
                       recentSessions={state.recentSessions}
                       onNew={() => setQuickCreatorOpen(true)}
+                      onOpenProject={() => setOpenProjectOpen(true)}
                       onRestore={(entry, restoreScrollback) => createSession({ label: entry.label, workingDirectory: entry.working_directory, restoreFromId: restoreScrollback ? entry.id : undefined })}
                     />
                   )}
@@ -1365,6 +1390,13 @@ function AppContent() {
             setQuickCreatorOpen(false);
             setSessionCreatorOpen({});
           }}
+        />
+      )}
+
+      {openProjectOpen && (
+        <OpenProjectDialog
+          onClose={() => setOpenProjectOpen(false)}
+          onPick={(p) => void handleOpenProject(p)}
         />
       )}
 
