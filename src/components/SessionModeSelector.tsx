@@ -65,6 +65,7 @@ export function SessionModeSelector({
   const isSSHDisabled = true; // conversion not supported in 1.0.0
 
   function isOptionDisabled(id: SelectorMode): boolean {
+    if (activeDisplayMode === "ssh" && id !== "ssh") return true;
     if (id === "agent") return isAgentDisabled;
     if (id === "ssh") return isSSHDisabled;
     return false;
@@ -119,11 +120,15 @@ export function SessionModeSelector({
 
       if (nextIndex !== currentIndex) {
         handleSelect(options[nextIndex]);
-        // Move DOM focus to the newly active radio button
+        // Move DOM focus to the newly active radio button.
+        // nextIndex is an index into MODE_OPTIONS (0-2); the NodeList only
+        // contains enabled radios, so map to that subset first.
+        const enabledOptions = MODE_OPTIONS.filter((o) => !isOptionDisabled(o.id));
+        const enabledPos = enabledOptions.findIndex((o) => o.id === MODE_OPTIONS[nextIndex].id);
         const buttons = groupRef.current?.querySelectorAll<HTMLButtonElement>(
           "[role='radio']:not([aria-disabled='true'])",
         );
-        buttons?.[nextIndex]?.focus();
+        buttons?.[enabledPos]?.focus();
       }
     },
     [activeDisplayMode, handleSelect],
