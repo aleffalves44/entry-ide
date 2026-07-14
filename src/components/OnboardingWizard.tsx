@@ -1,46 +1,17 @@
 import "../styles/components/OnboardingWizard.css";
 import { useState, useEffect, useCallback } from "react";
-import { getSetting, setSetting, getSettings } from "../api/settings";
+import { getSetting, setSetting } from "../api/settings";
 import { checkAiProviders } from "../api/sessions";
-import { applyTheme, applyUiScale, DARK_THEMES, LIGHT_THEMES, UI_SCALE_OPTIONS, normalizeThemeId, DEFAULT_THEME_ID } from "../utils/themeManager";
-import { AI_PROVIDERS } from "../utils/aiProviders";
 
-type Step = "welcome" | "theme" | "ai_setup" | "privacy";
+type Step = "welcome" | "privacy";
 
-const STEPS: Step[] = ["welcome", "theme", "ai_setup", "privacy"];
-
-// Mini terminal preview colors per theme (bg, text, accent, green).  Values
-// mirror the canonical `--bg-0`, `--text-1`, `--accent`, and `--green` tokens
-// in `themes.css` for each of the eight v1.1.15 themes.  Keep in sync if a
-// theme's tokens shift; the wizard renders a fixed `$ ~ ok` strip per card so
-// only these four values matter for the swatch.
-const THEME_PREVIEW: Record<string, { bg: string; text: string; accent: string; green: string }> = {
-  // Dark themes
-  "frosted-dark": { bg: "#1c1c1e", text: "#d6d6d9", accent: "#0a84ff", green: "#30d158" },
-  atelier:        { bg: "#1a1714", text: "#c8bfb0", accent: "#e07850", green: "#8fbc6a" },
-  observatory:    { bg: "#0a1018", text: "#c8b896", accent: "#d4a86a", green: "#6fa86f" },
-  phosphor:       { bg: "#050805", text: "#80d878", accent: "#b0f0a8", green: "#b0f0a8" },
-  // Light themes
-  "frosted-light": { bg: "#f5f5f7", text: "#3a3a3c", accent: "#0a84ff", green: "#28a745" },
-  linen:           { bg: "#f4ede0", text: "#4a3e30", accent: "#c45a32", green: "#5e8a40" },
-  newsprint:       { bg: "#f7f4ec", text: "#2a2a2a", accent: "#0a0a0a", green: "#2a6a2a" },
-  atrium:          { bg: "#eef2f6", text: "#4a5566", accent: "#4a6a8c", green: "#4a8a6a" },
-};
+const STEPS: Step[] = ["welcome", "privacy"];
 
 const SETTING_KEY = "onboarding_completed";
 
 export function OnboardingWizard() {
   const [visible, setVisible] = useState(false);
   const [step, setStep] = useState<Step>("welcome");
-
-  // Theme step
-  const [selectedTheme, setSelectedTheme] = useState<string>(DEFAULT_THEME_ID);
-  const [selectedScale, setSelectedScale] = useState("default");
-
-  // AI setup step
-  const [providerAvailability, setProviderAvailability] = useState<Record<string, boolean>>({});
-  const [detectionDone, setDetectionDone] = useState(false);
-
 
   useEffect(() => {
     let cancelled = false;
@@ -53,27 +24,16 @@ export function OnboardingWizard() {
         // Setting doesn't exist yet — first launch
       }
       if (!cancelled) {
-        // Load current theme if already set
-        try {
-          const settings = await getSettings();
-          if (settings.theme) setSelectedTheme(normalizeThemeId(settings.theme));
-          if (settings.ui_scale) setSelectedScale(settings.ui_scale);
-        } catch {
-          // ignore
-        }
         setVisible(true);
+        // R2: run provider detection fire-and-forget on first launch so any
+        // backend caching side-effects still occur. Results are not stored
+        // here — the Settings ai-agent tab calls checkAiProviders() on its
+        // own mount and owns the display of detected state.
+        checkAiProviders().catch(() => {/* ignore */});
       }
     })();
     return () => { cancelled = true; };
   }, []);
-
-  useEffect(() => {
-    if (step === "ai_setup" && !detectionDone) {
-      checkAiProviders()
-        .then((r) => { setProviderAvailability(r); setDetectionDone(true); })
-        .catch(() => setDetectionDone(true));
-    }
-  }, [step, detectionDone]);
 
   const currentStepIdx = STEPS.indexOf(step);
 
@@ -87,35 +47,14 @@ export function OnboardingWizard() {
     if (idx > 0) setStep(STEPS[idx - 1]);
   }, [step]);
 
-  const handleThemeSelect = useCallback(async (themeId: string) => {
-    setSelectedTheme(themeId);
-    await setSetting("theme", themeId).catch(console.warn);
-    try {
-      const settings = await getSettings();
-      applyTheme(themeId, settings);
-    } catch {
-      applyTheme(themeId, {});
-    }
-  }, []);
-
-  const handleScaleChange = useCallback(async (scaleId: string) => {
-    setSelectedScale(scaleId);
-    await setSetting("ui_scale", scaleId).catch(console.warn);
-    applyUiScale(scaleId, selectedTheme);
-  }, [selectedTheme]);
-
   const handleFinish = useCallback(async () => {
-    // Mark onboarding as completed
     await setSetting(SETTING_KEY, "true").catch(console.warn);
-
     setVisible(false);
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       if (step === "welcome") goNext();
-      else if (step === "theme") goNext();
-      else if (step === "ai_setup") goNext();
       else if (step === "privacy") handleFinish();
     }
   }, [step, goNext, handleFinish]);
@@ -128,9 +67,7 @@ export function OnboardingWizard() {
         {/* Header — hidden on welcome step */}
         {step !== "welcome" && (
           <div className="onboarding-header">
-            <span className="onboarding-header-title">
-              {step === "theme" ? "Personalize" : step === "ai_setup" ? "AI Tools" : "Privacy & Data"}
-            </span>
+            <span className="onboarding-header-title">Privacy &amp; Data</span>
             <span className="onboarding-header-step">
               Step {currentStepIdx + 1} of {STEPS.length}
             </span>
@@ -154,119 +91,23 @@ export function OnboardingWizard() {
             </div>
           )}
 
-          {/* ── Step 2: Theme ── */}
-          {step === "theme" && (
-            <>
-              <div className="onboarding-section-label">Dark</div>
-              <div className="onboarding-theme-grid">
-                {DARK_THEMES.map((t) => {
-                  const p = THEME_PREVIEW[t.id];
-                  return (
-                    <button
-                      key={t.id}
-                      className={`onboarding-theme-card ${selectedTheme === t.id ? "selected" : ""}`}
-                      onClick={() => handleThemeSelect(t.id)}
-                      title={t.label}
-                    >
-                      <div
-                        className="onboarding-theme-preview"
-                        style={{ background: p?.bg ?? "#111" }}
-                      >
-                        <span style={{ color: p?.text ?? "#ccc" }}>$</span>
-                        <span style={{ color: p?.accent ?? "#77f" }}>~</span>
-                        <span style={{ color: p?.green ?? "#4d4" }}>ok</span>
-                      </div>
-                      <span className="onboarding-theme-card-name">{t.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="onboarding-section-label">Light</div>
-              <div className="onboarding-theme-grid">
-                {LIGHT_THEMES.map((t) => {
-                  const p = THEME_PREVIEW[t.id];
-                  return (
-                    <button
-                      key={t.id}
-                      className={`onboarding-theme-card ${selectedTheme === t.id ? "selected" : ""}`}
-                      onClick={() => handleThemeSelect(t.id)}
-                      title={t.label}
-                    >
-                      <div
-                        className="onboarding-theme-preview"
-                        style={{ background: p?.bg ?? "#fff" }}
-                      >
-                        <span style={{ color: p?.text ?? "#333" }}>$</span>
-                        <span style={{ color: p?.accent ?? "#26e" }}>~</span>
-                        <span style={{ color: p?.green ?? "#1a4" }}>ok</span>
-                      </div>
-                      <span className="onboarding-theme-card-name">{t.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="onboarding-section-label">UI Scale</div>
-              <div className="onboarding-scale-row">
-                <select
-                  value={selectedScale}
-                  onChange={(e) => handleScaleChange(e.target.value)}
-                >
-                  {UI_SCALE_OPTIONS.map((s) => (
-                    <option key={s.id} value={s.id}>{s.label}</option>
-                  ))}
-                </select>
-              </div>
-            </>
-          )}
-
-          {/* ── Step 3: AI Setup ── */}
-          {step === "ai_setup" && (
-            <>
-              <div className="onboarding-section-label">Detected AI tools</div>
-              <div className="onboarding-ai-grid">
-                {AI_PROVIDERS.map((p) => {
-                  const available = providerAvailability[p.id];
-                  return (
-                    <div
-                      key={p.id}
-                      className={`onboarding-ai-card ${detectionDone && !available ? "missing" : ""}`}
-                    >
-                      <div className="onboarding-ai-card-header">
-                        <span className="onboarding-ai-card-name">{p.label}</span>
-                        {detectionDone ? (
-                          <span className={`onboarding-ai-status ${available ? "installed" : "missing"}`}>
-                            {available ? "Detected" : "Not found"}
-                          </span>
-                        ) : (
-                          <span className="onboarding-ai-status checking">Checking...</span>
-                        )}
-                      </div>
-                      <div className="onboarding-ai-card-desc">{p.description}</div>
-                      {detectionDone && !available && (
-                        <code className="onboarding-ai-install-cmd">{p.installCmd}</code>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="onboarding-ai-note">
-                You can use Entry IDE as a terminal without AI tools. Install them anytime.
-              </div>
-            </>
-          )}
-
-          {/* ── Step 4: Privacy ── */}
+          {/* ── Step 2: Privacy ── */}
           {step === "privacy" && (
-            <div className="onboarding-privacy-section">
-              <div className="onboarding-privacy-section-title">
-                No telemetry
+            <>
+              <div className="onboarding-privacy-section">
+                <div className="onboarding-privacy-section-title">
+                  No telemetry
+                </div>
+                <ul className="onboarding-privacy-list never">
+                  <li>Entry IDE does not collect any usage analytics</li>
+                  <li>Terminal content, commands, and files never leave your machine</li>
+                  <li>AI requests go directly to your configured provider</li>
+                </ul>
               </div>
-              <ul className="onboarding-privacy-list never">
-                <li>Entry IDE does not collect any usage analytics</li>
-                <li>Terminal content, commands, and files never leave your machine</li>
-                <li>AI requests go directly to your configured provider</li>
-              </ul>
-            </div>
+              <p className="onboarding-settings-hint">
+                Theme and AI tools can be configured anytime in Settings.
+              </p>
+            </>
           )}
         </div>
 
@@ -288,32 +129,6 @@ export function OnboardingWizard() {
               >
                 Get Started
               </button>
-            )}
-            {step === "theme" && (
-              <>
-                <button className="onboarding-btn" onClick={goBack}>
-                  Back
-                </button>
-                <button
-                  className="onboarding-btn onboarding-btn-primary"
-                  onClick={goNext}
-                >
-                  Next
-                </button>
-              </>
-            )}
-            {step === "ai_setup" && (
-              <>
-                <button className="onboarding-btn" onClick={goBack}>
-                  Back
-                </button>
-                <button
-                  className="onboarding-btn onboarding-btn-primary"
-                  onClick={goNext}
-                >
-                  Next
-                </button>
-              </>
             )}
             {step === "privacy" && (
               <>
