@@ -29,7 +29,7 @@ export function OnboardingWizard() {
         // backend caching side-effects still occur. Results are not stored
         // here — the Settings ai-agent tab calls checkAiProviders() on its
         // own mount and owns the display of detected state.
-        checkAiProviders().catch(() => {/* ignore */});
+        checkAiProviders().catch((e) => console.warn("[onboarding] provider detection failed:", e));
       }
     })();
     return () => { cancelled = true; };
