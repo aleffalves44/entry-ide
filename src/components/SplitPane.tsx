@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useSession } from "../state/SessionContext";
 import { ScopeBar } from "./ScopeBar";
 import { ProviderActionsBar } from "./ProviderActionsBar";
+import { SessionModeSelector } from "./SessionModeSelector";
+import { SessionMode } from "../types/session";
 import { TerminalPane } from "./TerminalPane";
 import { AgentSessionView } from "../agent/AgentSessionView";
 import { focusTerminal, terminalHasSelection, terminalGetSelection, insertFilePaths, writeTextToTerminal, clearTerminal } from "../terminal/TerminalPool";
@@ -308,6 +310,11 @@ export function SplitPane({ paneId, sessionId }: SplitPaneProps) {
             title="Close pane"
           >&times;</button>
         </div>
+        {/* Mode selector — visually separated from action affordances (R1, R2, R5) */}
+        <SessionModeSelector
+          session={session}
+          onRequestConvert={(newMode: SessionMode) => setPendingModeConvert(newMode)}
+        />
         <ScopeBar sessionId={sessionId} />
         {/* ProviderActionsBar is the legacy TUI quick-actions row. Hide it
             in agent mode — the new chat composer is the input surface. */}
