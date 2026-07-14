@@ -24,6 +24,7 @@ vi.mock("../api/projects", () => ({
 const dispatchMock = vi.fn();
 vi.mock("../state/SessionContext", () => ({
   useSession: () => ({ state: {}, dispatch: dispatchMock }),
+  useLocale: () => "en",
 }));
 
 // --- usePipelineState mock ---
@@ -44,7 +45,7 @@ vi.mock("../hooks/usePipelineState", () => ({
 }));
 
 import { PipelinePanel } from "../components/PipelinePanel";
-import { PHASE_DESCRIPTIONS, PHASE_PLACEHOLDERS } from "../utils/pipelinePhases";
+import { en } from "../i18n/en";
 import type { SessionData } from "../types/session";
 
 const SESSION: SessionData = {
@@ -282,10 +283,10 @@ describe("UI-02 — DOM order: row then expanded then detail/artifacts", () => {
 describe("UI-03 — expanded section content", () => {
   afterEach(() => cleanup());
 
-  it("shows PHASE_DESCRIPTIONS.spike text when spike is open", () => {
+  it("shows the spike description text when spike is open", () => {
     renderPanel();
     clickRow(0);
-    expect(screen.getByText(PHASE_DESCRIPTIONS.spike)).toBeInTheDocument();
+    expect(screen.getByText(en["pipeline.desc.spike"])).toBeInTheDocument();
   });
 
   it("renders context input with the phase placeholder", () => {
@@ -295,7 +296,7 @@ describe("UI-03 — expanded section content", () => {
       ".pipeline-phase-expanded input.pipeline-phase-input",
     ) as HTMLInputElement;
     expect(input).not.toBeNull();
-    expect(input).toHaveAttribute("placeholder", PHASE_PLACEHOLDERS.spike);
+    expect(input).toHaveAttribute("placeholder", en["pipeline.placeholder.spike"]);
   });
 
   it("exactly one send button visible when a phase is open", () => {

@@ -24,10 +24,12 @@ import { useWorkflowTimeline } from "../hooks/useWorkflowTimeline";
 import { useWorkflowRunner } from "../hooks/useWorkflowRunner";
 import { GitDiffView } from "./GitDiffView";
 import { formatDuration, formatTokens } from "../utils/frameworkAggregates";
+import { useTranslation } from "../hooks/useTranslation";
+import type { Translation } from "../hooks/useTranslation";
 import type { GitFile } from "../types/git";
 import type { SessionData } from "../types/session";
 import type { TimelineSection } from "../utils/workflowTimeline";
-import type { PhaseKey } from "../utils/pipelinePhases";
+import { formatPhaseDetail, type PhaseKey } from "../utils/pipelinePhases";
 import { PHASE_ORDER } from "../utils/workflowRunner";
 
 const DOT: Record<string, string> = {
@@ -55,6 +57,7 @@ interface WorkflowTimelinePanelProps {
 
 export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
   const { dispatch } = useSession();
+  const { t } = useTranslation();
   const { timeline, loading, isStreaming, pluginMissing, pluginPresent, refresh } =
     useWorkflowTimeline(session);
 
@@ -106,11 +109,11 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
     return (
       <div className="workflow-panel" data-testid="workflow-panel">
         <div className="workflow-empty">
-          <div className="workflow-empty-title">Plugin harness-cmd não encontrado</div>
+          <div className="workflow-empty-title">{t("pipeline.pluginMissingTitle")}</div>
           <p className="workflow-empty-body">
-            A aba Workflow acompanha o framework <code>agentic-harness</code>{" "}
-            (spike → plan → task → pr). Instale o plugin no Claude Code e
-            reinicie a sessão:
+            {t("workflow.pluginMissingBodyBefore")}
+            <code>agentic-harness</code>
+            {t("workflow.pluginMissingBodyAfter")}
           </p>
           <code className="workflow-empty-cmd">/plugin install harness-cmd</code>
         </div>
@@ -123,10 +126,11 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
     return (
       <div className="workflow-panel" data-testid="workflow-panel">
         <div className="workflow-empty">
-          <div className="workflow-empty-title">Aguardando a sessão…</div>
+          <div className="workflow-empty-title">{t("workflow.waitingTitle")}</div>
           <p className="workflow-empty-body">
-            O acompanhamento do workflow aparece assim que a sessão agent
-            iniciar com o plugin <code>harness-cmd</code>.
+            {t("workflow.waitingBodyBefore")}
+            <code>harness-cmd</code>
+            {t("workflow.waitingBodyAfter")}
           </p>
         </div>
       </div>
@@ -140,37 +144,37 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
   return (
     <div className="workflow-panel" data-testid="workflow-panel">
       <div className="workflow-toolbar">
-        <span className="workflow-toolbar-tag">WORKFLOW</span>
+        <span className="workflow-toolbar-tag">{t("workflow.tag")}</span>
         <button
           type="button"
           className="workflow-refresh"
           onClick={refresh}
           disabled={loading}
-          title="Reler estado"
+          title={t("workflow.refreshTitle")}
         >
           {loading ? "…" : "↻"}
         </button>
       </div>
 
-      {/* "Rodar workflow" controls */}
+      {/* "Run workflow" controls */}
       <div className="workflow-runner" data-testid="workflow-runner">
         <button
           type="button"
           className="workflow-runner-run"
           onClick={runner.start}
           disabled={runnerActive && !awaiting}
-          title="Encadear as fases pendentes automaticamente"
+          title={t("workflow.chainTitle")}
         >
-          {runnerActive && !awaiting ? "Encadeando…" : "▶ Rodar workflow"}
+          {runnerActive && !awaiting ? t("workflow.chaining") : t("workflow.run")}
         </button>
         {awaiting && (
           <button
             type="button"
             className="workflow-runner-approve"
             onClick={runner.approve}
-            title={`Aprovar e disparar ${PHASE_LABEL[awaiting]}`}
+            title={t("workflow.approveTitle", { phase: PHASE_LABEL[awaiting] })}
           >
-            ✓ Aprovar {PHASE_LABEL[awaiting]}
+            {t("workflow.approve", { phase: PHASE_LABEL[awaiting] })}
           </button>
         )}
         {runnerActive && (
@@ -178,12 +182,12 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
             type="button"
             className="workflow-runner-cancel"
             onClick={runner.cancel}
-            title="Parar o encadeamento (não interrompe o turno em andamento)"
+            title={t("workflow.cancelTitle")}
           >
-            ■ Cancelar
+            {t("workflow.cancel")}
           </button>
         )}
-        <div className="workflow-runner-stops" title="Marcar paradas para aprovação entre fases">
+        <div className="workflow-runner-stops" title={t("workflow.stopsTitle")}>
           {PHASE_ORDER.map((key) => (
             <label key={key} className={`workflow-stop ${runner.stopAfter.has(key) ? "is-on" : ""}`}>
               <input
@@ -197,7 +201,7 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
         </div>
         {awaiting && (
           <div className="workflow-runner-awaiting">
-            Pausado antes de <strong>{PHASE_LABEL[awaiting]}</strong> — aguardando aprovação.
+            {t("workflow.awaiting", { phase: PHASE_LABEL[awaiting] })}
           </div>
         )}
       </div>
@@ -207,8 +211,8 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
         className="workflow-task-input"
         value={taskInput}
         onChange={(e) => setTaskInput(e.target.value)}
-        placeholder="ex.: CRED-1234 ou descrição da task"
-        title="Enviado junto com cada fase: /comando <este texto>"
+        placeholder={t("workflow.taskPlaceholder")}
+        title={t("workflow.taskInputTitle")}
         spellCheck={false}
       />
 
@@ -218,6 +222,7 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
             key={i}
             section={section}
             isStreaming={isStreaming}
+            t={t}
             onRun={dispatchPhase}
             onOpenArtifact={openArtifact}
             onOpenDiff={openDiff}
@@ -225,18 +230,12 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
         ))}
         {timeline.sections.length === 0 && (
           <div className="workflow-empty">
-            <p className="workflow-empty-body">
-              As fases do pipeline aparecem aqui assim que o estado for lido.
-            </p>
+            <p className="workflow-empty-body">{t("workflow.emptyTimeline")}</p>
           </div>
         )}
       </div>
 
-      <p className="workflow-hint">
-        A timeline consolida progresso, artefatos <code>.md</code>, arquivos
-        alterados e custo por fase — sem trocar de aba. O estado vem do
-        worktree (arquivos, commits, PR).
-      </p>
+      <p className="workflow-hint">{t("workflow.hint")}</p>
 
       {diffTarget && projectId && (
         <GitDiffView
@@ -253,12 +252,14 @@ export function WorkflowTimelinePanel({ session }: WorkflowTimelinePanelProps) {
 function TimelineSectionView({
   section,
   isStreaming,
+  t,
   onRun,
   onOpenArtifact,
   onOpenDiff,
 }: {
   section: TimelineSection;
   isStreaming: boolean;
+  t: Translation["t"];
   onRun: (command: string) => void;
   onOpenArtifact: (path: string) => void;
   onOpenDiff: (file: GitFile) => void;
@@ -274,22 +275,24 @@ function TimelineSectionView({
           <span className="workflow-phase-label">{phase.label}</span>
           <span className="workflow-phase-status">
             {phase.status === "done"
-              ? "concluído"
+              ? t("phase.done")
               : phase.status === "running"
-                ? "em execução…"
-                : "pendente"}
+                ? t("phase.running")
+                : t("phase.pending")}
           </span>
           <button
             type="button"
             className="workflow-phase-run"
             onClick={() => onRun(phase.command)}
             disabled={isStreaming}
-            title={`Enviar /${phase.command}`}
+            title={t("workflow.runPhaseTitle", { command: phase.command })}
           >
             ▶
           </button>
         </div>
-        {phase.detail && <div className="workflow-phase-detail">{phase.detail}</div>}
+        {phase.detail && (
+          <div className="workflow-phase-detail">{formatPhaseDetail(phase.detail, t)}</div>
+        )}
       </div>
     );
   }
@@ -297,7 +300,7 @@ function TimelineSectionView({
   if (section.kind === "artifacts") {
     return (
       <div className="workflow-section workflow-artifacts">
-        <div className="workflow-section-title">Artefatos gerados</div>
+        <div className="workflow-section-title">{t("workflow.artifactsTitle")}</div>
         <div className="workflow-artifact-list">
           {section.items.map((a) => (
             <button
@@ -320,7 +323,7 @@ function TimelineSectionView({
     return (
       <div className="workflow-section workflow-files">
         <div className="workflow-section-title">
-          Arquivos alterados · {section.files.length}
+          {t("workflow.filesTitle", { count: section.files.length })}
         </div>
         <ul className="workflow-file-list">
           {section.files.map((f) => (
@@ -329,7 +332,7 @@ function TimelineSectionView({
                 type="button"
                 className="workflow-file-btn"
                 onClick={() => onOpenDiff(f)}
-                title={`Abrir diff · ${f.area}`}
+                title={t("workflow.openDiffTitle", { area: f.area })}
               >
                 <span className="workflow-file-status">{f.status[0].toUpperCase()}</span>
                 <span className="workflow-file-path">{f.path}</span>
@@ -344,27 +347,27 @@ function TimelineSectionView({
 
   // cost
   const cost = section.cost;
-  const phaseLabel = cost.phase ? PHASE_LABEL[cost.phase] : "turno";
+  const phaseLabel = cost.phase ? PHASE_LABEL[cost.phase] : t("workflow.costTurn");
   return (
     <div className="workflow-section workflow-cost">
-      <div className="workflow-section-title">Custo · {phaseLabel}</div>
+      <div className="workflow-section-title">{t("workflow.costTitle", { phase: phaseLabel })}</div>
       <div className="workflow-cost-grid">
         <span className="workflow-cost-cell">
-          <span className="workflow-cost-k">turnos</span>
+          <span className="workflow-cost-k">{t("workflow.cost.turns")}</span>
           <span className="workflow-cost-v">{cost.turns}</span>
         </span>
         <span className="workflow-cost-cell">
-          <span className="workflow-cost-k">tokens</span>
+          <span className="workflow-cost-k">{t("workflow.cost.tokens")}</span>
           <span className="workflow-cost-v mono">
             {formatTokens(cost.inputTokens + cost.outputTokens)}
           </span>
         </span>
         <span className="workflow-cost-cell">
-          <span className="workflow-cost-k">duração</span>
+          <span className="workflow-cost-k">{t("workflow.cost.duration")}</span>
           <span className="workflow-cost-v mono">{formatDuration(cost.durationMs)}</span>
         </span>
         <span className="workflow-cost-cell">
-          <span className="workflow-cost-k">custo</span>
+          <span className="workflow-cost-k">{t("workflow.cost.cost")}</span>
           <span className="workflow-cost-v mono">{formatCost(cost.costUsd)}</span>
         </span>
       </div>

@@ -14,6 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { getFrameworkUsage, exportFrameworkUsage, type FrameworkUsageEntry } from "../api/frameworkMetrics";
 import { openUsageWindow } from "../utils/usageWindow";
+import { useTranslation } from "../hooks/useTranslation";
 import {
   aggregateByAgent,
   aggregateByCommand,
@@ -42,6 +43,7 @@ interface FrameworkMetricsViewProps {
 }
 
 export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, showPopout }: FrameworkMetricsViewProps) {
+  const { t } = useTranslation();
   const [daysLocal, setDaysLocal] = useState(7);
   const days = daysProp ?? daysLocal;
   const [scope, setScope] = useState<"session" | "global">(sessionId ? "session" : "global");
@@ -76,11 +78,11 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, 
       });
       if (!path) return;
       const n = await exportFrameworkUsage(path, isoDaysAgo(days));
-      setExportStatus(`${n} linhas exportadas`);
+      setExportStatus(t("metrics.exported", { count: n }));
     } catch (e) {
-      setExportStatus(`Export falhou: ${e}`);
+      setExportStatus(t("metrics.exportFailed", { error: String(e) }));
     }
-  }, [days]);
+  }, [days, t]);
 
   return (
     <div className="fw-metrics" data-testid="framework-metrics-view">
@@ -91,13 +93,13 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, 
               className={`fw-metrics-chip ${scope === "session" ? "active" : ""}`}
               onClick={() => setScope("session")}
             >
-              Esta sessão
+              {t("metrics.scopeSession")}
             </button>
             <button
               className={`fw-metrics-chip ${scope === "global" ? "active" : ""}`}
               onClick={() => setScope("global")}
             >
-              Global
+              {t("metrics.scopeGlobal")}
             </button>
           </div>
         )}
@@ -115,41 +117,45 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, 
           </div>
         )}
         <button className="fw-metrics-export" onClick={exportJsonl}>
-          Export JSONL
+          {t("metrics.exportJsonl")}
         </button>
         {showPopout && (
           <button
             className="fw-metrics-export"
             onClick={() => void openUsageWindow()}
-            title="Abrir consumo geral em janela separada"
+            title={t("metrics.windowTitle")}
           >
-            ⧉ Janela
+            {t("metrics.window")}
           </button>
         )}
       </div>
       {exportStatus && <div className="fw-metrics-export-status">{exportStatus}</div>}
 
       {loading ? (
-        <div className="fw-metrics-empty">Carregando métricas…</div>
+        <div className="fw-metrics-empty">{t("metrics.loading")}</div>
       ) : rows.length === 0 ? (
         <div className="fw-metrics-empty">
-          Métricas aparecem após o primeiro turno {scope === "session" ? "desta sessão" : "em qualquer sessão agent"} —
-          cada turno grava comando, agente, modelo e tokens localmente.
+          {scope === "session" ? t("metrics.emptySession") : t("metrics.emptyGlobal")}
         </div>
       ) : (
         <>
           <div className="fw-metrics-summary">
-            {totalTurns} turnos · <strong>{formatCost(totalCost)}</strong>
-            <span className="fw-metrics-period"> · últimos {days} dias</span>
+            {t("metrics.turns", { count: totalTurns })} · <strong>{formatCost(totalCost)}</strong>
+            <span className="fw-metrics-period">{t("metrics.period", { days })}</span>
           </div>
 
           <div className="fw-metrics-section">
-            <div className="fw-metrics-title">Por comando</div>
+            <div className="fw-metrics-title">{t("metrics.byCommand")}</div>
             {commandAggs.map((c) => (
               <div
                 key={c.command}
                 className="fw-metrics-row"
-                title={`${c.turns} turnos · média ${formatCost(c.avgCostUsd)} · ${formatTokens(c.outputTokens)} out · ${formatDuration(c.avgDurationMs)} médio`}
+                title={t("metrics.commandRowTitle", {
+                  turns: c.turns,
+                  avg: formatCost(c.avgCostUsd),
+                  out: formatTokens(c.outputTokens),
+                  dur: formatDuration(c.avgDurationMs),
+                })}
               >
                 <span className="fw-metrics-label mono">/{c.command}</span>
                 <div className="fw-metrics-track">
@@ -167,9 +173,9 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, 
 
           {agentAggs.length > 0 && (
             <div className="fw-metrics-section">
-              <div className="fw-metrics-title">Por agente (total = in+out+cache · custo do usage×modelo)</div>
+              <div className="fw-metrics-title">{t("metrics.byAgent")}</div>
               {agentAggs.map((a) => (
-                <div key={a.agent} className="fw-metrics-row" title={`${a.runs} execuções · ${formatTokens(a.outputTokens)} out`}>
+                <div key={a.agent} className="fw-metrics-row" title={t("metrics.agentRowTitle", { runs: a.runs, out: formatTokens(a.outputTokens) })}>
                   <span className="fw-metrics-label truncate">{a.agent.replace(/^harness-cmd:/, "")}</span>
                   <div className="fw-metrics-track">
                     <div
@@ -185,9 +191,9 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, 
 
           {modelAggs.length > 0 && (
             <div className="fw-metrics-section">
-              <div className="fw-metrics-title">Por modelo</div>
+              <div className="fw-metrics-title">{t("metrics.byModel")}</div>
               {modelAggs.map((m) => (
-                <div key={m.model} className="fw-metrics-row" title={`${m.turns} turnos`}>
+                <div key={m.model} className="fw-metrics-row" title={t("metrics.modelRowTitle", { turns: m.turns })}>
                   <span className="fw-metrics-label mono truncate">{m.model}</span>
                   <div className="fw-metrics-track">
                     <div

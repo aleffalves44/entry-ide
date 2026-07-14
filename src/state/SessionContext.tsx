@@ -26,6 +26,7 @@ import { getFrameworkUsage } from "../api/frameworkMetrics";
 import { createWorktree, worktreeHasChanges, stashWorktree, getSessionWorktreeInfo } from "../api/git";
 import type { SessionWorktree } from "../types/git";
 import { getSettings, getSetting, setSetting } from "../api/settings";
+import { initLocale } from "./localeStore";
 import { createTerminal, destroy as destroyTerminal, writeScrollback, estimateInitialDimensions } from "../terminal/TerminalPool";
 import { applyTheme, applyAgentTimelineStyle } from "../utils/themeManager";
 import { restoreWindowState } from "../utils/windowState";
@@ -1557,6 +1558,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         const theme = s.theme || "frosted-dark";
         applyTheme(theme, s);
         applyAgentTimelineStyle(s.agent_timeline_style);
+        void initLocale();
         restoreWindowState(s).catch(console.error);
         if (s.execution_mode === "assisted" || s.execution_mode === "autonomous") {
           dispatch({ type: "SET_DEFAULT_MODE", mode: s.execution_mode as ExecutionMode });

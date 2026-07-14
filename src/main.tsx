@@ -1,8 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { initLocale } from "./state/localeStore";
 import "./styles/tokens.css";
 import "./styles/base.css";
+
+// Load the saved UI locale before first paint. Runs in every window
+// (including the standalone usage window, which has no SessionProvider);
+// idempotent, so the SessionProvider's own call is a no-op.
+void initLocale();
 
 // Dev-only debug hook: expose Tauri's `emit` on window so console tests
 // can inject synthetic events (e.g. a `prompt is too long` result event

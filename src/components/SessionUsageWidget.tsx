@@ -10,6 +10,7 @@ import "../styles/components/SessionUsageWidget.css";
 import { useState } from "react";
 import { useSessionUsage } from "../hooks/useSessionUsage";
 import { formatTokens } from "../utils/frameworkAggregates";
+import { useTranslation } from "../hooks/useTranslation";
 
 function formatCost(n: number): string {
   if (n <= 0) return "$0";
@@ -18,6 +19,7 @@ function formatCost(n: number): string {
 }
 
 export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
+  const { t } = useTranslation();
   const usage = useSessionUsage(sessionId);
   const [expanded, setExpanded] = useState(false);
 
@@ -34,7 +36,7 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
         <span className="session-usage-caret" aria-hidden="true">
           {expanded ? "▾" : "▸"}
         </span>
-        <span className="session-usage-tag">CONSUMO</span>
+        <span className="session-usage-tag">{t("usage.tag")}</span>
         <span className="session-usage-totals">
           {formatTokens(usage.totalTokens)} tokens · {formatCost(usage.totalCostUsd)}
         </span>
@@ -46,10 +48,10 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
             <table className="session-usage-table">
               <thead>
                 <tr>
-                  <th>Comando</th>
-                  <th>Turnos</th>
-                  <th>Out</th>
-                  <th>Custo</th>
+                  <th>{t("usage.col.command")}</th>
+                  <th>{t("usage.col.turns")}</th>
+                  <th>{t("usage.col.out")}</th>
+                  <th>{t("common.cost")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,11 +70,11 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
             <table className="session-usage-table">
               <thead>
                 <tr>
-                  <th>Agente</th>
-                  <th>Execuções</th>
-                  <th>Out</th>
-                  <th>Total</th>
-                  <th>Custo</th>
+                  <th>{t("usage.col.agent")}</th>
+                  <th>{t("usage.col.runs")}</th>
+                  <th>{t("usage.col.out")}</th>
+                  <th>{t("common.total")}</th>
+                  <th>{t("common.cost")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -92,10 +94,10 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
             <table className="session-usage-table">
               <thead>
                 <tr>
-                  <th>Modelo</th>
-                  <th>Turnos</th>
-                  <th>Out</th>
-                  <th>Custo</th>
+                  <th>{t("usage.col.model")}</th>
+                  <th>{t("usage.col.turns")}</th>
+                  <th>{t("usage.col.out")}</th>
+                  <th>{t("common.cost")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -110,11 +112,7 @@ export function SessionUsageWidget({ sessionId }: { sessionId: string }) {
               </tbody>
             </table>
           )}
-          <p className="session-usage-caption">
-            1 turno = 1 result do SDK · 1 execução = 1 despacho de subagente ·
-            Out = tokens de saída · Total = in+out+cache (volume cobrado) ·
-            custo calculado do usage × preço do modelo de cada turno.
-          </p>
+          <p className="session-usage-caption">{t("usage.caption")}</p>
         </div>
       )}
     </div>

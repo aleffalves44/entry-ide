@@ -18,6 +18,9 @@ import {
   type AgentPrefixMap,
 } from "../utils/aiProviders";
 import { useSession } from "../state/SessionContext";
+import { setLocale } from "../state/localeStore";
+import { useTranslation } from "../hooks/useTranslation";
+import { LOCALES, LOCALE_LABELS, DEFAULT_LOCALE, type Locale } from "../i18n";
 import { invoke } from "@tauri-apps/api/core";
 import {
   getSettings, setSetting, exportSettings, importSettings,
@@ -60,6 +63,7 @@ interface SettingsProps {
 }
 
 export function Settings({ onClose, initialTab, pluginRuntime, onConfirmPluginUpdate, onConfirmPluginUpdateAll, pluginRefreshTrigger }: SettingsProps) {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<SettingsMap>({});
   const [shells, setShells] = useState<{ name: string; path: string }[]>([]);
   const [activeTab, setActiveTab] = useState(initialTab || "general");
@@ -258,6 +262,23 @@ export function Settings({ onClose, initialTab, pluginRuntime, onConfirmPluginUp
           <div className="settings-content">
             {activeTab === "general" && (
               <div className="settings-section">
+                <div className="settings-group">
+                  <label className="settings-label">{t("settings.language")}</label>
+                  <select
+                    className="settings-select"
+                    value={settings.locale || DEFAULT_LOCALE}
+                    onChange={(e) => {
+                      const value = e.target.value as Locale;
+                      setSettings((prev) => ({ ...prev, locale: value }));
+                      setLocale(value);
+                    }}
+                  >
+                    {LOCALES.map((loc) => (
+                      <option key={loc} value={loc}>{LOCALE_LABELS[loc]}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="settings-group">
                   <label className="settings-label">Default Shell</label>
                   <select

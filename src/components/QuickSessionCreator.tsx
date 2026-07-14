@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { getProjectsOrdered, createProject } from "../api/projects";
 import { SessionBranchSelector } from "./SessionBranchSelector";
+import { useTranslation } from "../hooks/useTranslation";
 import type { CreateSessionOpts } from "../types/session";
 import type { ProjectOrdered } from "../types/project";
 
@@ -32,6 +33,7 @@ interface QuickSessionCreatorProps {
 }
 
 export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSessionCreatorProps) {
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<ProjectOrdered[] | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [branchSel, setBranchSel] = useState<BranchSelection | null>(null);
@@ -133,25 +135,25 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
         data-testid="quick-session-creator"
       >
         <div className="quick-creator-header">
-          <span className="quick-creator-title">Nova sessão</span>
-          <button className="quick-creator-close" onClick={onClose} title="Fechar (Esc)">
+          <span className="quick-creator-title">{t("quick.title")}</span>
+          <button className="quick-creator-close" onClick={onClose} title={t("quick.closeTitle")}>
             ×
           </button>
         </div>
 
         {projects === null ? (
-          <div className="quick-creator-empty">Carregando projetos…</div>
+          <div className="quick-creator-empty">{t("quick.loadingProjects")}</div>
         ) : projects.length === 0 ? (
           <div className="quick-creator-empty">
-            Nenhum projeto cadastrado ainda.
+            {t("quick.noProjects")}
             <button className="quick-creator-btn" onClick={() => void addFolder()}>
-              Adicionar pasta…
+              {t("quick.addFolder")}
             </button>
           </div>
         ) : (
           <>
             <label className="quick-creator-field">
-              <span className="quick-creator-label">Projeto</span>
+              <span className="quick-creator-label">{t("quick.project")}</span>
               <select
                 className="quick-creator-select"
                 value={selectedId ?? ""}
@@ -172,7 +174,7 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
                 {projects.map((p) => (
                   <option key={p.id} value={p.id} disabled={!p.path_exists}>
                     {p.name}
-                    {!p.path_exists ? " (pasta ausente)" : ""}
+                    {!p.path_exists ? t("quick.folderMissing") : ""}
                   </option>
                 ))}
               </select>
@@ -180,7 +182,7 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
                 type="button"
                 className="quick-creator-btn quick-creator-add"
                 onClick={() => void addFolder()}
-                title="Adicionar pasta como projeto"
+                title={t("quick.addFolderTitle")}
                 data-testid="quick-add-folder"
               >
                 +
@@ -206,11 +208,12 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
             <div className="quick-creator-footer">
               <span className={`quick-creator-hint${branchSel ? " has-selection" : ""}`}>
                 {branchSel
-                  ? `✓ Branch: ${branchSel.branch}${branchSel.createNew ? " (nova)" : ""}`
-                  : "Sem worktree — branch atual do repo"}
+                  ? t("quick.branchSelected", { branch: branchSel.branch }) +
+                    (branchSel.createNew ? t("quick.branchNew") : "")
+                  : t("quick.noWorktree")}
               </span>
               <button className="quick-creator-btn" onClick={onAdvanced}>
-                Avançado…
+                {t("quick.advanced")}
               </button>
               <button
                 className="quick-creator-btn quick-creator-create"
@@ -218,7 +221,7 @@ export function QuickSessionCreator({ onClose, onCreate, onAdvanced }: QuickSess
                 disabled={!selected || creating}
                 data-testid="quick-create-btn"
               >
-                {creating ? "Criando…" : "Criar sessão ⌘↵"}
+                {creating ? t("quick.creating") : t("quick.create")}
               </button>
             </div>
           </>

@@ -136,7 +136,7 @@ describe("QuickSessionCreator", () => {
   it("Avançado… hands off to the full wizard", async () => {
     const { onAdvanced } = setup();
     await screen.findByRole("combobox");
-    fireEvent.click(screen.getByRole("button", { name: /Avançado/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Advanced/ }));
     expect(onAdvanced).toHaveBeenCalled();
   });
 

@@ -9,8 +9,9 @@ src/
   agent/              # Agent-mode view layer (NOT generic utilities)
   components/         # One file per component; colocated with nothing else
   hooks/              # Custom React hooks (use* prefix)
+  i18n/               # In-repo i18n: en (source of truth) + pt-BR dicts, translate()
   plugins/            # Plugin runtime (PluginRuntime.ts, PluginLoader.ts, PluginAPI.ts)
-  state/              # SessionContext.tsx — the only global state container
+  state/              # SessionContext.tsx + small external stores (loopStore, localeStore)
   styles/             # One .css file per component; filename matches component
   types/              # Shared TypeScript interfaces/types
   utils/              # Pure functions, no React imports
@@ -36,6 +37,19 @@ All session and UI state lives in `src/state/SessionContext.tsx`. It is a single
 - Co-locate sub-components only if they are never imported elsewhere; otherwise extract to `components/`.
 - Props interfaces: inline when small, named `<Component>Props` when exported or large.
 - No default exports in utility/hook files — use named exports.
+
+## Internationalization (i18n)
+
+- User-visible strings live in `src/i18n/en.ts` (default, source of truth) and
+  `src/i18n/ptBR.ts`. `en`'s keys define `MessageKey`; `ptBR` is typed
+  `Record<MessageKey, string>`, so a missing/extra key is a compile error.
+- Components read copy via `const { t } = useTranslation()` and `t("key", { var })`.
+  `{name}` placeholders interpolate. Never hard-code user-visible text; keep only
+  technical values (command names, paths, acronyms, formatted numbers/units) inline.
+- Locale state is `src/state/localeStore.ts` (a `useSyncExternalStore` source, not
+  SessionContext) so it works in the standalone usage window too. Switch via
+  `setLocale(...)` (Settings → General → Language); `initLocale()` loads the saved
+  value at startup.
 
 ## CSS Rules
 

@@ -11,6 +11,7 @@ import { useActiveSession, useSessionList, useTotalCost, useTotalTokens, useExec
 import { PLATFORM, OS_VERSION } from "../utils/platform";
 import { useContextMenu, menuItem } from "../hooks/useContextMenu";
 import { fmt } from "../utils/platform";
+import { useTranslation } from "../hooks/useTranslation";
 // Theme switching moved to Settings → Appearance in 1.1.15.  The
 // status bar is for state, not configuration; keeping the picker
 // out of here removes a redundant entry point.
@@ -19,6 +20,7 @@ import { fmt } from "../utils/platform";
  *  task-done).  Persisted; lives in the status bar so it's one click
  *  away when a burst of sessions gets noisy. */
 function MuteNotificationsButton() {
+  const { t } = useTranslation();
   const muted = useSyncExternalStore(
     subscribeNotificationsMuted,
     areNotificationsMuted,
@@ -28,7 +30,7 @@ function MuteNotificationsButton() {
     <button
       className={`status-bug-btn${muted ? " status-mute-active" : ""}`}
       onClick={() => setNotificationsMuted(!muted)}
-      title={muted ? "Notificações pausadas — clique para reativar" : "Pausar notificações (som e banners)"}
+      title={muted ? t("status.mutedOn") : t("status.mutedOff")}
       aria-pressed={muted}
       data-testid="mute-notifications-btn"
     >
@@ -43,9 +45,9 @@ function formatTokens(n: number): string {
   return n.toString();
 }
 
-function formatElapsed(createdAt: string): string {
+function formatElapsed(createdAt: string, justNow: string): string {
   const diff = Math.floor((Date.now() - new Date(createdAt).getTime()) / 1000);
-  if (diff < 60) return "just now";
+  if (diff < 60) return justNow;
   if (diff < 3600) return `${Math.floor(diff / 60)}m`;
   if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
   return `${Math.floor(diff / 86400)}d`;
@@ -68,6 +70,7 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
   const totalTokens = useTotalTokens();
   const hasTokens = totalTokens.input + totalTokens.output > 0;
   const { dispatch } = useSession();
+  const { t } = useTranslation();
   const mode = useExecutionMode(active?.id ?? null);
   const [, setTick] = useState(0);
 
@@ -105,9 +108,9 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
     setSetting("execution_mode", next).catch(console.error);
   };
   const modeTooltip: Record<ExecutionMode, string> = {
-    manual: "Manual: No automatic suggestions or execution.",
-    assisted: "Assisted: Shows suggestions and lets you manually apply fixes.",
-    autonomous: "Autonomous: Applies frequent commands and repeated fixes after a countdown.",
+    manual: t("status.mode.manual"),
+    assisted: t("status.mode.assisted"),
+    autonomous: t("status.mode.autonomous"),
   };
   // Version chip state — collapses idle / checking / available / downloading
   // into a single visual element (see docs/design-system/06-components.md).
@@ -116,20 +119,20 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
 
   const cwdBasename = active && active.working_directory ? active.working_directory.replace(/\\/g, "/").split("/").pop() || active.working_directory : "";
   const cwdTooltip = active?.mode === "agent"
-    ? `Project context: ${active.working_directory}`
-    : `Working directory: ${active?.working_directory ?? ""}`;
+    ? t("status.projectContext", { dir: active.working_directory })
+    : t("status.workingDirectory", { dir: active?.working_directory ?? "" });
 
   return (
     <div className="status-bar">
       <div className="status-bar-left">
         <span className="status-bar-item">
           <span className={`status-dot ${sessions.length > 0 ? "status-dot-on" : ""}`} />
-          {sessions.length} active
+          {t("status.activeCount", { count: sessions.length })}
         </span>
         {active && active.mode !== "agent" && (
           <>
             <span className="status-bar-divider" />
-            <div className="status-mode-segmented" role="radiogroup" aria-label="Execution mode">
+            <div className="status-mode-segmented" role="radiogroup" aria-label={t("status.executionMode")}>
               {(["manual", "assisted", "autonomous"] as const).map((m) => (
                 <button
                   key={m}
@@ -139,7 +142,7 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
                   onClick={() => setMode(m)}
                   title={modeTooltip[m]}
                 >
-                  {m === "manual" ? "Manual" : m === "assisted" ? "Assisted" : "Auto"}
+                  {m === "manual" ? t("status.seg.manual") : m === "assisted" ? t("status.seg.assisted") : t("status.seg.auto")}
                 </button>
               ))}
             </div>
@@ -162,13 +165,13 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
               {active.phase === "busy" && (
                 <span className="status-capsule status-capsule-busy" role="status" aria-live="polite">
                   <span className="status-capsule-pulse" aria-hidden="true" />
-                  <span className="status-capsule-label">WORKING</span>
+                  <span className="status-capsule-label">{t("status.working")}</span>
                 </span>
               )}
               {active.phase === "needs_input" && (
                 <span className="status-capsule status-capsule-needs" role="status" aria-live="assertive">
                   <span className="status-capsule-pulse" aria-hidden="true" />
-                  <span className="status-capsule-label">NEEDS INPUT</span>
+                  <span className="status-capsule-label">{t("status.needsInput")}</span>
                 </span>
               )}
             </span>
@@ -178,7 +181,7 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
       <div className="status-bar-right">
         {hasTokens && (
           <>
-            <span className="status-bar-item status-bar-tokens" title={`Input: ${totalTokens.input.toLocaleString()} · Output: ${totalTokens.output.toLocaleString()}`}>
+            <span className="status-bar-item status-bar-tokens" title={t("status.tokensTitle", { input: totalTokens.input.toLocaleString(), output: totalTokens.output.toLocaleString() })}>
               {formatTokens(totalTokens.input + totalTokens.output)} tokens
             </span>
             <span className="status-bar-divider" />
@@ -188,8 +191,8 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
           <>
             <span className="status-bar-item status-bar-cost" onContextMenu={(e) => {
               showStatusMenu(e, [
-                menuItem("status.copy-cost", "Copy Cost"),
-                menuItem("status.copy-tokens", "Copy Token Count"),
+                menuItem("status.copy-cost", t("status.copyCost")),
+                menuItem("status.copy-tokens", t("status.copyTokens")),
               ]);
             }}>${totalCost.toFixed(2)}</span>
             <span className="status-bar-divider" />
@@ -197,11 +200,11 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
         )}
         {active && (
           <>
-            <span className="status-bar-item status-bar-elapsed">{formatElapsed(active.created_at)}</span>
+            <span className="status-bar-item status-bar-elapsed">{formatElapsed(active.created_at, t("status.justNow"))}</span>
             <span className="status-bar-divider" />
             <span className="status-bar-item mono" title={cwdTooltip} onContextMenu={(e) => {
               showStatusMenu(e, [
-                menuItem("status.copy-branch", "Copy Working Directory"),
+                menuItem("status.copy-branch", t("status.copyCwd")),
               ]);
             }}>{cwdBasename}</span>
             <span className="status-bar-divider" />
@@ -217,10 +220,10 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
             : undefined}
           title={
             versionState === "downloading"
-              ? `Downloading v${updateVersion}… ${updateProgress ?? 0}%`
+              ? t("status.downloading", { version: updateVersion ?? "", progress: updateProgress ?? 0 })
               : versionState === "available"
-              ? `Update to v${updateVersion}`
-              : "Check for updates"
+              ? t("status.updateTo", { version: updateVersion ?? "" })
+              : t("status.checkUpdates")
           }
           onClick={
             versionState === "available" ? onShowUpdate :
@@ -233,7 +236,7 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
           )}
           <span className="status-version-label">
             {versionState === "idle" && `v${__APP_VERSION__}`}
-            {versionState === "available" && `v${updateVersion} ready`}
+            {versionState === "available" && t("status.updateReady", { version: updateVersion ?? "" })}
             {versionState === "downloading" && `v${__APP_VERSION__} → ${updateVersion}`}
           </span>
           {versionState === "downloading" && (
@@ -262,7 +265,7 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
             });
             open(`https://github.com/aleffalves44/entry-ide/issues/new?${params}`);
           }}
-          title="Report a Bug"
+          title={t("status.reportBug")}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M8 2l1.88 1.88" /><path d="M14.12 3.88L16 2" />
@@ -276,7 +279,7 @@ export function StatusBar({ onOpenShortcuts, updateAvailable, updateVersion, upd
           <button
             className="status-shortcuts-btn"
             onClick={onOpenShortcuts}
-            title={`Keyboard Shortcuts (${fmt("{mod}/")})`}
+            title={t("status.shortcuts", { keys: fmt("{mod}/") })}
           >
             ⌨
           </button>
