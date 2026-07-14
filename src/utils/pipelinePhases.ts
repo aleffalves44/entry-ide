@@ -4,6 +4,7 @@
  *
  * Kept free of React/Tauri so it can be unit-tested directly.
  */
+import type { MessageKey } from "../i18n";
 
 export interface PipelineState {
   branch: string | null;
@@ -22,6 +23,17 @@ export interface PipelineState {
 export type PhaseKey = "spike" | "plan" | "task" | "pr";
 export type PhaseStatus = "done" | "running" | "pending";
 
+/** Structured (locale-agnostic) facts for the phase's extra line. The UI
+ *  turns this into localized copy via `formatPhaseDetail`. PR state stays a
+ *  raw technical token (not translated). */
+export type PhaseDetail =
+  | { kind: "commits"; count: number; branch: string | null }
+  | { kind: "branch"; branch: string }
+  | { kind: "pr"; prNumber: number; prState: string | null };
+
+/** Minimal translate surface — decouples this pure util from the i18n hook. */
+type TranslateFn = (key: MessageKey, vars?: Record<string, string | number>) => string;
+
 export interface PipelinePhase {
   key: PhaseKey;
   label: string;
@@ -30,8 +42,30 @@ export interface PipelinePhase {
   status: PhaseStatus;
   /** Artifact paths that prove the phase happened (clickable in the UI). */
   artifacts: { label: string; path: string }[];
-  /** Extra line under the phase (e.g. "3 commits", "PR #42 open"). */
-  detail: string | null;
+  /** Structured extra line under the phase (e.g. commits, PR). Null hides it. */
+  detail: PhaseDetail | null;
+}
+
+/** Render a `PhaseDetail` into localized copy. Kept next to the derivation so
+ *  both pipeline surfaces (PipelinePanel, WorkflowTimelinePanel) share it. */
+export function formatPhaseDetail(detail: PhaseDetail, t: TranslateFn): string {
+  switch (detail.kind) {
+    case "commits": {
+      const base = t(
+        detail.count === 1 ? "pipeline.detail.commit" : "pipeline.detail.commits",
+        { count: detail.count },
+      );
+      return detail.branch
+        ? base + t("pipeline.detail.onBranch", { branch: detail.branch })
+        : base;
+    }
+    case "branch":
+      return t("pipeline.detail.branch", { branch: detail.branch });
+    case "pr":
+      return detail.prState
+        ? `PR #${detail.prNumber} · ${detail.prState.toLowerCase()}`
+        : `PR #${detail.prNumber}`;
+  }
 }
 
 /** Commands the panel dispatches.  The plugin owns the workflow — these
@@ -125,9 +159,9 @@ export function derivePipelinePhases(
       artifacts: [],
       detail:
         s.commits_ahead !== null && s.commits_ahead > 0
-          ? `${s.commits_ahead} commit${s.commits_ahead === 1 ? "" : "s"}${s.branch ? ` em ${s.branch}` : ""}`
+          ? { kind: "commits", count: s.commits_ahead, branch: s.branch }
           : s.branch
-            ? `branch ${s.branch}`
+            ? { kind: "branch", branch: s.branch }
             : null,
     },
     {
@@ -137,7 +171,7 @@ export function derivePipelinePhases(
       status: status("pr", prDone),
       artifacts: [],
       detail: s.pr_number
-        ? `PR #${s.pr_number}${s.pr_state ? ` · ${s.pr_state.toLowerCase()}` : ""}`
+        ? { kind: "pr", prNumber: s.pr_number, prState: s.pr_state }
         : null,
     },
   ];

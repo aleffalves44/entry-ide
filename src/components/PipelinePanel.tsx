@@ -19,11 +19,12 @@ import { getSessionProjects } from "../api/projects";
 import { submitToAgent } from "../utils/submitToAgent";
 import { usePipelineState } from "../hooks/usePipelineState";
 import {
-  PHASE_DESCRIPTIONS,
-  PHASE_PLACEHOLDERS,
+  formatPhaseDetail,
   type PhaseKey,
   type PipelinePhase,
 } from "../utils/pipelinePhases";
+import { useTranslation } from "../hooks/useTranslation";
+import type { MessageKey } from "../i18n";
 import type { SessionData } from "../types/session";
 
 interface PipelinePanelProps {
@@ -45,6 +46,7 @@ function PhaseExpandedSection({
   onSend,
   disabled,
 }: PhaseExpandedSectionProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="pipeline-phase-expanded"
@@ -52,12 +54,14 @@ function PhaseExpandedSection({
       // text selection, send) from ever reaching the row toggle.
       onClick={(e) => e.stopPropagation()}
     >
-      <p className="pipeline-phase-description">{PHASE_DESCRIPTIONS[phase.key]}</p>
+      <p className="pipeline-phase-description">
+        {t(`pipeline.desc.${phase.key}` as MessageKey)}
+      </p>
       <input
         type="text"
         className="pipeline-phase-input"
         value={draft}
-        placeholder={PHASE_PLACEHOLDERS[phase.key]}
+        placeholder={t(`pipeline.placeholder.${phase.key}` as MessageKey)}
         disabled={disabled}
         autoFocus
         onChange={(e) => onDraftChange(e.target.value)}
@@ -74,7 +78,7 @@ function PhaseExpandedSection({
         onClick={onSend}
         disabled={disabled}
       >
-        Enviar
+        {t("common.send")}
       </button>
     </div>
   );
@@ -82,6 +86,7 @@ function PhaseExpandedSection({
 
 export function PipelinePanel({ session }: PipelinePanelProps) {
   const { dispatch } = useSession();
+  const { t } = useTranslation();
   const { phases, pipeline, loading, refresh, isStreaming, pluginMissing } =
     usePipelineState(session);
   const [projectId, setProjectId] = useState<string | null>(null);
@@ -134,11 +139,11 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
     return (
       <div className="pipeline-panel" data-testid="pipeline-panel">
         <div className="pipeline-empty">
-          <div className="pipeline-empty-title">Plugin harness-cmd não encontrado</div>
+          <div className="pipeline-empty-title">{t("pipeline.pluginMissingTitle")}</div>
           <p className="pipeline-empty-body">
-            O painel Pipeline dispara as fases do framework{" "}
-            <code>agentic-harness</code> (spike → plan → task → pr). Instale o
-            plugin no Claude Code e reinicie a sessão:
+            {t("pipeline.pluginMissingBodyBefore")}
+            <code>agentic-harness</code>
+            {t("pipeline.pluginMissingBodyAfter")}
           </p>
           <code className="pipeline-empty-cmd">/plugin install harness-cmd</code>
         </div>
@@ -150,7 +155,7 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
     <div className="pipeline-panel" data-testid="pipeline-panel">
       <div className="pipeline-toolbar">
         {pipeline?.branch && (
-          <span className="pipeline-branch" title="Branch atual">
+          <span className="pipeline-branch" title={t("pipeline.branchTitle")}>
             {pipeline.branch}
           </span>
         )}
@@ -159,7 +164,7 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
           className="pipeline-refresh"
           onClick={refresh}
           disabled={loading}
-          title="Reler estado do worktree"
+          title={t("pipeline.refreshTitle")}
         >
           {loading ? "…" : "↻"}
         </button>
@@ -188,9 +193,9 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
               <span className="pipeline-phase-label">{phase.label}</span>
               <span className="pipeline-phase-status">
                 {phase.status === "done"
-                  ? "concluído"
+                  ? t("phase.done")
                   : phase.status === "running"
-                    ? "em execução…"
+                    ? t("phase.running")
                     : ""}
               </span>
             </div>
@@ -207,7 +212,11 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
               />
             )}
 
-            {phase.detail && <div className="pipeline-phase-detail">{phase.detail}</div>}
+            {phase.detail && (
+              <div className="pipeline-phase-detail">
+                {formatPhaseDetail(phase.detail, t)}
+              </div>
+            )}
 
             {phase.artifacts.length > 0 && (
               <div className="pipeline-phase-artifacts">
@@ -232,9 +241,9 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
       </ol>
 
       <p className="pipeline-hint">
-        Fases disparam o comando correspondente na conversa — o mesmo que
-        digitar <code>/harness-cmd:…</code>. Estado lido do worktree (arquivos,
-        commits, PR), não de tracking interno.
+        {t("pipeline.hintBefore")}
+        <code>/harness-cmd:…</code>
+        {t("pipeline.hintAfter")}
       </p>
     </div>
   );

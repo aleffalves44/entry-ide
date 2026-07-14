@@ -54,6 +54,7 @@ vi.mock("../state/SessionContext", () => ({
   useTotalTokens: () => ({ input: 0, output: 0 }),
   useExecutionMode: () => "manual",
   useSession: () => ({ dispatch: vi.fn() }),
+  useLocale: () => "en",
 }));
 
 import { renderToString } from "react-dom/server";

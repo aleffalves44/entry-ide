@@ -5,11 +5,15 @@
 import { describe, it, expect } from "vitest";
 import {
   derivePipelinePhases,
+  formatPhaseDetail,
   hasHarnessPlugin,
   runningPhaseFromCommand,
   PHASE_DESCRIPTIONS,
   type PipelineState,
 } from "../utils/pipelinePhases";
+import { translate } from "../i18n";
+import { en } from "../i18n/en";
+import { ptBR } from "../i18n/ptBR";
 
 const EMPTY: PipelineState = {
   branch: null,
@@ -46,8 +50,8 @@ describe("derivePipelinePhases", () => {
     );
     expect(phases.map((p) => p.status)).toEqual(["done", "done", "done", "done"]);
     expect(phases[1].artifacts.map((a) => a.label)).toEqual(["SPEC.md", "PLAN.md"]);
-    expect(phases[2].detail).toBe("3 commits em feat/x");
-    expect(phases[3].detail).toBe("PR #42 · open");
+    expect(phases[2].detail).toEqual({ kind: "commits", count: 3, branch: "feat/x" });
+    expect(phases[3].detail).toEqual({ kind: "pr", prNumber: 42, prState: "OPEN" });
   });
 
   it("plan is not done with only SPEC.md (PLAN.md missing)", () => {
@@ -92,6 +96,34 @@ describe("PHASE_DESCRIPTIONS (RF-06)", () => {
       expect(typeof val).toBe("string");
       expect(val.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("formatPhaseDetail", () => {
+  const tEn = (k: Parameters<typeof translate>[1], v?: Record<string, string | number>) =>
+    translate(en, k, v);
+  const tPt = (k: Parameters<typeof translate>[1], v?: Record<string, string | number>) =>
+    translate(ptBR, k, v);
+
+  it("localizes the commits detail with branch, singular vs plural", () => {
+    expect(formatPhaseDetail({ kind: "commits", count: 3, branch: "feat/x" }, tEn)).toBe(
+      "3 commits on feat/x",
+    );
+    expect(formatPhaseDetail({ kind: "commits", count: 3, branch: "feat/x" }, tPt)).toBe(
+      "3 commits em feat/x",
+    );
+    expect(formatPhaseDetail({ kind: "commits", count: 1, branch: null }, tEn)).toBe("1 commit");
+  });
+
+  it("localizes the branch-only detail", () => {
+    expect(formatPhaseDetail({ kind: "branch", branch: "feat/x" }, tEn)).toBe("branch feat/x");
+  });
+
+  it("keeps PR detail technical (locale-agnostic)", () => {
+    expect(formatPhaseDetail({ kind: "pr", prNumber: 42, prState: "OPEN" }, tEn)).toBe(
+      "PR #42 · open",
+    );
+    expect(formatPhaseDetail({ kind: "pr", prNumber: 7, prState: null }, tPt)).toBe("PR #7");
   });
 });
 

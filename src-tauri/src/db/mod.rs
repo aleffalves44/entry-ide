@@ -2692,6 +2692,7 @@ const VALID_SETTING_KEYS: &[&str] = &[
     "session_creator_panel_height",
     // Appearance
     "theme",
+    "locale",
     "ui_scale",
     "font_size",
     "font_family",

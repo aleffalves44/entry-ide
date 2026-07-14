@@ -18,6 +18,7 @@ import {
   type LoopState,
 } from "../state/loopStore";
 import { LOOP_DEFAULTS, LOOP_PRESETS } from "../utils/loopPresets";
+import { useTranslation } from "../hooks/useTranslation";
 
 function formatCost(n: number): string {
   if (n <= 0) return "$0.00";
@@ -26,6 +27,7 @@ function formatCost(n: number): string {
 }
 
 export function LoopBar({ sessionId }: { sessionId: string }) {
+  const { t } = useTranslation();
   const loop = useSyncExternalStore(
     subscribeLoops,
     () => getLoopsSnapshot().get(sessionId) ?? null,
@@ -41,11 +43,11 @@ export function LoopBar({ sessionId }: { sessionId: string }) {
       <div className={`loop-bar is-${loop.status}`} data-testid="loop-bar">
         <span className="loop-bar-icon" aria-hidden="true">⟳</span>
         <span className="loop-bar-status">
-          {loop.status === "done" ? "Loop concluído" : "Loop parado"} · {loop.stopReason}
-          {" "}· {loop.iteration} iteração(ões) · {formatCost(loop.spentUsd)}
+          {loop.status === "done" ? t("loop.doneLabel") : t("loop.stoppedLabel")} · {loop.stopReason}
+          {" "}· {t("loop.iterations", { count: loop.iteration })} · {formatCost(loop.spentUsd)}
         </span>
         <button type="button" className="loop-bar-btn" onClick={() => clearLoop(sessionId)}>
-          Fechar
+          {t("common.close")}
         </button>
       </div>
     );
@@ -58,9 +60,9 @@ export function LoopBar({ sessionId }: { sessionId: string }) {
         className="loop-bar-btn loop-bar-open"
         onClick={() => setConfigOpen((v) => !v)}
         aria-expanded={configOpen}
-        title="Executar um prompt em loop até condição de parada (com teto de custo)"
+        title={t("loop.idleTitle")}
       >
-        ⟳ Loop
+        {t("loop.idleButton")}
       </button>
       {configOpen && (
         <LoopConfigPopover
@@ -75,20 +77,26 @@ export function LoopBar({ sessionId }: { sessionId: string }) {
 }
 
 function ActiveLoop({ sessionId, loop }: { sessionId: string; loop: LoopState }) {
+  const { t } = useTranslation();
   return (
     <div className={`loop-bar is-${loop.status}`} data-testid="loop-bar">
       <span className="loop-bar-icon loop-bar-spin" aria-hidden="true">⟳</span>
       <span className="loop-bar-status">
-        iteração {loop.iteration}/{loop.config.maxIterations}
-        {" "}· {formatCost(loop.spentUsd)} / teto {formatCost(loop.config.costCeilingUsd)}
-        {loop.status === "waiting" ? " · aguardando próxima iteração…" : " · rodando…"}
+        {t("loop.iterationProgress", { current: loop.iteration, max: loop.config.maxIterations })}
+        {" · "}
+        {t("loop.spendOfCap", {
+          spent: formatCost(loop.spentUsd),
+          ceiling: formatCost(loop.config.costCeilingUsd),
+        })}
+        {" · "}
+        {loop.status === "waiting" ? t("loop.waiting") : t("loop.running")}
       </span>
       <button
         type="button"
         className="loop-bar-btn loop-bar-stop"
         onClick={() => stopLoop(sessionId)}
       >
-        Parar
+        {t("loop.stop")}
       </button>
     </div>
   );
@@ -101,6 +109,7 @@ function LoopConfigPopover({
   onStart: (config: Parameters<typeof startLoop>[1]) => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [presetId, setPresetId] = useState(LOOP_PRESETS[0].id);
   const [prompt, setPrompt] = useState(LOOP_PRESETS[0].prompt);
   const [maxIterations, setMaxIterations] = useState(LOOP_DEFAULTS.maxIterations);
@@ -118,7 +127,7 @@ function LoopConfigPopover({
   return (
     <div className="loop-config" data-testid="loop-config">
       <div className="loop-config-row">
-        <label>Preset</label>
+        <label>{t("loop.preset")}</label>
         <select value={presetId} onChange={(e) => selectPreset(e.target.value)}>
           {LOOP_PRESETS.map((p) => (
             <option key={p.id} value={p.id} title={p.description}>
@@ -131,12 +140,12 @@ function LoopConfigPopover({
         className="loop-config-prompt"
         value={prompt}
         rows={4}
-        placeholder="Prompt repetido a cada iteração…"
+        placeholder={t("loop.promptPlaceholder")}
         onChange={(e) => setPrompt(e.target.value)}
       />
       <div className="loop-config-row loop-config-guards">
         <label>
-          Máx. iterações
+          {t("loop.maxIterations")}
           <input
             type="number"
             min={1}
@@ -146,7 +155,7 @@ function LoopConfigPopover({
           />
         </label>
         <label>
-          Teto de custo (US$)
+          {t("loop.costCeiling")}
           <input
             type="number"
             min={0.05}
@@ -158,7 +167,7 @@ function LoopConfigPopover({
       </div>
       <div className="loop-config-actions">
         <button type="button" className="loop-bar-btn" onClick={onClose}>
-          Cancelar
+          {t("common.cancel")}
         </button>
         <button
           type="button"
@@ -173,12 +182,12 @@ function LoopConfigPopover({
             })
           }
         >
-          Iniciar loop
+          {t("loop.start")}
         </button>
       </div>
       <p className="loop-config-hint">
-        O loop para sozinho no teto de custo, no máximo de iterações ou quando o
-        agente responder <code>LOOP_DONE</code>.
+        {t("loop.hint")}
+        <code>LOOP_DONE</code>.
       </p>
     </div>
   );

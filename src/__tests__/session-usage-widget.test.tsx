@@ -80,7 +80,7 @@ describe("SessionUsageWidget", () => {
       row({ kind: "agent", agent: "Build", cost_usd: 9.99, output_tokens: 99999 }),
     ];
     render(<SessionUsageWidget sessionId="s1" />);
-    const bar = screen.getByRole("button", { name: /CONSUMO/ });
+    const bar = screen.getByRole("button", { name: /USAGE/ });
     expect(bar.textContent).toContain("$0.75");
     expect(bar.textContent).toContain("2.0k tokens");
   });
@@ -92,7 +92,7 @@ describe("SessionUsageWidget", () => {
       row({ kind: "agent", agent: "Reviewer", output_tokens: 300 }),
     ];
     render(<SessionUsageWidget sessionId="s1" />);
-    fireEvent.click(screen.getByRole("button", { name: /CONSUMO/ }));
+    fireEvent.click(screen.getByRole("button", { name: /USAGE/ }));
     const detail = screen.getByTestId("session-usage-detail");
     // command executed
     expect(detail.textContent).toContain("harness-cmd:task");
@@ -106,7 +106,7 @@ describe("SessionUsageWidget", () => {
   it("a plain turn with no subagents still shows main + (prose) command", () => {
     mockRows = [row({ command: null })];
     render(<SessionUsageWidget sessionId="s1" />);
-    fireEvent.click(screen.getByRole("button", { name: /CONSUMO/ }));
+    fireEvent.click(screen.getByRole("button", { name: /USAGE/ }));
     const detail = screen.getByTestId("session-usage-detail");
     expect(detail.textContent).toContain("(prose)");
     expect(detail.textContent).toContain("main");

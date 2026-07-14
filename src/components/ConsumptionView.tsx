@@ -17,6 +17,7 @@ import { getSessions } from "../api/sessions";
 import { getFrameworkUsage, type FrameworkUsageEntry } from "../api/frameworkMetrics";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
 import { formatTokens } from "../utils/frameworkAggregates";
+import { useTranslation } from "../hooks/useTranslation";
 import type { SessionData } from "../types/session";
 
 const POLL_MS = 4000;
@@ -43,6 +44,7 @@ export function ConsumptionView({
   onOpenWindow,
   active = true,
 }: ConsumptionViewProps) {
+  const { t } = useTranslation();
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [rows, setRows] = useState<FrameworkUsageEntry[]>([]);
   const [tick, setTick] = useState(0);
@@ -97,35 +99,35 @@ export function ConsumptionView({
   return (
     <div className="usage-window" data-testid="usage-window">
       <header className="usage-window-header">
-        <h1>Consumo Geral</h1>
+        <h1>{t("consumption.title")}</h1>
         {headerExtra}
         {onOpenWindow && (
           <button
             type="button"
             className="usage-window-pin"
             onClick={onOpenWindow}
-            title="Abrir em janela separada"
+            title={t("consumption.openWindow")}
           >
             ⧉
           </button>
         )}
         <div className="usage-window-totals">
-          {live.length} {live.length === 1 ? "sessão ativa" : "sessões ativas"} ·{" "}
+          {t("consumption.activeSessions", { count: live.length })} ·{" "}
           {formatTokens(totalTokens)} tokens · <strong>{formatCost(totalCost)}</strong>
         </div>
       </header>
 
       {live.length > 0 && (
         <section className="usage-window-sessions">
-          <div className="usage-window-title">Sessões ativas</div>
+          <div className="usage-window-title">{t("consumption.activeSessionsTitle")}</div>
           <table className="usage-window-table">
             <thead>
               <tr>
-                <th>Sessão</th>
-                <th>Grupo</th>
-                <th>Status</th>
-                <th>Tokens</th>
-                <th>Custo</th>
+                <th>{t("consumption.col.session")}</th>
+                <th>{t("common.group")}</th>
+                <th>{t("common.status")}</th>
+                <th>tokens</th>
+                <th>{t("common.cost")}</th>
               </tr>
             </thead>
             <tbody>
@@ -135,7 +137,7 @@ export function ConsumptionView({
                   <tr
                     key={s.id}
                     className="usage-window-session-row"
-                    title="Clique para focar a sessão"
+                    title={t("consumption.focusRow")}
                     onClick={() => onFocusSession?.(s.id)}
                   >
                     <td>{s.label || s.id.slice(0, 8)}</td>
