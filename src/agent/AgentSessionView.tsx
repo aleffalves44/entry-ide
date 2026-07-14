@@ -18,6 +18,7 @@ import { useSession } from "../state/SessionContext";
 import { deriveActivity } from "./messageStore";
 import type { AgentSessionState, RenderedMessage } from "./messageStore";
 import { getOrCreateAgentSessionStore } from "./agentSessionStore";
+import { notifyPendingDecision } from "../utils/notifications";
 import { TextBlock } from "./blocks/TextBlock";
 import { ThinkingBlock } from "./blocks/ThinkingBlock";
 import { ToolUseBlock } from "./blocks/ToolUseBlock";
@@ -69,9 +70,17 @@ interface AgentExitPayload {
  *  React from over-rendering.  The third argument is the SSR snapshot —
  *  vitest's render-tree path renders on the server first, so we pass the
  *  same accessor (the store's snapshot is plain data, no DOM/window
- *  dependencies). */
-function useAgentSessionSnapshot(sessionId: string) {
-  const store = getOrCreateAgentSessionStore(sessionId, listen);
+ *  dependencies).
+ *
+ *  `sessionLabel` is forwarded to the store on first creation only (the store
+ *  is get-or-create); subsequent renders with an updated label have no effect
+ *  on the notification text — this is acceptable because labels are stable
+ *  across the store's lifetime in practice. */
+function useAgentSessionSnapshot(sessionId: string, sessionLabel?: string) {
+  const store = getOrCreateAgentSessionStore(sessionId, listen, {
+    onPendingDecision: notifyPendingDecision,
+    sessionLabel,
+  });
   const snapshot = useSyncExternalStore(
     store.subscribe,
     store.getSnapshot,
@@ -96,11 +105,14 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
   // doesn't get dropped when the bridge has exited between turns.
   const sessionCtx = useSession();
   const { sendAgentEnvelope } = sessionCtx;
+  // Resolve label early so the store is created with the correct session
+  // label for pending-decision notifications (RF-FIX-01 / RF-FIX-02).
+  const sessionLabel = sessionCtx.state.sessions[sessionId]?.label ?? sessionId;
   // Long-lived per-session store: events keep streaming into reducer
   // state even when this component is unmounted (e.g., the user
   // switched to a different session in the sidebar), so the timeline
   // is intact when the view remounts.  See `agentSessionStore.ts`.
-  const { snapshot, store } = useAgentSessionSnapshot(sessionId);
+  const { snapshot, store } = useAgentSessionSnapshot(sessionId, sessionLabel);
   const { state, stderr, exit: exitInfo } = snapshot;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   // Sticky-bottom flag: true when the user is already at (or very close

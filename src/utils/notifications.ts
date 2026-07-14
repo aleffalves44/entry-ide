@@ -17,3 +17,14 @@ export function notifyLongRunningDone(sessionLabel: string): void {
     body: `"${sessionLabel}" has returned to idle.`,
   });
 }
+
+/** Emitted when an agent session is waiting for a user decision (tool
+ *  permission, AskUserQuestion, or plan approval) and the window is not
+ *  focused.  Gives the user an ambient signal to return to the app. */
+export function notifyPendingDecision(sessionLabel: string, toolName: string): void {
+  if (!permissionGranted) return;
+  sendNotification({
+    title: "Decision needed",
+    body: `"${sessionLabel}" — Claude is waiting for your input on: ${toolName}`,
+  });
+}

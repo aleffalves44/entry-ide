@@ -71,6 +71,21 @@ type ListenFn = <T>(
   handler: (msg: { payload: T }) => void,
 ) => Promise<Unlisten>;
 
+/** Options accepted by AgentSessionStore for the pending-decision notification
+ *  path.  All fields are optional so existing call sites need no changes.
+ *
+ *  - `onPendingDecision(label, toolName)` — called when a perm-request arrives
+ *    and the window is hidden.  Production callers supply `notifyPendingDecision`
+ *    from `src/utils/notifications.ts`; tests supply a vi.fn() stub.
+ *  - `sessionLabel` — shown in the notification body.
+ *  - `isWindowHidden` — injectable predicate; defaults to `() => document.hidden`.
+ *    Tests inject a synchronous stub to avoid DOM dependency. */
+export interface AgentSessionStoreOptions {
+  onPendingDecision?: (sessionLabel: string, toolName: string) => void;
+  sessionLabel?: string;
+  isWindowHidden?: () => boolean;
+}
+
 const stores = new Map<string, AgentSessionStore>();
 
 /** Cap stderr at 1 MiB.  Subprocess output past that is summarized and
@@ -116,7 +131,22 @@ export class AgentSessionStore {
   private initGeneration = 0;
   private lastInitAt = 0;
 
-  constructor(public readonly sessionId: string, listen: ListenFn) {
+  /** Options for pending-decision OS notifications. */
+  private readonly opts: Required<AgentSessionStoreOptions>;
+  /** Request ids already notified in the current bridge lifetime.  Cleared
+   *  on every `init` (respawn) so a new bridge with the same request id can
+   *  still notify.  This prevents re-notification when the user switches
+   *  sessions and the subscriber re-renders without a new perm-request. */
+  private notifiedPermIds = new Set<string>();
+
+  constructor(public readonly sessionId: string, listen: ListenFn, opts: AgentSessionStoreOptions = {}) {
+    this.opts = {
+      onPendingDecision: opts.onPendingDecision ?? (() => undefined),
+      sessionLabel: opts.sessionLabel ?? sessionId,
+      // Guard against environments without a DOM (tests run in node).
+      // In production the Tauri/browser window always has `document`.
+      isWindowHidden: opts.isWindowHidden ?? (() => typeof document !== "undefined" && document.hidden),
+    };
     this.snapshot = {
       state: emptyState(),
       stderr: "",
@@ -137,6 +167,12 @@ export class AgentSessionStore {
       // session close.
       if (isPermRequest(payload)) {
         this.snapshot = { ...this.snapshot, pendingPermRequest: payload };
+        // OS notification when window is unfocused (RF-FIX-01).  Dedup
+        // by request id so a subscriber re-render never double-fires.
+        if (this.opts.isWindowHidden() && !this.notifiedPermIds.has(payload.id)) {
+          this.notifiedPermIds.add(payload.id);
+          this.opts.onPendingDecision(this.opts.sessionLabel, payload.toolName);
+        }
         // Don't fold perm-request envelopes into the message stream —
         // they're metadata, not chat content.  Notify and exit.
         this.notify();
@@ -177,6 +213,9 @@ export class AgentSessionStore {
           stderr: "",
           pendingPermRequest: null,
         };
+        // Also reset the notification dedup set so a new bridge with
+        // the same request id can notify again (RF-FIX-01 AC-3).
+        this.notifiedPermIds.clear();
       }
       this.notify();
     }).then((un) => this.collect(un)).catch(() => undefined);
@@ -280,6 +319,7 @@ export class AgentSessionStore {
       this.initGeneration += 1;
       this.lastInitAt = Date.now();
       this.snapshot = { ...this.snapshot, exit: null, stderr: "" };
+      this.notifiedPermIds.clear();
     }
     this.notify();
   };
@@ -328,14 +368,20 @@ export class AgentSessionStore {
  * The optional `listen` injector lets tests substitute a synchronous
  * stub for the Tauri `listen` API without touching the global registry
  * shape.
+ *
+ * `opts` is forwarded to the store constructor on first creation only —
+ * subsequent calls for the same sessionId return the existing store.
+ * Pass updated `sessionLabel` via `updateStoreLabel` if the session is
+ * renamed after first creation.
  */
 export function getOrCreateAgentSessionStore(
   sessionId: string,
   listen: ListenFn,
+  opts?: AgentSessionStoreOptions,
 ): AgentSessionStore {
   let store = stores.get(sessionId);
   if (!store) {
-    store = new AgentSessionStore(sessionId, listen);
+    store = new AgentSessionStore(sessionId, listen, opts);
     stores.set(sessionId, store);
   }
   return store;
