@@ -14,7 +14,7 @@
 
 // ─── Tabs ───────────────────────────────────────────────────────────
 
-export const WORKBENCH_TABS = ["workflow", "files", "context", "git", "pipeline", "metrics"] as const;
+export const WORKBENCH_TABS = ["workflow", "files", "context", "git", "metrics"] as const;
 export type WorkbenchTab = (typeof WORKBENCH_TABS)[number];
 
 /** Default tab for an agent session whose init confirmed the harness-cmd

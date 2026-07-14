@@ -19,7 +19,6 @@ import { useSession } from "../state/SessionContext";
 import { FileExplorerPanel } from "./FileExplorerPanel";
 import { AgentContextPanel } from "./AgentContextPanel";
 import { GitPanel } from "./GitPanel";
-import { PipelinePanel } from "./PipelinePanel";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
 import { WorkflowTimelinePanel } from "./WorkflowTimelinePanel";
 import { WorkbenchNotes } from "./WorkbenchNotes";
@@ -170,7 +169,7 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
   }, [dispatch]);
 
   const setTab = useCallback(
-    (tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics") => {
+    (tab: "workflow" | "files" | "context" | "git" | "metrics") => {
       dispatch({ type: "SET_WORKBENCH_TAB", tab });
     },
     [dispatch],
@@ -304,15 +303,6 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
             type="button"
             className="workbench-tab"
             role="tab"
-            aria-selected={wb.tab === "pipeline"}
-            onClick={() => setTab("pipeline")}
-          >
-            Pipeline
-          </button>
-          <button
-            type="button"
-            className="workbench-tab"
-            role="tab"
             aria-selected={wb.tab === "metrics"}
             onClick={() => setTab("metrics")}
           >
@@ -356,14 +346,6 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
         hidden={wb.tab !== "git"}
       >
         <GitPanel visible={wb.tab === "git"} />
-      </div>
-      <div
-        className="workbench-body"
-        role="tabpanel"
-        aria-label="Pipeline"
-        hidden={wb.tab !== "pipeline"}
-      >
-        <PipelinePanel session={session} />
       </div>
       <div
         className="workbench-body"
