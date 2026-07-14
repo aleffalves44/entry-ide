@@ -98,6 +98,7 @@ describe("AgentErrorActions", () => {
         onRetry={onRetry}
         onSwitchMode={vi.fn()}
         canSwitchMode={true}
+        onOpenSettings={vi.fn()}
       />,
     );
     fireEvent.click(getByRole("button", { name: /retry/i }));
@@ -111,6 +112,7 @@ describe("AgentErrorActions", () => {
         onRetry={vi.fn()}
         onSwitchMode={onSwitchMode}
         canSwitchMode={true}
+        onOpenSettings={vi.fn()}
       />,
     );
     fireEvent.click(getByRole("button", { name: /switch to terminal/i }));
@@ -131,29 +133,35 @@ describe("AgentErrorActions", () => {
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
 
-  it("does not render Open AI setup when onOpenSettings is omitted", () => {
-    const { queryByRole } = render(
+  it("renders Open AI setup button even when onOpenSettings is a no-op (required prop)", () => {
+    // onOpenSettings is now required — callers pass a no-op when IDEShellContext
+    // is absent. The button must always render regardless of handler identity.
+    const { getByRole } = render(
       <AgentErrorActions
         onRetry={vi.fn()}
         onSwitchMode={vi.fn()}
         canSwitchMode={true}
+        onOpenSettings={() => { /* no-op — shell not mounted */ }}
       />,
     );
-    expect(queryByRole("button", { name: /open ai setup/i })).toBeNull();
+    expect(getByRole("button", { name: /open ai setup/i })).toBeInTheDocument();
   });
 
   it("renders Switch to Terminal disabled with tooltip when canSwitchMode is false (R5)", () => {
+    // canSwitchMode derives from Boolean(onRequestSwitchToTerminal) at the
+    // AgentSessionView call sites; here we test the component prop directly.
     const { getByRole } = render(
       <AgentErrorActions
         onRetry={vi.fn()}
         onSwitchMode={undefined}
         canSwitchMode={false}
-        switchModeReason="Already in terminal mode"
+        switchModeReason="Mode switch unavailable for this session"
+        onOpenSettings={vi.fn()}
       />,
     );
     const btn = getByRole("button", { name: /switch to terminal/i });
     expect(btn).toBeDisabled();
-    expect(btn).toHaveAttribute("title", "Already in terminal mode");
+    expect(btn).toHaveAttribute("title", "Mode switch unavailable for this session");
   });
 
   it("is accessible: buttons have visible group role", () => {

@@ -383,8 +383,12 @@ export function AgentSessionView({ sessionId, workspacePathCount, onRequestSwitc
                 <AgentErrorActions
                   onRetry={() => { respawnAgent(sessionId).catch(console.warn); }}
                   onSwitchMode={onRequestSwitchToTerminal ?? (() => { sessionCtx.convertSessionMode(sessionId, "terminal").catch(console.warn); })}
-                  canSwitchMode={true}
-                  onOpenSettings={ideShell ? () => ideShell.onOpenSettings("ai-agent") : undefined}
+                  canSwitchMode={Boolean(onRequestSwitchToTerminal)}
+                  switchModeReason={!onRequestSwitchToTerminal ? "Mode switch unavailable for this session" : undefined}
+                  // Invariant: IDEShellContext is always mounted in production. The
+                  // no-op fallback exists only for test environments where the shell
+                  // host is absent — the button still renders so layout is stable.
+                  onOpenSettings={ideShell ? () => ideShell.onOpenSettings("ai-agent") : () => { console.warn("IDEShellContext not mounted — Open AI setup is a no-op"); }}
                 />
               </div>
             );
@@ -399,8 +403,12 @@ export function AgentSessionView({ sessionId, workspacePathCount, onRequestSwitc
               <AgentErrorActions
                 onRetry={() => store.clearExitNotice()}
                 onSwitchMode={onRequestSwitchToTerminal ?? (() => { sessionCtx.convertSessionMode(sessionId, "terminal").catch(console.warn); })}
-                canSwitchMode={true}
-                onOpenSettings={ideShell ? () => ideShell.onOpenSettings("ai-agent") : undefined}
+                canSwitchMode={Boolean(onRequestSwitchToTerminal)}
+                switchModeReason={!onRequestSwitchToTerminal ? "Mode switch unavailable for this session" : undefined}
+                // Invariant: IDEShellContext is always mounted in production. The
+                // no-op fallback exists only for test environments where the shell
+                // host is absent — the button still renders so layout is stable.
+                onOpenSettings={ideShell ? () => ideShell.onOpenSettings("ai-agent") : () => { console.warn("IDEShellContext not mounted — Open AI setup is a no-op"); }}
               />
             </div>
           ) : null}
@@ -991,7 +999,10 @@ export interface AgentErrorActionsProps {
   onSwitchMode: (() => void) | undefined;
   canSwitchMode: boolean;
   switchModeReason?: string;
-  onOpenSettings?: () => void;
+  // Required: IDEShellContext may not be mounted in all host environments,
+  // but callers must always provide a handler (no-op if shell is absent).
+  // This ensures the button is always rendered — never silently omitted.
+  onOpenSettings: () => void;
 }
 
 export function AgentErrorActions({
@@ -1020,15 +1031,13 @@ export function AgentErrorActions({
       >
         Switch to Terminal
       </button>
-      {onOpenSettings && (
-        <button
-          type="button"
-          className="agent-error-action agent-error-action--settings"
-          onClick={onOpenSettings}
-        >
-          Open AI setup
-        </button>
-      )}
+      <button
+        type="button"
+        className="agent-error-action agent-error-action--settings"
+        onClick={onOpenSettings}
+      >
+        Open AI setup
+      </button>
     </div>
   );
 }
