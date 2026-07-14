@@ -79,11 +79,16 @@ type ListenFn = <T>(
  *    from `src/utils/notifications.ts`; tests supply a vi.fn() stub.
  *  - `sessionLabel` — shown in the notification body.
  *  - `isWindowHidden` — injectable predicate; defaults to `() => document.hidden`.
- *    Tests inject a synchronous stub to avoid DOM dependency. */
+ *    Tests inject a synchronous stub to avoid DOM dependency.
+ *  - `isBypassMode` — injectable predicate; when it returns `true` the
+ *    notification is suppressed (bypass-mode sessions auto-resolve every
+ *    request, so there is nothing for the user to act on).  The pending
+ *    request is still stored — only the OS notification is skipped. */
 export interface AgentSessionStoreOptions {
   onPendingDecision?: (sessionLabel: string, toolName: string) => void;
   sessionLabel?: string;
   isWindowHidden?: () => boolean;
+  isBypassMode?: () => boolean;
 }
 
 const stores = new Map<string, AgentSessionStore>();
@@ -146,6 +151,7 @@ export class AgentSessionStore {
       // Guard against environments without a DOM (tests run in node).
       // In production the Tauri/browser window always has `document`.
       isWindowHidden: opts.isWindowHidden ?? (() => typeof document !== "undefined" && document.hidden),
+      isBypassMode: opts.isBypassMode ?? (() => false),
     };
     this.snapshot = {
       state: emptyState(),
@@ -169,7 +175,14 @@ export class AgentSessionStore {
         this.snapshot = { ...this.snapshot, pendingPermRequest: payload };
         // OS notification when window is unfocused (RF-FIX-01).  Dedup
         // by request id so a subscriber re-render never double-fires.
-        if (this.opts.isWindowHidden() && !this.notifiedPermIds.has(payload.id)) {
+        // Bypass-mode sessions auto-resolve every request — the user has
+        // nothing to act on, so suppress the notification (RF-FIX-01
+        // precondition: permissionMode != "bypassPermissions").
+        if (
+          this.opts.isWindowHidden()
+          && !this.notifiedPermIds.has(payload.id)
+          && !this.opts.isBypassMode()
+        ) {
           this.notifiedPermIds.add(payload.id);
           this.opts.onPendingDecision(this.opts.sessionLabel, payload.toolName);
         }

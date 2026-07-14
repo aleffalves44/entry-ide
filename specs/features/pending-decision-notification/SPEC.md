@@ -29,9 +29,10 @@ this code path entirely.
 GIVEN an agent session has an active `pendingPermRequest` (type `_entry_perm_request`)
 AND `document.hidden` is `true` (window not focused)
 AND the request id has not already been notified this session
+AND `permissionMode` is NOT `"bypassPermissions"` (bypass sessions auto-resolve; no user action needed)
 WHEN the perm-request envelope is processed by `AgentSessionStore`
 THEN exactly one OS notification is dispatched with title `"Decision needed"` and body
-`"<session-label>" — Claude is waiting for your input.`
+`"<session-label>" — Claude is waiting for your input on: <tool>`
 
 AC-1: notification fires at most once per unique request `id` (no re-notify on subscriber
 re-render or store re-subscribe).

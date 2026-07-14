@@ -180,3 +180,86 @@ describe("RF-FIX-02: notification body includes session label", () => {
     expect(onPendingDecision).toHaveBeenCalledWith("Refactor PR", "Bash");
   });
 });
+
+describe("RF-FIX-01 bypass guard: bypassPermissions sessions must NOT notify", () => {
+  it("isBypassMode=true suppresses notification even when window is hidden", async () => {
+    const onPendingDecision = vi.fn();
+    const bus = makeStubBus();
+    new AgentSessionStore("s1", bus.listen, {
+      onPendingDecision,
+      sessionLabel: "Bypass Session",
+      isWindowHidden: () => true,
+      isBypassMode: () => true,
+    });
+    await Promise.resolve();
+
+    const evCh = bus.channels.get("agent-event-s1")!;
+    [...evCh][0].fire(permRequestEvent("req-bypass-001", "Bash"));
+
+    expect(onPendingDecision).not.toHaveBeenCalled();
+  });
+
+  it("isBypassMode=true still stores pendingPermRequest (only notification is suppressed)", async () => {
+    const onPendingDecision = vi.fn();
+    const bus = makeStubBus();
+    const store = new AgentSessionStore("s1", bus.listen, {
+      onPendingDecision,
+      sessionLabel: "Bypass Session",
+      isWindowHidden: () => true,
+      isBypassMode: () => true,
+    });
+    await Promise.resolve();
+
+    const evCh = bus.channels.get("agent-event-s1")!;
+    [...evCh][0].fire(permRequestEvent("req-bypass-002", "Write"));
+
+    expect(onPendingDecision).not.toHaveBeenCalled();
+    expect(store.getSnapshot().pendingPermRequest).not.toBeNull();
+    expect(store.getSnapshot().pendingPermRequest?.id).toBe("req-bypass-002");
+  });
+
+  it("isBypassMode=false/undefined restores normal notification behavior", async () => {
+    const onPendingDecision = vi.fn();
+    const bus = makeStubBus();
+    new AgentSessionStore("s1", bus.listen, {
+      onPendingDecision,
+      sessionLabel: "Normal Session",
+      isWindowHidden: () => true,
+      isBypassMode: () => false,
+    });
+    await Promise.resolve();
+
+    const evCh = bus.channels.get("agent-event-s1")!;
+    [...evCh][0].fire(permRequestEvent("req-normal-001", "Read"));
+
+    expect(onPendingDecision).toHaveBeenCalledOnce();
+    expect(onPendingDecision).toHaveBeenCalledWith("Normal Session", "Read");
+  });
+
+  it("predicate is re-evaluated per request: flip bypass off → next request notifies", async () => {
+    const onPendingDecision = vi.fn();
+    const bus = makeStubBus();
+    let bypassOn = true;
+    new AgentSessionStore("s1", bus.listen, {
+      onPendingDecision,
+      sessionLabel: "Flipping Session",
+      isWindowHidden: () => true,
+      isBypassMode: () => bypassOn,
+    });
+    await Promise.resolve();
+
+    const evCh = bus.channels.get("agent-event-s1")!;
+
+    // First request arrives while bypass is active — no notification.
+    [...evCh][0].fire(permRequestEvent("req-flip-001", "Bash"));
+    expect(onPendingDecision).not.toHaveBeenCalled();
+
+    // Flip bypass off.
+    bypassOn = false;
+
+    // Second request (different id) arrives — should notify now.
+    [...evCh][0].fire(permRequestEvent("req-flip-002", "Bash"));
+    expect(onPendingDecision).toHaveBeenCalledOnce();
+    expect(onPendingDecision).toHaveBeenCalledWith("Flipping Session", "Bash");
+  });
+});

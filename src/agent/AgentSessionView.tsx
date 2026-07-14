@@ -75,11 +75,27 @@ interface AgentExitPayload {
  *  `sessionLabel` is forwarded to the store on first creation only (the store
  *  is get-or-create); subsequent renders with an updated label have no effect
  *  on the notification text — this is acceptable because labels are stable
- *  across the store's lifetime in practice. */
-function useAgentSessionSnapshot(sessionId: string, sessionLabel?: string) {
+ *  across the store's lifetime in practice.
+ *
+ *  `permissionMode` is forwarded as a live ref so the `isBypassMode` predicate
+ *  always reads the CURRENT value.  Store options are captured at construction,
+ *  but the closure over `bypassModeRef.current` is evaluated on every perm-
+ *  request arrival — so a mid-session setPermissionMode flip takes effect
+ *  immediately without requiring a store rebuild. */
+function useAgentSessionSnapshot(
+  sessionId: string,
+  sessionLabel?: string,
+  permissionMode?: string,
+) {
+  // Ref keeps the latest permissionMode visible to the isBypassMode closure
+  // even though the store is get-or-create (constructed only once).
+  const bypassModeRef = useRef(permissionMode === "bypassPermissions");
+  bypassModeRef.current = permissionMode === "bypassPermissions";
+
   const store = getOrCreateAgentSessionStore(sessionId, listen, {
     onPendingDecision: notifyPendingDecision,
     sessionLabel,
+    isBypassMode: () => bypassModeRef.current,
   });
   const snapshot = useSyncExternalStore(
     store.subscribe,
@@ -108,11 +124,25 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
   // Resolve label early so the store is created with the correct session
   // label for pending-decision notifications (RF-FIX-01 / RF-FIX-02).
   const sessionLabel = sessionCtx.state.sessions[sessionId]?.label ?? sessionId;
+  // Resolve permissionMode early — needed for the isBypassMode predicate
+  // passed into the store.  The full derivation (with init-event fallback)
+  // is repeated below the early return for the rest of the component, but
+  // we need it here so the store's isBypassMode closure reads live state
+  // from the very first perm-request event.
+  const sessionEntryEarly = sessionCtx.state.sessions[sessionId];
   // Long-lived per-session store: events keep streaming into reducer
   // state even when this component is unmounted (e.g., the user
   // switched to a different session in the sidebar), so the timeline
   // is intact when the view remounts.  See `agentSessionStore.ts`.
-  const { snapshot, store } = useAgentSessionSnapshot(sessionId, sessionLabel);
+  //
+  // permissionMode is passed so isBypassMode reads the CURRENT value on
+  // every perm-request arrival (the ref inside useAgentSessionSnapshot
+  // is updated on each render — RF-FIX-01 bypass guard).
+  const { snapshot, store } = useAgentSessionSnapshot(
+    sessionId,
+    sessionLabel,
+    sessionEntryEarly?.permission_mode ?? "default",
+  );
   const { state, stderr, exit: exitInfo } = snapshot;
   const scrollRef = useRef<HTMLDivElement | null>(null);
   // Sticky-bottom flag: true when the user is already at (or very close
@@ -449,7 +479,9 @@ function InteractivePermissionDispatcher({
   // so a session-switch unmount can't strand the bridge waiting on
   // canUseTool.  The dispatcher just reads from the store and writes
   // back via clearPendingPermRequest after a decision.
-  const { snapshot, store } = useAgentSessionSnapshot(sessionId);
+  // permissionMode is forwarded so the store's isBypassMode ref stays
+  // current (same store instance — ref update is a no-op on remount).
+  const { snapshot, store } = useAgentSessionSnapshot(sessionId, undefined, permissionMode);
   const request = snapshot.pendingPermRequest;
 
   // Per-request latch for the bypass auto-allow effect (fix B1).
