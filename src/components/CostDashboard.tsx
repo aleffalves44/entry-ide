@@ -103,7 +103,7 @@ export function CostDashboard({ onClose }: CostDashboardProps) {
               Framework
             </button>
             <span className="cost-tab-sep" aria-hidden="true" />
-            {[7, 14, 30].map((d) => (
+            {[1, 7, 14, 30].map((d) => (
               <button
                 key={d}
                 className={`cost-tab ${days === d ? "cost-tab-active" : ""}`}
