@@ -3849,3 +3849,100 @@ html[data-agent-timeline-style="classic"] .agent-message {
 .agent-tool-generic[data-status="done"]:hover {
   opacity: 1;
 }
+
+/* ── Agent error action row ────────────────────────────────────────────
+ * Three-button group rendered on both failure surfaces:
+ * agent-result-error banner and agent-exit-notice strip.
+ * Buttons share the quiet brass-tinted style of the legacy
+ * agent-exit-action but are grouped horizontally and sized slightly
+ * larger so they read as a distinct call-to-action, not a footnote. */
+
+.agent-exit-notice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.agent-exit-notice-label {
+  font: 12px/1.5 var(--font-mono);
+  color: var(--ink-secondary);
+}
+
+.agent-error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.agent-error-action {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  background: transparent;
+  border: 1px solid var(--brass, var(--accent-paper));
+  border-radius: 4px;
+  color: var(--brass, var(--accent-paper));
+  font: 11px/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+
+.agent-error-action:hover:not(:disabled) {
+  background: var(--brass-dim, color-mix(in srgb, var(--accent-paper) 14%, transparent));
+  color: var(--ink-primary);
+}
+
+.agent-error-action:focus-visible {
+  outline: 2px solid var(--brass, var(--accent-paper));
+  outline-offset: 2px;
+}
+
+.agent-error-action:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  border-color: var(--ink-tertiary);
+  color: var(--ink-tertiary);
+}
+
+/* Retry — same brass tint as the legacy Start-fresh button. */
+.agent-error-action--retry {
+  border-color: var(--brass, var(--accent-paper));
+  color: var(--brass, var(--accent-paper));
+}
+
+/* Switch to Terminal — muted variant (lower priority). */
+.agent-error-action--switch {
+  border-color: var(--ink-secondary);
+  color: var(--ink-secondary);
+}
+
+.agent-error-action--switch:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink-secondary) 10%, transparent);
+  color: var(--ink-primary);
+}
+
+/* Open AI setup — neutral info tone. */
+.agent-error-action--settings {
+  border-color: var(--ink-tertiary);
+  color: var(--ink-tertiary);
+}
+
+.agent-error-action--settings:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--ink-tertiary) 10%, transparent);
+  color: var(--ink-secondary);
+}
+
+/* Action row when embedded inside the result-error banner —
+ * add some top breathing room after the title/body/hint. */
+.agent-result-error .agent-error-actions {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid color-mix(
+    in srgb,
+    var(--danger, var(--red, var(--tool-error))) 20%,
+    transparent
+  );
+}

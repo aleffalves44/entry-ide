@@ -58,6 +58,7 @@ import type { ProjectOrdered } from "./types/project";
 import { PromptComposer } from "./components/PromptComposer";
 import { SessionComposer, getComposerTextarea } from "./components/SessionComposer";
 import { SplitLayout } from "./components/SplitLayout";
+import { IDEShellContext } from "./state/IDEShellContext";
 import { SessionGitPanel } from "./components/SessionGitPanel";
 import { PanelErrorBoundary } from "./components/PanelErrorBoundary";
 import { setSetting } from "./api/settings";
@@ -1081,7 +1082,9 @@ function AppContent() {
               <div className="chat-column">
                 <div className="terminal-container">
                   {state.layout.root ? (
-                    <SplitLayout node={state.layout.root} />
+                    <IDEShellContext.Provider value={{ onOpenSettings: (tab) => setSettingsOpen(tab) }}>
+                      <SplitLayout node={state.layout.root} />
+                    </IDEShellContext.Provider>
                   ) : (
                     <EmptyState
                       recentSessions={state.recentSessions}

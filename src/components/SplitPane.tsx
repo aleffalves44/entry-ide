@@ -328,7 +328,11 @@ export function SplitPane({ paneId, sessionId }: SplitPaneProps) {
           onContextMenu={(e) => showTerminalMenu(e, buildTerminalMenuItems(terminalHasSelection(sessionId)))}
         >
           {session.mode === "agent"
-            ? <AgentSessionView sessionId={sessionId} workspacePathCount={session.workspace_paths.length} />
+            ? <AgentSessionView
+                sessionId={sessionId}
+                workspacePathCount={session.workspace_paths.length}
+                onRequestSwitchToTerminal={() => setPendingModeConvert("terminal")}
+              />
             : <TerminalPane sessionId={sessionId} phase={session.phase} color={session.color} />}
         </div>
       </div>

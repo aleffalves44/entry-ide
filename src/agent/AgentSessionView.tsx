@@ -44,6 +44,7 @@ import {
 } from "../utils/permissionRequest";
 import { extractTodoSnapshot } from "../utils/todoStore";
 import { selectFatalError } from "./errorSelector";
+import { useIDEShell } from "../state/IDEShellContext";
 import {
   slashReceiptAfterUserMessage,
   slashReceiptForMessage,
@@ -58,6 +59,11 @@ interface AgentSessionViewProps {
    *  primary path is misleading.  When ≤ 1 we keep the path so single-
    *  folder sessions still see their working directory at a glance. */
   workspacePathCount: number;
+  /** Trigger the mode-conversion confirmation flow from the parent pane.
+   *  When provided the "Switch to Terminal" button goes through SplitPane's
+   *  existing confirm dialog.  When omitted, the button calls
+   *  convertSessionMode directly (no dialog — used in tests). */
+  onRequestSwitchToTerminal?: () => void;
 }
 
 interface AgentExitPayload {
@@ -113,13 +119,14 @@ function useAgentSessionSnapshot(
  *   - agent-stderr-{sessionId} — stderr text chunks (surfaced on error)
  *   - agent-exit-{sessionId}   — process exit
  */
-export function AgentSessionView({ sessionId, workspacePathCount }: AgentSessionViewProps) {
+export function AgentSessionView({ sessionId, workspacePathCount, onRequestSwitchToTerminal }: AgentSessionViewProps) {
   // Resilient envelope sender — wraps `send_agent_input` IPC with a
   // respawn-on-not-found retry.  Used by the interactive cards
   // (AskUserQuestion, ExitPlanMode, canUseTool) so a tool reply
   // doesn't get dropped when the bridge has exited between turns.
   const sessionCtx = useSession();
-  const { sendAgentEnvelope } = sessionCtx;
+  const { sendAgentEnvelope, respawnAgent } = sessionCtx;
+  const ideShell = useIDEShell();
   // Resolve label early so the store is created with the correct session
   // label for pending-decision notifications (RF-FIX-01 / RF-FIX-02).
   const sessionLabel = sessionCtx.state.sessions[sessionId]?.label ?? sessionId;
@@ -373,24 +380,28 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
                     fork a fresh session from this point with <code>/branch</code>.
                   </div>
                 ) : null}
+                <AgentErrorActions
+                  onRetry={() => { respawnAgent(sessionId).catch(console.warn); }}
+                  onSwitchMode={onRequestSwitchToTerminal ?? (() => { sessionCtx.convertSessionMode(sessionId, "terminal").catch(console.warn); })}
+                  canSwitchMode={true}
+                  onOpenSettings={ideShell ? () => ideShell.onOpenSettings("ai-agent") : undefined}
+                />
               </div>
             );
           })()}
           {exitInfo && shouldShowExitNotice(exitInfo, state.messages.length) ? (
             <div className="agent-exit-notice">
-              {classifyExit(exitInfo, stderr).label}
-              {exitInfo.code !== null ? ` (code ${exitInfo.code})` : ""}
-              {exitInfo.signal ? ` (signal ${exitInfo.signal})` : ""}
-              {/* Start-Fresh action — clears the local exitInfo so the user
-                  can submit again; the next submitAgentMessage's retry path
-                  will spawn a fresh INITIAL session, no stale --resume. */}
-              <button
-                type="button"
-                className="agent-exit-action"
-                onClick={() => store.clearExitNotice()}
-              >
-                Start fresh from here
-              </button>
+              <span className="agent-exit-notice-label">
+                {classifyExit(exitInfo, stderr).label}
+                {exitInfo.code !== null ? ` (code ${exitInfo.code})` : ""}
+                {exitInfo.signal ? ` (signal ${exitInfo.signal})` : ""}
+              </span>
+              <AgentErrorActions
+                onRetry={() => store.clearExitNotice()}
+                onSwitchMode={onRequestSwitchToTerminal ?? (() => { sessionCtx.convertSessionMode(sessionId, "terminal").catch(console.warn); })}
+                canSwitchMode={true}
+                onOpenSettings={ideShell ? () => ideShell.onOpenSettings("ai-agent") : undefined}
+              />
             </div>
           ) : null}
           {stderr ? (
@@ -957,6 +968,69 @@ export function classifyExit(
     return { label: "Agent process crashed", kind: "crash" };
   }
   return { label: "Agent process exited", kind: "exit" };
+}
+
+/* ─── AgentErrorActions ───────────────────────────────────────────
+ *
+ * Three-button action row rendered on every agent failure surface
+ * (result-error banner + exit-notice strip).
+ *
+ * Props:
+ *   onRetry        — clears the local failure state so the user can
+ *                    send again; same path as "Start fresh from here".
+ *   onSwitchMode   — requests terminal-mode conversion; undefined when
+ *                    the mode guard in convertSessionMode would reject
+ *                    the request (e.g. non-Claude session).
+ *   canSwitchMode  — when false, the Switch button renders disabled
+ *                    with a tooltip explaining why.
+ *   switchModeReason — tooltip text for the disabled state.
+ *   onOpenSettings — opens Settings at the ai-agent tab.
+ */
+export interface AgentErrorActionsProps {
+  onRetry: () => void;
+  onSwitchMode: (() => void) | undefined;
+  canSwitchMode: boolean;
+  switchModeReason?: string;
+  onOpenSettings?: () => void;
+}
+
+export function AgentErrorActions({
+  onRetry,
+  onSwitchMode,
+  canSwitchMode,
+  switchModeReason,
+  onOpenSettings,
+}: AgentErrorActionsProps) {
+  return (
+    <div className="agent-error-actions" role="group" aria-label="Recovery actions">
+      <button
+        type="button"
+        className="agent-error-action agent-error-action--retry"
+        onClick={onRetry}
+      >
+        Retry
+      </button>
+      <button
+        type="button"
+        className="agent-error-action agent-error-action--switch"
+        onClick={canSwitchMode ? onSwitchMode : undefined}
+        disabled={!canSwitchMode}
+        title={!canSwitchMode ? (switchModeReason ?? "Cannot switch mode") : undefined}
+        aria-disabled={!canSwitchMode}
+      >
+        Switch to Terminal
+      </button>
+      {onOpenSettings && (
+        <button
+          type="button"
+          className="agent-error-action agent-error-action--settings"
+          onClick={onOpenSettings}
+        >
+          Open AI setup
+        </button>
+      )}
+    </div>
+  );
 }
 
 /* ─── SlashReceiptCard ────────────────────────────────────────────
