@@ -23,6 +23,8 @@ import {
   type PhaseKey,
   type PipelinePhase,
 } from "../utils/pipelinePhases";
+import { useWorkflowRunner } from "../hooks/useWorkflowRunner";
+import { PHASE_ORDER } from "../utils/workflowRunner";
 import { useTranslation } from "../hooks/useTranslation";
 import type { MessageKey } from "../i18n";
 import type { SessionData } from "../types/session";
@@ -94,6 +96,11 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
   // Per-phase context drafts.  Persist across accordion toggles and after
   // send, so re-running a phase with the same Jira key costs zero retyping.
   const [drafts, setDrafts] = useState<Partial<Record<PhaseKey, string>>>({});
+  // Shared task context for the "Rodar workflow" chaining runner — appended
+  // to every chained phase's slash command, same contract as the Workflow
+  // timeline used before unification.
+  const [taskInput, setTaskInput] = useState("");
+  const runner = useWorkflowRunner(session, taskInput);
 
   // Project id for the artifact → FilePreview handoff.
   useEffect(() => {
@@ -169,6 +176,79 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
           {loading ? "…" : "↻"}
         </button>
       </div>
+
+      {/* "Rodar workflow" chaining controls — run / approve / cancel +
+          per-phase approval-stop toggles.  Brought over from the unified
+          Workflow tab when the two were merged into this Pipeline view. */}
+      <div className="workflow-runner" data-testid="workflow-runner">
+        <button
+          type="button"
+          className="workflow-runner-run"
+          onClick={runner.start}
+          disabled={runner.state.running && !runner.state.awaitingApproval}
+          title={t("workflow.chainTitle")}
+        >
+          {runner.state.running && !runner.state.awaitingApproval
+            ? t("workflow.chaining")
+            : t("workflow.run")}
+        </button>
+        {runner.state.awaitingApproval && (
+          <button
+            type="button"
+            className="workflow-runner-approve"
+            onClick={runner.approve}
+            title={t("workflow.approveTitle", {
+              phase: phases.find((p) => p.key === runner.state.awaitingApproval)?.label ?? "",
+            })}
+          >
+            {t("workflow.approve", {
+              phase: phases.find((p) => p.key === runner.state.awaitingApproval)?.label ?? "",
+            })}
+          </button>
+        )}
+        {runner.state.running && (
+          <button
+            type="button"
+            className="workflow-runner-cancel"
+            onClick={runner.cancel}
+            title={t("workflow.cancelTitle")}
+          >
+            {t("workflow.cancel")}
+          </button>
+        )}
+        <div className="workflow-runner-stops" title={t("workflow.stopsTitle")}>
+          {PHASE_ORDER.map((key) => (
+            <label
+              key={key}
+              className={`workflow-stop ${runner.stopAfter.has(key) ? "is-on" : ""}`}
+            >
+              <input
+                type="checkbox"
+                checked={runner.stopAfter.has(key)}
+                onChange={() => runner.toggleStop(key)}
+              />
+              {phases.find((p) => p.key === key)?.label ?? key}
+            </label>
+          ))}
+        </div>
+        {runner.state.awaitingApproval && (
+          <div className="workflow-runner-awaiting">
+            {t("workflow.awaiting", {
+              phase: phases.find((p) => p.key === runner.state.awaitingApproval)?.label ?? "",
+            })}
+          </div>
+        )}
+      </div>
+
+      <input
+        type="text"
+        className="workflow-task-input"
+        value={taskInput}
+        onChange={(e) => setTaskInput(e.target.value)}
+        placeholder={t("workflow.taskPlaceholder")}
+        title={t("workflow.taskInputTitle")}
+        spellCheck={false}
+      />
 
       <ol className="pipeline-phases">
         {phases.map((phase) => (

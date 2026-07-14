@@ -225,3 +225,98 @@
   opacity: 0.4;
   cursor: default;
 }
+
+/* ── "Rodar workflow" chaining runner ────────────────────────────── */
+.workflow-runner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 4%, transparent);
+}
+.workflow-runner-run,
+.workflow-runner-approve,
+.workflow-runner-cancel {
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 3px 9px;
+  font-size: 11px;
+  color: var(--text-1);
+  background: var(--bg-1, transparent);
+}
+.workflow-runner-run {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.workflow-runner-run:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.workflow-runner-run:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.workflow-runner-approve {
+  border-color: var(--green, var(--accent));
+  color: var(--green, var(--accent));
+}
+.workflow-runner-approve:hover {
+  background: color-mix(in srgb, var(--green, var(--accent)) 12%, transparent);
+}
+.workflow-runner-cancel:hover {
+  border-color: var(--text-2);
+}
+.workflow-runner-stops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+.workflow-stop {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10.5px;
+  color: var(--text-2);
+  cursor: pointer;
+  padding: 1px 5px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  user-select: none;
+}
+.workflow-stop.is-on {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.workflow-stop input {
+  margin: 0;
+  accent-color: var(--accent);
+}
+.workflow-runner-awaiting {
+  width: 100%;
+  font-size: 11px;
+  color: var(--accent);
+}
+
+.workflow-task-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--bg-1, transparent);
+  border: 1px solid var(--rule);
+  border-radius: 5px;
+  color: var(--text-1);
+  padding: 5px 8px;
+  font-size: 11.5px;
+  font-family: var(--font-mono, monospace);
+}
+.workflow-task-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.workflow-task-input::placeholder {
+  color: var(--text-3, var(--text-2));
+}

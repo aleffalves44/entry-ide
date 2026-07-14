@@ -14,14 +14,14 @@
 
 // ─── Tabs ───────────────────────────────────────────────────────────
 
-export const WORKBENCH_TABS = ["workflow", "files", "context", "git", "metrics"] as const;
+export const WORKBENCH_TABS = ["pipeline", "files", "context", "git", "metrics"] as const;
 export type WorkbenchTab = (typeof WORKBENCH_TABS)[number];
 
 /** Default tab for an agent session whose init confirmed the harness-cmd
- *  plugin — the unified Workflow timeline is the accompanying view.  Falls
+ *  plugin — the Pipeline view is the accompanying view.  Falls
  *  back to "files" elsewhere (see `defaultWorkbenchTabFor`). */
 export const DEFAULT_WORKBENCH_TAB: WorkbenchTab = "files";
-export const DEFAULT_WORKBENCH_TAB_WITH_PLUGIN: WorkbenchTab = "workflow";
+export const DEFAULT_WORKBENCH_TAB_WITH_PLUGIN: WorkbenchTab = "pipeline";
 
 export function isWorkbenchTab(value: unknown): value is WorkbenchTab {
   return typeof value === "string" && (WORKBENCH_TABS as readonly string[]).includes(value);

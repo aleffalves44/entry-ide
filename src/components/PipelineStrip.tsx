@@ -50,7 +50,7 @@ export function PipelineStrip({ session }: { session: SessionData }) {
 
   const openPanel = useCallback(() => {
     dispatch({ type: "SET_WORKBENCH_OPEN", open: true });
-    dispatch({ type: "SET_WORKBENCH_TAB", tab: "workflow" });
+    dispatch({ type: "SET_WORKBENCH_TAB", tab: "pipeline" });
   }, [dispatch]);
 
   const togglePhase = useCallback(
