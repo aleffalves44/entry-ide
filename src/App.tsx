@@ -988,7 +988,7 @@ function AppContent() {
                   // session to host the right rail.
                   if (activeSession?.mode === "agent") {
                     dispatch({ type: "SET_WORKBENCH_OPEN", open: true });
-                    dispatch({ type: "SET_WORKBENCH_TAB", tab: "consumption" });
+                    dispatch({ type: "SET_WORKBENCH_TAB", tab: "metrics" });
                   } else {
                     void openUsageWindow();
                   }

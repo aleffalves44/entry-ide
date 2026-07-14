@@ -21,8 +21,6 @@ import { AgentContextPanel } from "./AgentContextPanel";
 import { GitPanel } from "./GitPanel";
 import { PipelinePanel } from "./PipelinePanel";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
-import { ConsumptionView } from "./ConsumptionView";
-import { openUsageWindow } from "../utils/usageWindow";
 import { WorkflowTimelinePanel } from "./WorkflowTimelinePanel";
 import { WorkbenchNotes } from "./WorkbenchNotes";
 import {
@@ -172,7 +170,7 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
   }, [dispatch]);
 
   const setTab = useCallback(
-    (tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics" | "consumption") => {
+    (tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics") => {
       dispatch({ type: "SET_WORKBENCH_TAB", tab });
     },
     [dispatch],
@@ -318,15 +316,6 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
             aria-selected={wb.tab === "metrics"}
             onClick={() => setTab("metrics")}
           >
-            Metrics
-          </button>
-          <button
-            type="button"
-            className="workbench-tab"
-            role="tab"
-            aria-selected={wb.tab === "consumption"}
-            onClick={() => setTab("consumption")}
-          >
             Consumo
           </button>
         </div>
@@ -379,22 +368,10 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
       <div
         className="workbench-body"
         role="tabpanel"
-        aria-label="Metrics"
+        aria-label="Consumo"
         hidden={wb.tab !== "metrics"}
       >
         <FrameworkMetricsView sessionId={session.id} showPopout />
-      </div>
-      <div
-        className="workbench-body"
-        role="tabpanel"
-        aria-label="Consumo"
-        hidden={wb.tab !== "consumption"}
-      >
-        <ConsumptionView
-          active={wb.tab === "consumption"}
-          onFocusSession={(id) => dispatch({ type: "SET_ACTIVE", id })}
-          onOpenWindow={() => void openUsageWindow()}
-        />
       </div>
 
       <div

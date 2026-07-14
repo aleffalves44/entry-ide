@@ -105,7 +105,7 @@ export function FrameworkMetricsView({ sessionId, days: daysProp, refreshToken, 
         )}
         {daysProp == null && (
           <div className="fw-metrics-scope">
-            {[7, 14, 30].map((d) => (
+            {[1, 7, 14, 30].map((d) => (
               <button
                 key={d}
                 className={`fw-metrics-chip ${daysLocal === d ? "active" : ""}`}
