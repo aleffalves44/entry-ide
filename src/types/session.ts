@@ -366,7 +366,7 @@ export type SessionAction =
   // `utils/workbenchLayout.ts` for the persisted shape.
   | { type: "TOGGLE_WORKBENCH" }
   | { type: "SET_WORKBENCH_OPEN"; open: boolean }
-  | { type: "SET_WORKBENCH_TAB"; tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics" }
+  | { type: "SET_WORKBENCH_TAB"; tab: "pipeline" | "files" | "context" | "git" | "metrics" }
   | { type: "SET_WORKBENCH_RATIO"; ratio: number }
   | { type: "SET_WORKBENCH_FILES_NOTES_SPLIT"; ratio: number }
   // Per-session notes (1.1.14) — replaces or complements the

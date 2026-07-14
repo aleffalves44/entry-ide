@@ -101,9 +101,9 @@ describe("RF-01 — no expanded section when nothing is active", () => {
     expect(document.querySelectorAll(".pipeline-phase-expanded")).toHaveLength(0);
   });
 
-  it("renders no text input inside the panel", () => {
+  it("renders no expanded phase input on initial mount", () => {
     renderPanel();
-    expect(document.querySelectorAll('input[type="text"]')).toHaveLength(0);
+    expect(document.querySelectorAll(".pipeline-phase-input")).toHaveLength(0);
   });
 });
 

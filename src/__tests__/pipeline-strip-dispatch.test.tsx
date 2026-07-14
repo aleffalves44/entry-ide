@@ -85,11 +85,11 @@ describe("PipelineStrip one-click dispatch", () => {
     expect(screen.queryByTestId("pipeline-strip-popover")).toBeNull();
   });
 
-  it("PIPELINE tag opens the Workflow tab instead of dispatching", () => {
+  it("PIPELINE tag opens the Pipeline tab instead of dispatching", () => {
     render(<PipelineStrip session={session} />);
     fireEvent.click(screen.getByRole("button", { name: "PIPELINE" }));
     expect(dispatchMock).toHaveBeenCalledWith({ type: "SET_WORKBENCH_OPEN", open: true });
-    expect(dispatchMock).toHaveBeenCalledWith({ type: "SET_WORKBENCH_TAB", tab: "workflow" });
+    expect(dispatchMock).toHaveBeenCalledWith({ type: "SET_WORKBENCH_TAB", tab: "pipeline" });
     expect(submitToAgentMock).not.toHaveBeenCalled();
   });
 });

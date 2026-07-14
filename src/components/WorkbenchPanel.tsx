@@ -21,7 +21,6 @@ import { AgentContextPanel } from "./AgentContextPanel";
 import { GitPanel } from "./GitPanel";
 import { PipelinePanel } from "./PipelinePanel";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
-import { WorkflowTimelinePanel } from "./WorkflowTimelinePanel";
 import { WorkbenchNotes } from "./WorkbenchNotes";
 import {
   clampFilesNotesSplit,
@@ -170,7 +169,7 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
   }, [dispatch]);
 
   const setTab = useCallback(
-    (tab: "workflow" | "files" | "context" | "git" | "pipeline" | "metrics") => {
+    (tab: "pipeline" | "files" | "context" | "git" | "metrics") => {
       dispatch({ type: "SET_WORKBENCH_TAB", tab });
     },
     [dispatch],
@@ -200,7 +199,7 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
 
   // Default-tab policy: when the harness-cmd plugin is present and the
   // user hasn't picked a tab yet (still on the legacy "files" default),
-  // surface the unified Workflow timeline as the accompanying view.
+  // surface the Pipeline view as the accompanying view.
   // Fires once per session-init edge; a manual tab choice wins because the
   // condition narrows on `wb.tab === "files"`.
   const autoSwitchedRef = useRef(false);
@@ -268,10 +267,10 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
             type="button"
             className="workbench-tab"
             role="tab"
-            aria-selected={wb.tab === "workflow"}
-            onClick={() => setTab("workflow")}
+            aria-selected={wb.tab === "pipeline"}
+            onClick={() => setTab("pipeline")}
           >
-            Workflow
+            Pipeline
           </button>
           <button
             type="button"
@@ -304,15 +303,6 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
             type="button"
             className="workbench-tab"
             role="tab"
-            aria-selected={wb.tab === "pipeline"}
-            onClick={() => setTab("pipeline")}
-          >
-            Pipeline
-          </button>
-          <button
-            type="button"
-            className="workbench-tab"
-            role="tab"
             aria-selected={wb.tab === "metrics"}
             onClick={() => setTab("metrics")}
           >
@@ -328,10 +318,10 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
       <div
         className="workbench-body"
         role="tabpanel"
-        aria-label="Workflow"
-        hidden={wb.tab !== "workflow"}
+        aria-label="Pipeline"
+        hidden={wb.tab !== "pipeline"}
       >
-        <WorkflowTimelinePanel session={session} />
+        <PipelinePanel session={session} />
       </div>
       <div
         className="workbench-body"
@@ -356,14 +346,6 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
         hidden={wb.tab !== "git"}
       >
         <GitPanel visible={wb.tab === "git"} />
-      </div>
-      <div
-        className="workbench-body"
-        role="tabpanel"
-        aria-label="Pipeline"
-        hidden={wb.tab !== "pipeline"}
-      >
-        <PipelinePanel session={session} />
       </div>
       <div
         className="workbench-body"
