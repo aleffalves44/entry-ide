@@ -469,10 +469,13 @@
   gap: var(--space-2);
   padding: 0;
   position: relative;
-  /* Cap conversation column width on wide monitors so prose lines
-   * don't blow past comfortable reading length. 72ch sweet spot for
-   * sans-serif body at 14–15px (slightly wider than before for code). */
-  max-width: 72ch;
+  /* NOTE: the row is NOT width-capped here.  Capping the whole row
+   * also capped code fences / tool output / diffs / tables, which then
+   * broke and scrolled horizontally instead of using the full pane —
+   * the "agent outputs don't use 100% of the screen" symptom.  Reading
+   * length is enforced per-prose-element below (.agent-md-p, headings,
+   * lists, blockquote) so mono / wide content flows to the column edge.
+   * User prompts keep a 72ch bubble cap via [data-role="user"]. */
   /* Message entry animation — fade + lift on first mount only.
    * React sets data-mounted="true" on next frame so scroll-in repaints
    * don't re-animate. See docs/design-system/05-motion.md. */
@@ -595,6 +598,12 @@
 /* User messages get a soft accent-tinted card on the body — the
  * "this is yours" signal that replaces the old brass left bar.
  * Padding INSIDE the card so the speaker chip sits flush above it. */
+.agent-message[data-role="user"] {
+  /* User prompts read as a chat bubble: capped narrow, left-aligned.
+   * Assistant rows are NOT capped (see .agent-message note) so their
+   * code / tool / diff output can use the full pane width. */
+  max-width: 72ch;
+}
 .agent-message[data-role="user"] .agent-message-body {
   background: color-mix(in srgb, var(--brass, var(--accent)) 6%, transparent);
   border: 1px solid color-mix(in srgb, var(--brass, var(--accent)) 12%, transparent);
@@ -802,6 +811,23 @@ html[data-theme="newsprint"] .agent-md-h2 {
 .agent-md-p {
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+/* Reading-length cap for PROSE only.  Headings, paragraphs, lists and
+ * blockquotes stop at 72ch on wide panes so lines stay comfortable;
+ * code fences (.agent-code-fence) and tables (.agent-md-table) are NOT
+ * capped here, so they flow to the full conversation-column width
+ * (bounded only by .agent-session-messages' max-width).  This is what
+ * lets agent output use the whole pane instead of breaking at 72ch. */
+.agent-md-p,
+.agent-md-h1,
+.agent-md-h2,
+.agent-md-h3,
+.agent-md-h4,
+.agent-md-ul,
+.agent-md-ol,
+.agent-md-blockquote {
+  max-width: 72ch;
 }
 
 /* Lists — custom marker in --ink-tertiary so the bullet/number doesn't
