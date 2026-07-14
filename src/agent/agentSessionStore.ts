@@ -72,6 +72,23 @@ type ListenFn = <T>(
   handler: (msg: { payload: T }) => void,
 ) => Promise<Unlisten>;
 
+/** Options accepted by AgentSessionStore for the pending-decision notification
+ *  path.  All fields are optional so existing call sites need no changes.
+ *
+ *  - `sessionLabel` — shown in the notification body.
+ *  - `isBypassMode` — injectable predicate; when it returns `true` the
+ *    notification is suppressed (bypass-mode sessions auto-resolve every
+ *    request, so there is nothing for the user to act on).  The pending
+ *    request is still stored — only the alert is skipped.
+ *  - `alertFn` — injectable alert function; defaults to
+ *    `alertInteractionNeeded` from `src/utils/notifications.ts`.
+ *    Tests supply a `vi.fn()` stub to avoid DOM/audio dependencies. */
+export interface AgentSessionStoreOptions {
+  sessionLabel?: string;
+  isBypassMode?: () => boolean;
+  alertFn?: (toolName: string, sessionLabel?: string) => void;
+}
+
 const stores = new Map<string, AgentSessionStore>();
 
 /** Cap stderr at 1 MiB.  Subprocess output past that is summarized and
@@ -117,7 +134,20 @@ export class AgentSessionStore {
   private initGeneration = 0;
   private lastInitAt = 0;
 
-  constructor(public readonly sessionId: string, listen: ListenFn) {
+  /** Options for pending-decision OS notifications. */
+  private readonly opts: Required<AgentSessionStoreOptions>;
+  /** Request ids already notified in the current bridge lifetime.  Cleared
+   *  on every `init` (respawn) so a new bridge with the same request id can
+   *  still notify.  This prevents re-notification when the user switches
+   *  sessions and the subscriber re-renders without a new perm-request. */
+  private notifiedPermIds = new Set<string>();
+
+  constructor(public readonly sessionId: string, listen: ListenFn, opts: AgentSessionStoreOptions = {}) {
+    this.opts = {
+      sessionLabel: opts.sessionLabel ?? sessionId,
+      isBypassMode: opts.isBypassMode ?? (() => false),
+      alertFn: opts.alertFn ?? alertInteractionNeeded,
+    };
     this.snapshot = {
       state: emptyState(),
       stderr: "",
@@ -141,7 +171,16 @@ export class AgentSessionStore {
         // Audible/native alert — the agent is BLOCKED on the user.
         // Fires here (store level) so hidden panes and background
         // sessions alert too, not just the mounted view.
-        alertInteractionNeeded(payload.toolName);
+        // Dedup by request id so a subscriber re-render never double-fires.
+        // Bypass-mode sessions auto-resolve every request — the user has
+        // nothing to act on, so suppress the alert.
+        if (
+          !this.notifiedPermIds.has(payload.id)
+          && !this.opts.isBypassMode()
+        ) {
+          this.notifiedPermIds.add(payload.id);
+          this.opts.alertFn(payload.toolName, this.opts.sessionLabel);
+        }
         // Don't fold perm-request envelopes into the message stream —
         // they're metadata, not chat content.  Notify and exit.
         this.notify();
@@ -182,6 +221,9 @@ export class AgentSessionStore {
           stderr: "",
           pendingPermRequest: null,
         };
+        // Also reset the notification dedup set so a new bridge with
+        // the same request id can notify again (RF-FIX-01 AC-3).
+        this.notifiedPermIds.clear();
       }
       this.notify();
     }).then((un) => this.collect(un)).catch(() => undefined);
@@ -285,6 +327,7 @@ export class AgentSessionStore {
       this.initGeneration += 1;
       this.lastInitAt = Date.now();
       this.snapshot = { ...this.snapshot, exit: null, stderr: "" };
+      this.notifiedPermIds.clear();
     }
     this.notify();
   };
@@ -333,14 +376,20 @@ export class AgentSessionStore {
  * The optional `listen` injector lets tests substitute a synchronous
  * stub for the Tauri `listen` API without touching the global registry
  * shape.
+ *
+ * `opts` is forwarded to the store constructor on first creation only —
+ * subsequent calls for the same sessionId return the existing store.
+ * Pass updated `sessionLabel` via `updateStoreLabel` if the session is
+ * renamed after first creation.
  */
 export function getOrCreateAgentSessionStore(
   sessionId: string,
   listen: ListenFn,
+  opts?: AgentSessionStoreOptions,
 ): AgentSessionStore {
   let store = stores.get(sessionId);
   if (!store) {
-    store = new AgentSessionStore(sessionId, listen);
+    store = new AgentSessionStore(sessionId, listen, opts);
     stores.set(sessionId, store);
   }
   return store;

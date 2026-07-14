@@ -87,12 +87,6 @@ export function playInteractionChime(): void {
   }
 }
 
-/**
- * The agent needs the user (permission request, AskUserQuestion,
- * ExitPlanMode).  Window unfocused → native notification (with the
- * system sound) so it cuts through other apps; focused → just the
- * chime, since the modal is already on screen somewhere.
- */
 /** Per-platform sound identifier for native notifications.  The WebAudio
  *  chime is the GUARANTEED audible cue on every platform (it plays even
  *  when the window is unfocused); the native sound is best-effort:
@@ -106,6 +100,12 @@ function nativeNotificationSound(): string {
   return "message-new-instant";
 }
 
+/**
+ * The agent needs the user (permission request, AskUserQuestion,
+ * ExitPlanMode).  Window unfocused → native notification (with the
+ * system sound) so it cuts through other apps; focused → just the
+ * chime, since the modal is already on screen somewhere.
+ */
 export function alertInteractionNeeded(toolName: string, sessionLabel?: string): void {
   if (muted) return;
   const focused = typeof document !== "undefined" && document.hasFocus();

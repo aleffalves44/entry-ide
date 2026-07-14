@@ -142,3 +142,5 @@ pnpm-debug.log*
 !.claude/hooks/
 # Sensei structural gate — machine-local state (rules.toml + baseline.json), never committed
 .sensei/
+# Pipeline scaffolding — local only, never committed
+/specs/

@@ -55,3 +55,23 @@ care which theme is active.
 See `CLAUDE.md` and `ARCHITECTURE.md`. Two session modes: `agent`
 (Claude, stream-json subprocess) and `terminal` (PTY + xterm). State
 lives in `src/state/SessionContext.tsx`. `SplitPane.tsx` routes by mode.
+
+## Domain Guides
+
+Detailed context for specific domains lives under `docs/agents/`:
+
+- [frontend.md](docs/agents/frontend.md) — React component patterns, state, CSS
+- [backend.md](docs/agents/backend.md) — Rust/Tauri modules, commands, IPC
+- [agent-mode.md](docs/agents/agent-mode.md) — stream-json protocol, message store, Claude subprocess
+- [terminal-mode.md](docs/agents/terminal-mode.md) — PTY, xterm, shell integration
+- [testing.md](docs/agents/testing.md) — vitest setup, test conventions, Rust test layout
+- [plugins.md](docs/agents/plugins.md) — plugin runtime, builtin plugins, plugin API
+
+## ADRs
+
+| ID | Title | Status |
+|---|---|---|
+| [001](docs/adr/001-agent-mode.md) | Agent mode for Claude | Accepted |
+| [002](docs/adr/002-bridge-runtime-tarball.md) | Bridge runtime as a first-launch tarball | Proposed |
+
+Full records: `docs/adr/`.
