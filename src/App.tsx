@@ -27,8 +27,7 @@ import { getSetting } from "./api/settings";
 import { SessionList } from "./components/SessionList";
 import { ContextPanel } from "./components/ContextPanel";
 import { hideOpeningOverlay, showOpeningOverlay } from "./utils/sessionCreatorOverlay";
-import { UsagePanel } from "./components/UsagePanel";
-import { ActivityBar, SessionsIcon, ContextIcon, UsageIcon, WorkbenchIcon, PlusIcon, PluginsIcon, SettingsIcon, ConsumptionIcon } from "./components/ActivityBar";
+import { ActivityBar, SessionsIcon, ContextIcon, WorkbenchIcon, PlusIcon, PluginsIcon, SettingsIcon, ConsumptionIcon } from "./components/ActivityBar";
 import { openUsageWindow } from "./utils/usageWindow";
 import { WorkbenchPanel } from "./components/WorkbenchPanel";
 import { workbenchPixelWidth } from "./utils/workbenchLayout";
@@ -1154,7 +1153,7 @@ function AppContent() {
            *  open; toggled from the activity bar (or ⌥⌘B).
            *
            *  Terminal-mode (and any other) sessions keep the legacy
-           *  toggleable ContextPanel + UsagePanel pair.
+           *  toggleable ContextPanel.
            */}
           {!ui.flowMode && activeSession?.mode === "agent" && ui.workbench.open && (
             <PanelErrorBoundary panelName="Workbench">
@@ -1166,24 +1165,6 @@ function AppContent() {
               <PanelResizeHandle direction="horizontal" onResize={handleRightResize} onResizeEnd={refitActive} />
               <PanelErrorBoundary panelName="Context Panel">
                 <ContextPanel session={activeSession} />
-              </PanelErrorBoundary>
-            </>
-          )}
-          {/* Usage panel.  Mounted for both agent and terminal sessions,
-              mutex with the right-rail occupant of the moment:
-              - terminal: mutex with ContextPanel (same column)
-              - agent:    mutex with WorkbenchPanel (same column)
-              When the user clicks the Usage activity-bar tab on an
-              agent session, the click handler closes the workbench
-              first so this clause renders. */}
-          {ui.usagePanelOpen && !ui.contextPanelOpen && !ui.flowMode && activeSession &&
-            (activeSession.mode !== "agent" || !ui.workbench.open) && (
-            <>
-              {activeSession.mode !== "agent" && (
-                <PanelResizeHandle direction="horizontal" onResize={handleRightResize} onResizeEnd={refitActive} />
-              )}
-              <PanelErrorBoundary panelName="Usage Panel">
-                <UsagePanel session={activeSession} />
               </PanelErrorBoundary>
             </>
           )}
@@ -1199,47 +1180,25 @@ function AppContent() {
                       label: `Workbench (${fmt("{mod}{alt}B")})`,
                       icon: WorkbenchIcon,
                     },
-                    { id: "usage", label: "Usage · plan & limits", icon: UsageIcon },
                   ]
                 : [
                     { id: "context", label: `Context (${fmt("{mod}E")})`, icon: ContextIcon },
-                    { id: "usage", label: "Usage · plan & limits", icon: UsageIcon },
                   ]
             }
             activeTabId={
               activeSession?.mode === "agent"
                 ? ui.workbench.open
                   ? "workbench"
-                  : ui.usagePanelOpen
-                    ? "usage"
-                    : null
+                  : null
                 : ui.contextPanelOpen
                   ? "context"
-                  : ui.usagePanelOpen
-                    ? "usage"
-                    : null
+                  : null
             }
             onTabClick={(tabId) => {
-              // Right-rail tabs are mutex within the same column — clicking
-              // one tab implicitly closes whatever else was occupying the
-              // panel.  TOGGLE_USAGE / TOGGLE_CONTEXT / TOGGLE_WORKBENCH
-              // are independent flags in state, so we mirror the mutex
-              // here in the dispatch handler.
               if (tabId === "workbench") {
-                if (ui.usagePanelOpen) dispatch({ type: "TOGGLE_USAGE" });
                 dispatch({ type: "TOGGLE_WORKBENCH" });
               } else if (tabId === "context") {
-                if (ui.usagePanelOpen) dispatch({ type: "TOGGLE_USAGE" });
                 dispatch({ type: "TOGGLE_CONTEXT" });
-              } else if (tabId === "usage") {
-                // Closing the workbench when opening Usage so the right
-                // column has room.  If Usage is already open, this is a
-                // toggle-off → leave the workbench in whatever state it
-                // was in.
-                if (!ui.usagePanelOpen && ui.workbench.open) {
-                  dispatch({ type: "SET_WORKBENCH_OPEN", open: false });
-                }
-                dispatch({ type: "TOGGLE_USAGE" });
               }
             }}
           />
