@@ -1085,7 +1085,7 @@ function AppContent() {
            *  open; toggled from the activity bar (or ⌥⌘B).
            *
            *  Terminal-mode (and any other) sessions keep the legacy
-           *  toggleable ContextPanel + UsagePanel pair.
+           *  toggleable ContextPanel.
            */}
           {!ui.flowMode && activeSession?.mode === "agent" && ui.workbench.open && (
             <PanelErrorBoundary panelName="Workbench">
