@@ -75,14 +75,14 @@
   bottom: 100%;
   left: 8px;
   right: 8px;
-  z-index: 40;
+  z-index: var(--z-overlay);
   box-sizing: border-box;
   margin-bottom: 4px;
   padding: 10px 12px;
   background: var(--bg-1, var(--bg-0));
   border: 1px solid var(--rule);
   border-radius: 8px;
-  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-3);
 }
 
 .loop-config-row {

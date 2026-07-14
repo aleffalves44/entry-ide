@@ -46,6 +46,7 @@ import type { AgentEvent, ResultEvent } from "./types";
 import { emptyState, freezePendingThinking, reduceEvent } from "./messageStore";
 import type { AgentSessionState } from "./messageStore";
 import { isPermRequest, type PermRequest } from "../utils/permissionRequest";
+import { alertInteractionNeeded } from "../utils/notifications";
 import { recordFrameworkUsageForResult } from "./frameworkMetrics";
 
 export interface AgentExitInfo {
@@ -74,21 +75,18 @@ type ListenFn = <T>(
 /** Options accepted by AgentSessionStore for the pending-decision notification
  *  path.  All fields are optional so existing call sites need no changes.
  *
- *  - `onPendingDecision(label, toolName)` — called when a perm-request arrives
- *    and the window is hidden.  Production callers supply `notifyPendingDecision`
- *    from `src/utils/notifications.ts`; tests supply a vi.fn() stub.
  *  - `sessionLabel` — shown in the notification body.
- *  - `isWindowHidden` — injectable predicate; defaults to `() => document.hidden`.
- *    Tests inject a synchronous stub to avoid DOM dependency.
  *  - `isBypassMode` — injectable predicate; when it returns `true` the
  *    notification is suppressed (bypass-mode sessions auto-resolve every
  *    request, so there is nothing for the user to act on).  The pending
- *    request is still stored — only the OS notification is skipped. */
+ *    request is still stored — only the alert is skipped.
+ *  - `alertFn` — injectable alert function; defaults to
+ *    `alertInteractionNeeded` from `src/utils/notifications.ts`.
+ *    Tests supply a `vi.fn()` stub to avoid DOM/audio dependencies. */
 export interface AgentSessionStoreOptions {
-  onPendingDecision?: (sessionLabel: string, toolName: string) => void;
   sessionLabel?: string;
-  isWindowHidden?: () => boolean;
   isBypassMode?: () => boolean;
+  alertFn?: (toolName: string, sessionLabel?: string) => void;
 }
 
 const stores = new Map<string, AgentSessionStore>();
@@ -146,12 +144,9 @@ export class AgentSessionStore {
 
   constructor(public readonly sessionId: string, listen: ListenFn, opts: AgentSessionStoreOptions = {}) {
     this.opts = {
-      onPendingDecision: opts.onPendingDecision ?? (() => undefined),
       sessionLabel: opts.sessionLabel ?? sessionId,
-      // Guard against environments without a DOM (tests run in node).
-      // In production the Tauri/browser window always has `document`.
-      isWindowHidden: opts.isWindowHidden ?? (() => typeof document !== "undefined" && document.hidden),
       isBypassMode: opts.isBypassMode ?? (() => false),
+      alertFn: opts.alertFn ?? alertInteractionNeeded,
     };
     this.snapshot = {
       state: emptyState(),
@@ -173,18 +168,18 @@ export class AgentSessionStore {
       // session close.
       if (isPermRequest(payload)) {
         this.snapshot = { ...this.snapshot, pendingPermRequest: payload };
-        // OS notification when window is unfocused (RF-FIX-01).  Dedup
-        // by request id so a subscriber re-render never double-fires.
+        // Audible/native alert — the agent is BLOCKED on the user.
+        // Fires here (store level) so hidden panes and background
+        // sessions alert too, not just the mounted view.
+        // Dedup by request id so a subscriber re-render never double-fires.
         // Bypass-mode sessions auto-resolve every request — the user has
-        // nothing to act on, so suppress the notification (RF-FIX-01
-        // precondition: permissionMode != "bypassPermissions").
+        // nothing to act on, so suppress the alert.
         if (
-          this.opts.isWindowHidden()
-          && !this.notifiedPermIds.has(payload.id)
+          !this.notifiedPermIds.has(payload.id)
           && !this.opts.isBypassMode()
         ) {
           this.notifiedPermIds.add(payload.id);
-          this.opts.onPendingDecision(this.opts.sessionLabel, payload.toolName);
+          this.opts.alertFn(payload.toolName, this.opts.sessionLabel);
         }
         // Don't fold perm-request envelopes into the message stream —
         // they're metadata, not chat content.  Notify and exit.

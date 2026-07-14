@@ -13,13 +13,16 @@ let workspaceDirty = false;
 import {
   createSession as apiCreateSession, closeSession as apiCloseSession,
   getSessions, getRecentSessions, getSessionSnapshot,
-  updateSessionDescription, updateSessionGroup,
+  updateSessionDescription, updateSessionGroup, updateSessionLabel,
   saveAllSnapshots,
   addWorkspacePath,
 } from "../api/sessions";
 import { getProjects, getSessionProjects, attachSessionProject } from "../api/projects";
 import { autoAttachInsideProject } from "../utils/autoAttach";
 import { hasAddDirDrift } from "../utils/agentDrift";
+import { deriveSessionLabel, isDefaultSessionLabel } from "../utils/autoLabel";
+import { seedSessionCommand } from "../agent/frameworkMetrics";
+import { getFrameworkUsage } from "../api/frameworkMetrics";
 import { createWorktree, worktreeHasChanges, stashWorktree, getSessionWorktreeInfo } from "../api/git";
 import type { SessionWorktree } from "../types/git";
 import { getSettings, getSetting, setSetting } from "../api/settings";
@@ -60,7 +63,7 @@ import {
 } from "../utils/workbenchLayout";
 import { spawnAgentSession, closeAgentSession, sendAgentInput, updateEntryState, setAgentPermissionMode } from "../api/agent";
 import { reportAgentSpawnFailure } from "../utils/agentSpawnFailure";
-import { destroyAgentSessionStore } from "../agent/agentSessionStore";
+import { destroyAgentSessionStore, peekAgentSessionStore } from "../agent/agentSessionStore";
 import { cleanupSessionRefs } from "../utils/sessionRefCleanup";
 import { cacheAgentInit, clearAgentInitCache, peekAgentInitCache } from "../agent/useAgentInit";
 import {
@@ -546,16 +549,22 @@ export function sessionReducer(state: SessionState, action: SessionAction): Sess
           layout: { ...state.layout, focusedPaneId: existing.id },
         };
       }
-      // Otherwise, swap the focused pane's session
-      if (state.layout.focusedPaneId) {
-        const swapped = setPaneSession(state.layout.root, state.layout.focusedPaneId, action.id);
-        return {
-          ...state,
-          activeSessionId: action.id,
-          layout: { ...state.layout, root: swapped },
-        };
-      }
-      return { ...state, activeSessionId: action.id };
+      // No pane shows this session — tile it BESIDE the existing layout
+      // (multipane contract: activating a session never hides another).
+      const activatedPane: PaneLeaf = { type: "pane", id: nextPaneId(), sessionId: action.id };
+      const paneCount = collectPanes(state.layout.root).length;
+      const tiledRoot: LayoutNode = {
+        type: "split",
+        id: nextSplitId(),
+        direction: "horizontal",
+        children: [state.layout.root, activatedPane],
+        ratio: paneCount / (paneCount + 1),
+      };
+      return {
+        ...state,
+        activeSessionId: action.id,
+        layout: { root: tiledRoot, focusedPaneId: activatedPane.id },
+      };
     }
     case "SET_RECENT":
       return { ...state, recentSessions: action.entries };
@@ -1309,7 +1318,36 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           }
         },
       );
-      initListeners.current.set(sessionId, unlisten);
+      // Also watch exits: when the subprocess dies because `--resume`
+      // pointed at a conversation Claude no longer has ("No conversation
+      // found" on stderr), the stored uuid is DEAD.  Without dropping it
+      // here, every subsequent revive respawns with the same defunct
+      // --resume and fails identically — the "Couldn't resume that
+      // conversation" banner on loop.  Dropping the uuid makes the next
+      // submit spawn a FRESH conversation (UI history is preserved in
+      // the store; Claude-side context is gone either way).
+      const unlistenExit = await listen<{ code: number | null; signal: string | null }>(
+        `agent-exit-${sessionId}`,
+        (msg) => {
+          const code = msg.payload?.code;
+          if (code === null || code === 0) return;
+          const stderrText =
+            peekAgentSessionStore(sessionId)?.getSnapshot().stderr ?? "";
+          if (stderrText.toLowerCase().includes("no conversation found")) {
+            const stale = claudeUuids.current.get(sessionId);
+            if (stale) {
+              console.warn(
+                `[SessionContext] dropping stale resume uuid ${stale} for ${sessionId} — Claude has no record of it`,
+              );
+              claudeUuids.current.delete(sessionId);
+            }
+          }
+        },
+      );
+      initListeners.current.set(sessionId, () => {
+        try { unlisten(); } catch { /* already detached */ }
+        try { unlistenExit(); } catch { /* already detached */ }
+      });
     } catch (err) {
       console.warn("[SessionContext] failed to attach init listener:", err);
     }
@@ -1677,6 +1715,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
               dispatch({ type: "SESSION_UPDATED", session: newSession });
               oldToNew.set(saved.id, newSession.id);
+
+              // Carry command attribution across the id remap (audit D4):
+              // a /plan resumed after restart keeps attributing its turns
+              // to the command instead of falling into "(prose)".  Seed
+              // from the OLD session's most recent commanded row.
+              getFrameworkUsage({ sessionId: saved.id })
+                .then((rows) => {
+                  const last = rows.find((r) => r.command);
+                  if (last?.command) seedSessionCommand(newSession.id, last.command);
+                })
+                .catch(() => undefined);
             } catch (err) {
               console.warn("[SessionContext] Failed to restore session:", saved.label, err);
               // Clean up the terminal that was pre-created for this failed session
@@ -2467,6 +2516,20 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   ): Promise<void> => {
     const envelope = buildUserEnvelope(draft, attachments);
     if (!envelope) return;
+
+    // Auto-name the session from its first message (conversation
+    // subject).  Only while the label is still the backend default —
+    // a user-typed (or already derived) name is never overwritten.
+    // The backend emits `session-updated`, so the sidebar re-renders.
+    {
+      const current = stateRef.current.sessions[sessionId];
+      if (current && isDefaultSessionLabel(current.label)) {
+        const derived = deriveSessionLabel(draft);
+        if (derived) {
+          updateSessionLabel(sessionId, derived).catch(() => undefined);
+        }
+      }
+    }
 
     // Echo first so the user sees their own message immediately even if
     // we're about to respawn the subprocess.

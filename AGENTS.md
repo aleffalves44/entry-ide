@@ -1,103 +1,60 @@
 # AGENTS.md — Entry IDE
 
-AI agent context root. Read this before touching any file in this repository.
-For human contributors, see [CONTRIBUTING.md](CONTRIBUTING.md) and [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md).
+Repository-specific knowledge for agents working in this codebase.
 
-## Repository at a Glance
+## Design system (the most important context)
 
-| Property | Value |
-|---|---|
-| Product | Entry IDE — AI-native terminal emulator/IDE |
-| Version | 1.3.2 |
-| License | BSL 1.1 (Apache 2.0 after 3 years) |
-| Stack | Tauri 2 + React 19 + Vite + TypeScript (strict) + Rust |
-| Platforms | macOS, Windows, Linux |
+Entry ships a mature, token-based design system documented in
+`docs/design-system/00-principles.md` … `09-migration.md`. The system is
+**aspirational unless enforced** — component CSS historically violated
+its own principles. As of this writing the major debt is cleared and a
+linter guards regressions.
 
-## Repo Layout
+### Rules that are ENFORCED (do not break)
 
-```
-entry-ide/
-  src/                    # React/TypeScript frontend
-    agent/                # Agent-mode store, types, view logic
-    components/           # All UI components (one file per component)
-    hooks/                # Custom React hooks
-    plugins/              # Plugin runtime and builtin plugins
-    state/                # SessionContext.tsx — central app state
-    styles/               # Per-component CSS (no CSS-in-JS)
-    types/                # Shared TypeScript types
-    utils/                # Pure utility helpers
-    terminal/             # xterm integration helpers
-    App.tsx               # Root component + layout wiring
-  src-tauri/              # Rust backend (Tauri 2)
-    src/
-      agent/              # Claude subprocess spawning, stream-json I/O
-      pty/                # PTY management + xterm bridge
-      git/                # Git repo/worktree management
-      process/            # OS process tracking
-      workspace/          # Workspace/project persistence
-      plugins.rs          # Plugin host (Tauri-side)
-      lib.rs              # Tauri command registry
-  docs/
-    adr/                  # Architecture Decision Records
-    agents/               # THIS DIRECTORY — per-domain agent guides
-  .github/workflows/      # CI (ci.yml, build.yml, release.yml)
-```
+- **`npm run lint:tokens`** fails the build on: raw `rgba(0,0,0,…)` box
+  shadows, manual `cubic-bezier(…)`, raw durations in
+  `transition:`/`animation:` (non-loop), and literal `z-index: <number>`.
+  Run it before pushing CSS changes. It runs in `preflight` too.
+- Use the elevation tokens `--shadow-1..4` (1=cards, 2=dropdowns,
+  3=popovers, 4=dialogs). The `--shadow-tint` per-theme token makes them
+  warm on Linen/Atrium and cool on dark themes — never paste `#000`.
+- Use easing tokens `--ease-out-expo/-soft/spring/standard` and duration
+  tokens `--dur-tap/quick/base/slow`. The mapping table is in
+  `docs/design-system/05-motion.md`.
+- Use the z-index scale in `tokens.css`: `--z-base`, `--z-raised`,
+  `--z-overlay`, `--z-popover`, `--z-modal`, `--z-picker`, `--z-toast`,
+  `--z-drag`. Relative order: base < raised < overlay < popover < modal
+  < picker < toast < drag.
+- Loop animations (shimmer/sweep/pulse/drift) keep their content-timing
+  literals (e.g. `1.6s`) — those are NOT motion-of-UI and must not be
+  tokenized. The linter exempts lines containing `infinite`.
+- Themes override **tokens**, never patch components (P4). If a theme
+  needs per-component CSS, a token is missing — extract it.
 
-## Two Session Modes — The Core Invariant
+### Adding a theme
 
-Every session has `mode: "terminal" | "agent"`. This determines the entire render path. **Never mix terminal and agent rendering code.**
-
-| Mode | Transport | Rust module | React entry |
-|---|---|---|---|
-| `agent` | Claude CLI stream-json subprocess | `src-tauri/src/agent/` | `src/agent/AgentSessionView.tsx` |
-| `terminal` | PTY via OS process | `src-tauri/src/pty/` | `src/components/TerminalPane.tsx` |
-
-`SplitPane.tsx` routes between modes based on `session.mode`. See [ADR 001](docs/adr/001-agent-mode.md) for the full rationale.
-
-## Agent-Mode Wire Protocol
-
-Claude is spawned as:
-```
-claude --print --output-format stream-json --input-format stream-json
-```
-
-Events flow as NDJSON. Typed event kinds: `system/init`, `assistant`, `user`, `result`, tool hook events. The Rust layer (`src-tauri/src/agent/mod.rs`) reads stdout, deserializes events, and forwards them via Tauri events. The frontend reducer (`src/agent/messageStore.ts`) builds the message list. User input is written as JSON `user` events to the subprocess stdin via `src/components/SessionComposer.tsx`.
-
-## Key State Files
-
-- `src/state/SessionContext.tsx` — all session state (115 KB); the single source of truth for session list, active session, UI panel state
-- `src/agent/agentSessionStore.ts` — agent-mode session lifecycle
-- `src/agent/messageStore.ts` — per-session message list reducer
+Write an `html[data-theme="…"]` block in `themes.css` that overrides the
+surface/ink/voice/shadow-tint tokens, and pick one archetype by setting
+the `--tool-card-*` / `--turn-separator` tokens. No component code should
+care which theme is active.
 
 ## Commands
 
-```bash
-npm run dev              # Vite dev server (frontend only)
-npm run tauri dev        # Full Tauri app in dev mode
-npm run test             # Vitest unit tests (src/**/*.test.ts[x])
-npx tsc --noEmit         # TypeScript type check (strict)
-cd src-tauri && cargo fmt --check   # Rust formatting check
-cd src-tauri && cargo clippy -- -D warnings  # Rust linter
-cd src-tauri && cargo test --lib    # Rust unit tests
-npm run preflight        # Full local CI: tsc + eslint + vitest + cargo test + agent e2e
-```
+- `npm run dev` — Vite dev server
+- `npm run tauri dev` — full Tauri app
+- `npm test` — vitest (3624 tests; CSS/z-index changes are covered by
+  `agent-timeline-style.test.ts`, `toast-positioning.test.ts`, etc.)
+- `npm run lint:tokens` — token-discipline linter (CSS regressions)
+- `npm run lint:tsc` / `npm run lint` — type check / eslint
+- `npm run preflight` — full gate: tsc + eslint + lint:tokens + tests +
+  cargo lib tests + agent e2e
 
-## Code Style — Hard Rules
+## Architecture
 
-- TypeScript: strict mode, no `any`, follow patterns in `src/`
-- React: functional components + hooks only; state in `SessionContext`
-- CSS: one `.css` file per component in `src/styles/`; no CSS-in-JS
-- Rust: `cargo fmt` and `cargo clippy` must pass; follow existing module layout
-- No new top-level dependencies without prior discussion
-
-## Constraints for AI Agents
-
-1. Do not clobber `CLAUDE.md` — it is the authoritative project briefing for Claude Code.
-2. Do not commit or stage anything — leave changes unstaged.
-3. Do not read `.env` files; reference `.env.example` if it exists.
-4. Never invent architectural facts — cite evidence or write "Not applicable."
-5. Bug fixes and doc changes need no prior approval; new features do.
-6. When uncertain whether a change belongs to agent or terminal mode, read [DESIGN_PRINCIPLES.md](DESIGN_PRINCIPLES.md) §0 first.
+See `CLAUDE.md` and `ARCHITECTURE.md`. Two session modes: `agent`
+(Claude, stream-json subprocess) and `terminal` (PTY + xterm). State
+lives in `src/state/SessionContext.tsx`. `SplitPane.tsx` routes by mode.
 
 ## Domain Guides
 

@@ -5,8 +5,8 @@
  *   • Workbench → "Consumo" tab (docked in the IDE, part of the setup)
  *   • UsageWindow (standalone native window, second-monitor use)
  *
- * Reads ONLY via Tauri commands (get_sessions, get_framework_usage,
- * get_delivery_events) on a light poll — no SessionContext dependency,
+ * Reads ONLY via Tauri commands (get_sessions, get_framework_usage)
+ * on a light poll — no SessionContext dependency,
  * so both hosts share identical behavior.  Focusing a session is the
  * host's business (in-app dispatch vs cross-window event) — injected
  * via `onFocusSession`.
@@ -15,14 +15,8 @@ import "../styles/components/UsageWindow.css";
 import { useEffect, useMemo, useState } from "react";
 import { getSessions } from "../api/sessions";
 import { getFrameworkUsage, type FrameworkUsageEntry } from "../api/frameworkMetrics";
-import { getDeliveryEvents, type DeliveryEvent } from "../api/delivery";
 import { FrameworkMetricsView } from "./FrameworkMetricsView";
 import { formatTokens } from "../utils/frameworkAggregates";
-import {
-  deriveDeliveryLines,
-  medianLeadMs,
-  formatLead,
-} from "../utils/deliveryMetrics";
 import type { SessionData } from "../types/session";
 
 const POLL_MS = 4000;
@@ -51,7 +45,6 @@ export function ConsumptionView({
 }: ConsumptionViewProps) {
   const [sessions, setSessions] = useState<SessionData[]>([]);
   const [rows, setRows] = useState<FrameworkUsageEntry[]>([]);
-  const [deliveryEvents, setDeliveryEvents] = useState<DeliveryEvent[]>([]);
   const [tick, setTick] = useState(0);
 
   useEffect(() => {
@@ -66,11 +59,6 @@ export function ConsumptionView({
       getFrameworkUsage()
         .then((r) => {
           if (!cancelled && Array.isArray(r)) setRows(r);
-        })
-        .catch(() => undefined);
-      getDeliveryEvents()
-        .then((d) => {
-          if (!cancelled && Array.isArray(d)) setDeliveryEvents(d);
         })
         .catch(() => undefined);
     };
@@ -163,59 +151,11 @@ export function ConsumptionView({
         </section>
       )}
 
-      <DeliverySection events={deliveryEvents} />
-
+      {/* Delivery/lead-time is capture-only (usePipelineState writes
+          delivery_events); this screen neither shows nor fetches it. */}
       <section className="usage-window-metrics">
         <FrameworkMetricsView refreshToken={tick} />
       </section>
     </div>
-  );
-}
-
-/** Lead-time view (M5): task_started → PR aberto per task, plus the
- *  observed full cycle to merge.  Data from delivery_events. */
-function DeliverySection({ events }: { events: DeliveryEvent[] }) {
-  const lines = useMemo(() => deriveDeliveryLines(events), [events]);
-  if (lines.length === 0) return null;
-  const median = medianLeadMs(lines);
-  return (
-    <section className="usage-window-sessions" data-testid="usage-window-delivery">
-      <div className="usage-window-title">
-        Delivery — lead time tarefa → PR
-        {median !== null && (
-          <span className="usage-window-median"> · mediana {formatLead(median)}</span>
-        )}
-      </div>
-      <table className="usage-window-table">
-        <thead>
-          <tr>
-            <th>Branch</th>
-            <th>Início</th>
-            <th>PR aberto</th>
-            <th>Lead</th>
-            <th>Ciclo (merge)</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lines.slice(0, 20).map((l) => (
-            <tr key={l.sessionId}>
-              <td>{l.branch ?? l.sessionId.slice(0, 8)}</td>
-              <td className="mono">{l.startedAt?.slice(0, 16).replace("T", " ") ?? "—"}</td>
-              <td className="mono">
-                {l.prUrl ? (
-                  <a href={l.prUrl} target="_blank" rel="noreferrer">
-                    {l.prOpenedAt?.slice(0, 16).replace("T", " ") ?? "aberto"}
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </td>
-              <td className="mono">{formatLead(l.leadMs)}</td>
-              <td className="mono">{formatLead(l.cycleMs)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </section>
   );
 }

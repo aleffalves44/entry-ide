@@ -31,3 +31,12 @@ export function recordDeliveryEvent(event: DeliveryEvent): Promise<boolean> {
 export function getDeliveryEvents(since?: string): Promise<DeliveryEvent[]> {
   return invoke("get_delivery_events", { since: since ?? null });
 }
+
+/** On-demand merge check for a specific PR (delivery metrics).  Returns
+ *  gh's exact mergedAt when merged, null otherwise/on any failure. */
+export function checkPrMerged(
+  repoPath: string,
+  prNumber: number,
+): Promise<string | null> {
+  return invoke("check_pr_merged", { repoPath, prNumber });
+}

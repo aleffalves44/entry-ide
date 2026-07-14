@@ -18,7 +18,6 @@ import { useSession } from "../state/SessionContext";
 import { deriveActivity } from "./messageStore";
 import type { AgentSessionState, RenderedMessage } from "./messageStore";
 import { getOrCreateAgentSessionStore } from "./agentSessionStore";
-import { notifyPendingDecision } from "../utils/notifications";
 import { TextBlock } from "./blocks/TextBlock";
 import { ThinkingBlock } from "./blocks/ThinkingBlock";
 import { ToolUseBlock } from "./blocks/ToolUseBlock";
@@ -28,6 +27,7 @@ import { SubagentMastheadChip } from "./SubagentMastheadChip";
 import { PipelineStrip } from "../components/PipelineStrip";
 import { SessionUsageWidget } from "../components/SessionUsageWidget";
 import { LoopBar } from "../components/LoopBar";
+import { SessionIdContext } from "./SessionIdContext";
 import { selectWorkingState } from "./workingState";
 import { WorkingFootline } from "./WorkingFootline";
 import { MarginDraft } from "./MarginDraft";
@@ -93,7 +93,6 @@ function useAgentSessionSnapshot(
   bypassModeRef.current = permissionMode === "bypassPermissions";
 
   const store = getOrCreateAgentSessionStore(sessionId, listen, {
-    onPendingDecision: notifyPendingDecision,
     sessionLabel,
     isBypassMode: () => bypassModeRef.current,
   });
@@ -292,6 +291,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
     ?? "default";
 
   return (
+    <SessionIdContext.Provider value={sessionId}>
     <div className="agent-session-view" data-session-id={sessionId}>
       <AgentHeader state={state} sessionId={sessionId} workspacePathCount={workspacePathCount} />
       {sessionEntryForPerm && <PipelineStrip session={sessionEntryForPerm} />}
@@ -444,6 +444,7 @@ export function AgentSessionView({ sessionId, workspacePathCount }: AgentSession
           per-agent / per-model breakdowns of this session's usage. */}
       <SessionUsageWidget sessionId={sessionId} />
     </div>
+    </SessionIdContext.Provider>
   );
 }
 
@@ -940,7 +941,9 @@ export function classifyExit(
   const lc = (stderr ?? "").toLowerCase();
   if (lc.includes("no conversation found")) {
     return {
-      label: "Couldn't resume that conversation — Claude no longer has a record of it",
+      label:
+        "Couldn't resume that conversation — Claude no longer has a record of it. "
+        + "Your next message starts a fresh conversation (the history above is kept).",
       kind: "no-conversation",
     };
   }

@@ -82,7 +82,7 @@
 .worktree-overview-project-chevron {
   color: var(--text-3);
   font-size: 10px;
-  transition: transform 0.15s;
+  transition: transform var(--dur-quick);
   flex-shrink: 0;
   width: 12px;
   text-align: center;
@@ -286,7 +286,7 @@
   display: flex;
   gap: 2px;
   opacity: 0;
-  transition: opacity 0.1s;
+  transition: opacity var(--dur-tap);
   flex-shrink: 0;
 }
 

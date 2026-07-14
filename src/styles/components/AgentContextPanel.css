@@ -27,7 +27,7 @@
   left: 0;
   width: 4px;
   cursor: col-resize;
-  z-index: 2;
+  z-index: var(--z-base);
   /* Invisible 4px hit area; the visual hairline is the panel's border-left
    * which is in --rule.  Hover thickens it via the pseudo below. */
 }
@@ -40,7 +40,7 @@
   left: 0;
   width: 1px;
   background: var(--rule, var(--border));
-  transition: background 120ms ease;
+  transition: background var(--dur-quick) ease;
 }
 
 .agent-context-panel-resize-handle:hover::before,
@@ -126,7 +126,7 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-tertiary, var(--text-3));
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .agent-context-section-header:hover {
@@ -179,7 +179,7 @@
   color: var(--brass, var(--accent));
   cursor: pointer;
   letter-spacing: 0.02em;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .agent-context-empty-cta:hover {

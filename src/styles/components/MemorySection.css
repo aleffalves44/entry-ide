@@ -19,7 +19,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ink-secondary, var(--text-2));
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .memory-row-header:hover { color: var(--ink-primary, var(--text-0)); }
@@ -60,7 +60,7 @@
   color: var(--brass, var(--accent));
   cursor: pointer;
   align-self: flex-start;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .memory-add-cta:hover { color: var(--brass-bright, var(--accent)); }
@@ -102,7 +102,7 @@
   font-family: var(--font-mono);
   font-size: 10px;
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .memory-editor-revert {

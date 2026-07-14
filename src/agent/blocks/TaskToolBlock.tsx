@@ -11,10 +11,13 @@
  *
  *   ▸ ● Subagent · audit src/agent ········· done · 12s
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { ToolResultBlockData, ToolUseBlockData } from "../types";
 import { parseAgentResult, resultText } from "../agentResultParse";
 import { MarkdownBody } from "./MarkdownBody";
+import { peekAgentSessionStore } from "../agentSessionStore";
+import { selectSubagentLiveActivity } from "../subagentSelectors";
+import { useSessionId } from "../SessionIdContext";
 
 interface TaskToolBlockProps {
   block: ToolUseBlockData;
@@ -25,6 +28,70 @@ function formatMs(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
   const s = ms / 1000;
   return s < 10 ? `${s.toFixed(1)}s` : `${Math.round(s)}s`;
+}
+
+function formatElapsed(sinceMs: number, nowMs: number): string {
+  const s = Math.max(0, Math.floor((nowMs - sinceMs) / 1000));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  return `${m}m${String(s % 60).padStart(2, "0")}s`;
+}
+
+/**
+ * Live view of what the delegated subagent is doing RIGHT NOW —
+ * current tool call, last narration line, elapsed and step count.
+ * Subscribes to the session store only while the Task is running, so
+ * finished blocks stay static and cheap.  Without this strip, a long
+ * delegation renders as a frozen "running" row.
+ */
+function LiveActivityStrip({ toolUseId }: { toolUseId: string }) {
+  const sessionId = useSessionId();
+  const store = sessionId ? peekAgentSessionStore(sessionId) : null;
+  const snapshot = useSyncExternalStore(
+    store?.subscribe ?? (() => () => {}),
+    () => (store ? store.getSnapshot() : null),
+    () => (store ? store.getSnapshot() : null),
+  );
+  const messages = snapshot?.state.messages;
+  const activity = useMemo(
+    () => (snapshot ? selectSubagentLiveActivity(snapshot.state, toolUseId) : null),
+    [snapshot, toolUseId, messages],
+  );
+
+  // 1 Hz clock for the elapsed counter.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!activity) {
+    return (
+      <div className="agent-task-live" data-testid="task-live-strip">
+        <span className="agent-task-live-pulse" aria-hidden="true" />
+        <span className="agent-task-live-action">iniciando subagente…</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="agent-task-live" data-testid="task-live-strip">
+      <span className="agent-task-live-pulse" aria-hidden="true" />
+      <span className="agent-task-live-elapsed">
+        {formatElapsed(activity.since, now)} · {activity.messageCount} passos
+      </span>
+      {activity.lastAction && (
+        <span className="agent-task-live-action" title={activity.lastAction}>
+          ⎿ {activity.lastAction}
+        </span>
+      )}
+      {activity.lastNarration && (
+        <span className="agent-task-live-narration" title={activity.lastNarration}>
+          “{activity.lastNarration}”
+        </span>
+      )}
+    </div>
+  );
 }
 
 export function TaskToolBlock({ block, result }: TaskToolBlockProps) {
@@ -87,6 +154,8 @@ export function TaskToolBlock({ block, result }: TaskToolBlockProps) {
           {statusLabel}
         </span>
       </button>
+
+      {status === "running" && <LiveActivityStrip toolUseId={block.id} />}
 
       {open && (
         <div className="agent-task-block-body">

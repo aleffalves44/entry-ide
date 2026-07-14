@@ -7,8 +7,8 @@
   align-items: center;
   justify-content: center;
   background: var(--border);
-  transition: background 0.15s;
-  z-index: 2;
+  transition: background var(--dur-quick);
+  z-index: var(--z-base);
 }
 
 .panel-resize-handle:hover {
@@ -33,7 +33,7 @@
   border-radius: var(--radius-pill);
   background: var(--text-3);
   opacity: 0.4;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-quick);
 }
 
 .panel-resize-handle:hover .panel-resize-pill {

@@ -194,6 +194,9 @@ export function SessionBranchSelector({ projectId, existingBranchName, onBranchS
         if (!taken) {
           // Read through the ref so loadData's deps stay stable.
           onBranchSelectedRef.current(current.name, false);
+          // Mark the auto-picked branch as selected so hosts that keep
+          // the picker open (quick creator) show WHICH branch is active.
+          setSelectedBranch(current.name);
         }
       }
 

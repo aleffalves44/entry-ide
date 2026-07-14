@@ -4,7 +4,7 @@
 
 .usage-window {
   box-sizing: border-box;
-  min-height: 100vh;
+  min-height: 100%;
   padding: 16px 20px;
   background: var(--bg-0);
   color: var(--text-1);

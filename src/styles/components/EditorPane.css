@@ -31,7 +31,7 @@
   cursor: pointer;
   border-left: 1px solid var(--border);
   overflow: hidden;
-  z-index: 5;
+  z-index: var(--z-raised);
 }
 
 .cm-minimap canvas {

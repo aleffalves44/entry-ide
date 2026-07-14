@@ -65,7 +65,12 @@
   background: var(--bg-3);
 }
 
-/* ─── CRT Scanline Overlay ──────────────────────────────── */
+/* ─── CRT Scanline Overlay ────────────────────────────────
+ * Only Phosphor sets --scanline-opacity above 0; every other theme
+ * leaves it at 0 so this layer paints nothing. The layer stays in the
+ * composition because removing/inserting it per-theme would create a
+ * paint-time flash on theme switch. opacity:0 + pointer-events:none
+ * is effectively free. See docs/design-system/02-color.md. */
 
 .app::after {
   content: "";

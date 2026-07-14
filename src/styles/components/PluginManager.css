@@ -64,7 +64,7 @@
   font-size: var(--text-md);
   padding: 6px 12px;
   cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
+  transition: color var(--dur-quick), border-color var(--dur-quick);
   white-space: nowrap;
 }
 .pm-tab:hover {
@@ -121,7 +121,7 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
-  transition: color 0.12s, background 0.12s;
+  transition: color var(--dur-quick), background var(--dur-quick);
 }
 .pm-check-updates:hover {
   color: var(--accent);
@@ -151,7 +151,7 @@
   font-size: var(--text-xs);
   padding: 2px 8px;
   cursor: pointer;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
   white-space: nowrap;
 }
 .pm-chip:hover {
@@ -186,7 +186,7 @@
   padding: 6px 8px;
   border-radius: var(--radius);
   cursor: pointer;
-  transition: background 0.1s;
+  transition: background var(--dur-tap);
   user-select: none;
 }
 .pm-row:hover {
@@ -308,7 +308,7 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  animation: pm-expand 0.12s ease-out;
+  animation: pm-expand var(--dur-quick) ease-out;
 }
 
 @keyframes pm-expand {
@@ -431,7 +431,7 @@
   padding: 4px 12px;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  transition: background var(--dur-tap), color var(--dur-tap), border-color var(--dur-tap);
 }
 .pm-btn:hover {
   background: var(--bg-hover);
@@ -647,7 +647,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: var(--z-popover);
   border-radius: var(--radius);
 }
 
@@ -660,7 +660,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-3);
 }
 
 .pm-confirm-title {
@@ -774,7 +774,7 @@
   border-radius: 9px;
   cursor: pointer;
   padding: 0;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--dur-quick), border-color var(--dur-quick);
 }
 .ps-toggle-on {
   background: var(--accent);
@@ -789,7 +789,7 @@
   height: 12px;
   background: var(--text-0);
   border-radius: 50%;
-  transition: transform 0.15s;
+  transition: transform var(--dur-quick);
 }
 .ps-toggle-on .ps-toggle-knob {
   transform: translateX(14px);

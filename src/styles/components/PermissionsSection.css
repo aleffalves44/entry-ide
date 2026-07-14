@@ -85,7 +85,7 @@
   color: var(--brass, var(--accent));
   cursor: pointer;
   align-self: flex-start;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .perms-add-cta:hover { color: var(--brass-bright, var(--accent)); }
@@ -163,7 +163,7 @@
   font-size: 11px;
   color: var(--ink-tertiary, var(--text-3));
   cursor: pointer;
-  transition: color 120ms ease;
+  transition: color var(--dur-quick) ease;
 }
 
 .perms-link:hover:not(:disabled) { color: var(--ink-secondary, var(--text-2)); }

@@ -14,7 +14,7 @@
 .session-creator-opening-overlay {
   position: fixed;
   inset: 0;
-  z-index: 99999;
+  z-index: var(--z-drag);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -23,7 +23,7 @@
    * surfaces (Newsprint cream, Atrium daylight). */
   background: color-mix(in srgb, var(--bg-0) 72%, transparent);
   pointer-events: none;
-  animation: session-creator-opening-in 100ms ease-out;
+  animation: session-creator-opening-in var(--dur-tap) ease-out;
 }
 
 .session-creator-opening-text {

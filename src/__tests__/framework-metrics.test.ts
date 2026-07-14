@@ -153,8 +153,31 @@ describe("deriveTurnRows", () => {
       cache_read_tokens: 90_000,
       cache_creation_tokens: 500,
       duration_ms: 45_000,
-      cost_usd: 0.31,
     });
+    // D3: cost is COMPUTED from the turn's usage × sonnet rates —
+    // (1200×$3 + 800×$15 + 500×$3.75 + 90000×$0.30) / 1M — never the
+    // session-cumulative result.total_cost_usd (0.31 in the fixture).
+    expect(turn!.cost_usd).toBeCloseTo(0.044475, 6);
+  });
+
+  it("inherits the session's active command on follow-up turns (D4)", () => {
+    // Turn 1: explicit slash latches the command.
+    deriveTurnRows("sess1", baseState([userMsg("/harness-cmd:plan CRED-9", 100)]), RESULT);
+    // Turn 2 (same session): prose follow-up — still belongs to /plan.
+    const rows = deriveTurnRows(
+      "sess1",
+      baseState([userMsg("continue de onde parou", 200)]),
+      { ...RESULT, uuid: "turn-2" },
+    );
+    const turn = rows.find((r) => r.kind === "turn")!;
+    expect(turn.command).toBe("harness-cmd:plan");
+    // A DIFFERENT session inherits nothing.
+    const other = deriveTurnRows(
+      "sess2",
+      baseState([userMsg("oi", 300)]),
+      { ...RESULT, uuid: "turn-3" },
+    );
+    expect(other.find((r) => r.kind === "turn")!.command).toBeNull();
   });
 
   it("records prose turns with null command/phase", () => {
@@ -220,15 +243,19 @@ describe("deriveTurnRows", () => {
     const agentRows = rows.filter((r) => r.kind === "agent");
     expect(agentRows.length).toBeGreaterThanOrEqual(1);
     expect(agentRows[0].agent).toBe("Build");
-    // Sum of final output tokens across the thread's messages.
+    // D1: sums of the subagent's OWN per-message usage — output stays
+    // output, input is the billed per-call sum (not fabricated zeros,
+    // not the handoff's in+out+cache total).
     const totalOutput = agentRows.reduce((n, r) => n + r.output_tokens, 0);
     expect(totalOutput).toBe(1200);
-    // Input is intentionally 0 — per-call inputs are not additive.
-    expect(agentRows[0].input_tokens).toBe(0);
+    expect(agentRows[0].input_tokens).toBe(185_000);
+    // D2: cost computed from that usage — never $0 with tokens > 0.
+    // (90000×$3 + 500×$15 + 95000×$3 + 700×$15) / 1M = 0.573
+    expect(agentRows[0].cost_usd).toBeCloseTo(0.573, 6);
     expect(agentRows[0].turn_uuid).toContain("turn-1:agent:tu1");
   });
 
-  it("prefers the authoritative <usage> block from the Task tool_result", () => {
+  it("uses stream usage for tokens; the handoff <usage> only supplies duration fallback", () => {
     const taskBlock = {
       type: "tool_use" as const,
       id: "tu9",
@@ -238,8 +265,9 @@ describe("deriveTurnRows", () => {
     const state = baseState([
       userMsg("/harness-cmd:task go", 100),
       assistantMsg("a1", 110, { blocks: [taskBlock] }),
-      // Stream message with tiny partial usage — must be IGNORED in favor
-      // of the tool_result's <usage> totals.
+      // D1: per-message usage IS the token source — the handoff
+      // total_tokens (in+out+cache mixed) must never land in a token
+      // column again.
       assistantMsg("sub1", 120, { parentToolUseId: "tu9", usage: { output_tokens: 63 } }),
     ]);
     state.toolResults.set("tu9", {
@@ -252,8 +280,9 @@ describe("deriveTurnRows", () => {
 
     const rows = deriveTurnRows("sess1", state, RESULT);
     const agentRow = rows.find((r) => r.kind === "agent")!;
-    expect(agentRow.output_tokens).toBe(48213);
-    expect(agentRow.duration_ms).toBe(92500);
+    expect(agentRow.output_tokens).toBe(63);
+    expect(agentRow.output_tokens).not.toBe(48213); // handoff total ≠ output
+    expect(agentRow.duration_ms).toBe(92500); // handoff still ok for duration
     expect(agentRow.agent).toBe("Build");
   });
 

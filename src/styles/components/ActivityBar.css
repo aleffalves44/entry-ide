@@ -16,7 +16,7 @@
   flex-shrink: 0;
   user-select: none;
   -webkit-user-select: none;
-  z-index: 10;
+  z-index: var(--z-raised);
   overflow: visible;
   position: relative;
 }
@@ -181,7 +181,7 @@
 
 /* Heartbeat pulse when badge value just increased */
 .activity-bar-badge[data-fresh="true"] {
-  animation: badge-heartbeat 0.6s var(--ease-spring) 2;
+  animation: badge-heartbeat var(--dur-slow) var(--ease-spring) 2;
 }
 @keyframes badge-heartbeat {
   0%, 100% { transform: scale(1); }
