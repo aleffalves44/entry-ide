@@ -528,15 +528,28 @@ function InteractivePermissionDispatcher({
   // self-auto-allows on bypass (cosmetic), but doing it here means the
   // envelope never even gets to render.
   //
+  // Interactive tools (AskUserQuestion / ExitPlanMode / EnterPlanMode) are
+  // EXEMPT from bypass auto-allow: the bridge now round-trips them even in
+  // bypass mode (their `canUseTool` carries the user's answer, not a
+  // permission), so the card MUST mount and the user MUST answer.  The old
+  // behaviour synthesised first-option answers / silently approved plans,
+  // which is exactly the "buttons never appeared, answered empty" bug.
+  //
   // B1 — claim the latch DURING RENDER (not in the effect) so the early-
   // return below can suppress the modal on the SAME PASS.  Otherwise the
   // modal mounts before our effect runs and self-auto-allows a duplicate
   // envelope (the effect's send + the modal's onMount call both fire).
   // Refs are safe to mutate during render as long as the mutation is
   // purely a closure latch with no hook-ordering dependency.
+  const isInteractiveTool =
+    !!request
+    && (request.toolName === "AskUserQuestion"
+      || request.toolName === "ExitPlanMode"
+      || request.toolName === "EnterPlanMode");
   const willBypassAutoAllow =
     !!request
     && permissionMode === "bypassPermissions"
+    && !isInteractiveTool
     && lastBypassSentId.current !== request.id;
   if (willBypassAutoAllow && request) {
     lastBypassSentId.current = request.id;
@@ -544,30 +557,12 @@ function InteractivePermissionDispatcher({
   useEffect(() => {
     if (!willBypassAutoAllow || !request) return;
     const cached = request;
-    // B2 — AskUserQuestion's `canUseTool` contract requires an
-    // `answers` record on `updatedInput`; sending plain `allow` with
-    // no payload makes the SDK treat the answer set as empty.
-    // Synthesize a sensible default by picking the first option for
-    // each question so bypass mode preserves the auto-allow promise
-    // without breaking the tool contract.
-    let decision: PermissionDecision = { kind: "allow" };
-    if (request.toolName === "AskUserQuestion") {
-      const askInput = request.input as unknown as AskUserQuestionInput;
-      const answers: Record<string, string> = {};
-      const questions = Array.isArray(askInput?.questions)
-        ? askInput.questions
-        : [];
-      for (const q of questions) {
-        const first = q?.options?.[0]?.label;
-        if (typeof q?.question === "string") {
-          answers[q.question] = typeof first === "string" ? first : "";
-        }
-      }
-      decision = {
-        kind: "allow",
-        updatedInput: { ...(askInput as unknown as Record<string, unknown>), answers },
-      };
-    }
+    // B2 — non-interactive tools in bypass mode are auto-allowed with
+    // the original input echoed (the host didn't edit it).  Interactive
+    // tools (AskUserQuestion/ExitPlanMode/EnterPlanMode) never reach
+    // here — they're exempt from willBypassAutoAllow and instead render
+    // their card so the user answers/approves for real.
+    const decision: PermissionDecision = { kind: "allow" };
     const env = buildPermResponse(request.id, decision);
     // B1b — clear AFTER send succeeds so a failed send doesn't strand
     // the bridge.  On failure, re-inject the request and surface a
@@ -598,10 +593,12 @@ function InteractivePermissionDispatcher({
   // PermissionRequestModal also self-auto-allows on bypass mount,
   // which would queue a SECOND envelope for the same id before our
   // optimistic clear lands.  Render nothing during the auto-allow
-  // window — and for AskUserQuestion too, where the bypass effect
-  // synthesizes the answer envelope itself.
+  // window.  Interactive tools are exempt (see willBypassAutoAllow):
+  // they never latch bypass auto-allow, so their card renders normally
+  // and the user actually answers.
   if (
     permissionMode === "bypassPermissions"
+    && !isInteractiveTool
     && lastBypassSentId.current === request.id
   ) {
     return null;

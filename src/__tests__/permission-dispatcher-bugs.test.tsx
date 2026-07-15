@@ -31,7 +31,7 @@
  *        FIRST click on B's modal is silently swallowed.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
 
 // AgentSessionView pulls `listen` from @tauri-apps/api/event at module
@@ -227,9 +227,9 @@ describe("InteractivePermissionDispatcher — bypass auto-allow double-fire (B1)
 // ────────────────────────────────────────────────────────────────────
 describe("InteractivePermissionDispatcher — bypass on AskUserQuestion (B2)", () => {
   it(
-    "FAILING: bypass auto-allow on AskUserQuestion sends `{behavior: allow}` " +
-      "with NO updatedInput.answers — the SDK then sees an empty/missing " +
-      "answers record, breaking the AskUserQuestion contract",
+    "AskUserQuestion in bypass mode does NOT auto-allow — the card renders " +
+      "so the user actually answers (the `canUseTool` contract carries the " +
+      "answer, not a permission; auto-allowing fed the SDK an empty answer set)",
     async () => {
       const SESSION_ID = "test-bypass-askq";
       const store = getOrCreateAgentSessionStore(
@@ -264,20 +264,16 @@ describe("InteractivePermissionDispatcher — bypass on AskUserQuestion (B2)", (
         await Promise.resolve();
       });
 
-      // Exactly one envelope was sent (the bypass auto-allow).
-      expect(sendCalls).toHaveLength(1);
-      const env = sendCalls[0].envelope as PermResponse;
-      expect(env.type).toBe("_entry_perm_response");
+      // The bridge is now exempt from bypass auto-allow for interactive
+      // tools, so the dispatcher must NOT have auto-sent a response —
+      // the user hasn't answered yet.  No envelope leaves the dispatcher.
+      expect(sendCalls).toHaveLength(0);
 
-      // The SDK's AskUserQuestion tool contract requires that when we
-      // approve, updatedInput.answers MUST be present (even if empty)
-      // for the SDK to format a valid tool_result.  Bypass mode should
-      // EITHER skip auto-allow for AskUserQuestion, OR synthesize a
-      // sensible answers record.  Right now neither happens.
-      const decision = env.decision as { behavior: string; updatedInput?: Record<string, unknown> };
-      expect(decision.behavior).toBe("allow");
-      expect(decision.updatedInput).toBeDefined();
-      expect(decision.updatedInput).toHaveProperty("answers");
+      // Instead the AskUserQuestion card mounts so the buttons appear.
+      // (The card renders the question text from the request input.)
+      expect(
+        screen.getByText("ship it?"),
+      ).toBeInTheDocument();
     },
   );
 });
