@@ -569,3 +569,125 @@ describe("createCanUseToolHandler — permPending overflow protection", () => {
     await p1;
   });
 });
+
+// ─── interactive tools never short-circuit (REGRESSION: bypass empty answers) ──
+
+describe("createCanUseToolHandler — interactive tools are exempt from bypass + allowlist", () => {
+  const INTERACTIVE = ["AskUserQuestion", "ExitPlanMode", "EnterPlanMode"] as const;
+
+  function makeInteractiveHarness(mode: string, rules: string[] = []) {
+    const writes: string[] = [];
+    const stdout = { write: (chunk: string) => writes.push(chunk) };
+    const permPending: PermPending = new Map();
+    let nextId = 0;
+    const sessionAllowList = new Set<string>(rules);
+    const handler = createCanUseToolHandler({
+      stdout,
+      permPending,
+      idGen: () => `perm-${++nextId}`,
+      permissionMode: mode,
+      sessionAllowList,
+    });
+    return { writes, permPending, handler, sessionAllowList };
+  }
+
+  it("bypassPermissions does NOT auto-allow interactive tools — they round-trip", async () => {
+    for (const toolName of INTERACTIVE) {
+      const { writes, permPending, handler } = makeInteractiveHarness(
+        "bypassPermissions",
+      );
+      const input =
+        toolName === "AskUserQuestion"
+          ? { questions: [{ question: "Q?", options: [{ label: "A" }] }] }
+          : { plan: "do the thing" };
+      const promise = handler(toolName, input);
+      // The bridge MUST have written a perm-request envelope…
+      expect(writes).toHaveLength(1);
+      const envelope = JSON.parse(writes[0].trimEnd());
+      expect(envelope).toEqual({
+        type: "_entry_perm_request",
+        id: "perm-1",
+        toolName,
+        input,
+      });
+      // …and be waiting on the host (NOT settled with empty allow).
+      expect(permPending.has("perm-1")).toBe(true);
+      // Host answers with the user's actual selection.
+      permPending.get("perm-1")!.resolve({
+        behavior: "allow",
+        updatedInput:
+          toolName === "AskUserQuestion"
+            ? { ...input, answers: { "Q?": "A" } }
+            : input,
+      });
+      const result = await promise;
+      // The answers flow through — NOT the original input alone.
+      if (toolName === "AskUserQuestion") {
+        expect(result).toEqual({
+          behavior: "allow",
+          updatedInput: { ...input, answers: { "Q?": "A" } },
+        });
+      } else {
+        expect(result).toEqual({ behavior: "allow", updatedInput: input });
+      }
+    }
+  });
+
+  it("session allowlist does NOT auto-allow interactive tools — even with a matching bare rule", async () => {
+    for (const toolName of INTERACTIVE) {
+      // A bare "AskUserQuestion" rule would otherwise match any call.
+      const { writes, permPending, handler } = makeInteractiveHarness(
+        "default",
+        [toolName],
+      );
+      const input =
+        toolName === "AskUserQuestion"
+          ? { questions: [{ question: "Q?", options: [{ label: "A" }] }] }
+          : { plan: "do the thing" };
+      const promise = handler(toolName, input);
+      // Allowlist MUST NOT have short-circuited — round-trip happens.
+      expect(writes).toHaveLength(1);
+      expect(permPending.has("perm-1")).toBe(true);
+      permPending.get("perm-1")!.resolve({ behavior: "deny", message: "no" });
+      const result = await promise;
+      expect(result.behavior).toBe("deny");
+    }
+  });
+
+  it("bypass precedence holds for NON-interactive tools (regression guard)", async () => {
+    // Bash in bypass mode still auto-allows without a round-trip —
+    // the interactive exemption must not have leaked into the general path.
+    const { writes, permPending, handler } = makeInteractiveHarness(
+      "bypassPermissions",
+    );
+    const result = await handler("Bash", { command: "rm -rf /" });
+    expect(result).toEqual({ behavior: "allow", updatedInput: { command: "rm -rf /" } });
+    expect(writes).toHaveLength(0);
+    expect(permPending.size).toBe(0);
+  });
+
+  it("interactive exemption honours the live mode getter (bypass off → still round-trips)", async () => {
+    const writes: string[] = [];
+    const stdout = { write: (chunk: string) => writes.push(chunk) };
+    const permPending: PermPending = new Map();
+    let liveMode = "bypassPermissions";
+    let nextId = 0;
+    const handler = createCanUseToolHandler({
+      stdout,
+      permPending,
+      idGen: () => `perm-${++nextId}`,
+      getPermissionMode: () => liveMode,
+    });
+    // In bypass: round-trips because it's interactive.
+    const p1 = handler("AskUserQuestion", { questions: [] });
+    expect(writes).toHaveLength(1);
+    permPending.get("perm-1")!.resolve({ behavior: "allow" });
+    await p1;
+    // Flip to default: still round-trips (no bypass short-circuit anyway).
+    liveMode = "default";
+    const p2 = handler("AskUserQuestion", { questions: [] });
+    expect(writes).toHaveLength(2);
+    permPending.get("perm-2")!.resolve({ behavior: "allow" });
+    await p2;
+  });
+});

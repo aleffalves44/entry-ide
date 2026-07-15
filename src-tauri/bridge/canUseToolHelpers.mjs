@@ -115,6 +115,39 @@ export function ruleMatches(rule, toolName, input) {
 }
 
 /**
+ * Tools whose `canUseTool` callback is NOT a permission gate but the
+ * user's actual answer/decision.  These tools always round-trip to the
+ * host, even in bypassPermissions mode and even when an allowlist rule
+ * matches, because:
+ *
+ *   - **AskUserQuestion** — the model is asking the user a question.
+ *     Auto-allowing it sends the SDK `{behavior:"allow"}` with the
+ *     original input, which has no `answers` field, so the tool runs
+ *     with an EMPTY answer set ("answered empty").  The buttons never
+ *     appear because no `_entry_perm_request` ever reaches the host.
+ *   - **ExitPlanMode** — the model is requesting plan approval.
+ *     Auto-allowing means "approve the plan silently", which discards
+ *     the user's actual accept/reject choice.
+ *   - **EnterPlanMode** — the model is requesting to enter plan mode.
+ *     Same reasoning: the host's response IS the decision.
+ *
+ * The SDK confirms this contract: AskUserQuestion/ExitPlanMode expose
+ * `requiresUserInteraction() === true` and `checkPermissions()` returns
+ * `{behavior:"ask"}`, so the SDK's own permission pipeline (`iaO`)
+ * returns `"ask"` for these tools BEFORE the bypassPermissions
+ * auto-allow branch and always invokes `canUseTool`.  The bridge must
+ * honour that by forwarding the request to the host instead of
+ * short-circuiting it.
+ *
+ * @type {ReadonlySet<string>}
+ */
+const INTERACTIVE_TOOLS = new Set([
+  "AskUserQuestion",
+  "ExitPlanMode",
+  "EnterPlanMode",
+]);
+
+/**
  * Build the `canUseTool` callback the SDK invokes when a tool is about
  * to run.  Two short-circuits before contacting the host:
  *
@@ -126,6 +159,12 @@ export function ruleMatches(rule, toolName, input) {
  *      round-trip entirely matches user expectation ("bypass means
  *      bypass") and removes a class of races.
  *
+ *      Interactive tools ({@link INTERACTIVE_TOOLS}) are EXEMPT: in
+ *      bypass mode the SDK still calls `canUseTool` for them (their
+ *      `requiresUserInteraction()` keeps the decision at `"ask"`), and
+ *      auto-allowing would drop the user's answer.  They always
+ *      round-trip so the host renders the native card.
+ *
  *   2. **session allowlist** — when the host previously approved a
  *      request with `persist: "<rule>"`, we cache the rule in memory
  *      for the lifetime of the bridge process and match subsequent
@@ -135,6 +174,11 @@ export function ruleMatches(rule, toolName, input) {
  *      bridge never consulted that file, so the user got prompted
  *      again.  In-memory cache + persist field gives correct behaviour
  *      now; future work can also load disk rules at startup.
+ *
+ *      Interactive tools are EXEMPT here too: an allowlist rule can
+ *      grant permission, but it cannot answer a question or approve a
+ *      plan on the user's behalf.  A cached "ExitPlanMode" rule would
+ *      otherwise silently approve every future plan.
  *
  * Otherwise the bridge writes a `_entry_perm_request` on stdout and
  * waits for `_entry_perm_response` on stdin.  Honours the SDK's
@@ -176,11 +220,20 @@ export function createCanUseToolHandler({
       return normalize({ behavior: "deny", message: "aborted" }, input);
     }
     // 1. bypassPermissions — auto-allow without round-trip.
-    if (readMode() === "bypassPermissions") {
+    //    Interactive tools are exempt (see INTERACTIVE_TOOLS): they
+    //    carry the user's answer/decision, so auto-allowing would drop
+    //    it and run the tool with empty answers / silent approval.
+    if (readMode() === "bypassPermissions" && !INTERACTIVE_TOOLS.has(toolName)) {
       return normalize({ behavior: "allow" }, input);
     }
     // 2. Session allowlist — auto-allow when a prior decision matches.
-    if (sessionAllowList && sessionAllowList.size > 0) {
+    //    Interactive tools are exempt: an allow rule can grant a tool,
+    //    not answer a question or approve a plan for the user.
+    if (
+      sessionAllowList
+      && sessionAllowList.size > 0
+      && !INTERACTIVE_TOOLS.has(toolName)
+    ) {
       for (const rule of sessionAllowList) {
         if (ruleMatches(rule, toolName, input)) {
           return normalize({ behavior: "allow" }, input);
