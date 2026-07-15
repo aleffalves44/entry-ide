@@ -131,6 +131,8 @@ export const en = {
   "pipeline.pluginMissingBodyBefore": "The Pipeline panel triggers the ",
   "pipeline.pluginMissingBodyAfter":
     " framework's phases (spike → plan → task → pr). Install the plugin in Claude Code and restart the session:",
+  "pipeline.installButton": "Install harness-cmd",
+  "pipeline.installing": "Installing…",
   "pipeline.branchTitle": "Current branch",
   "pipeline.refreshTitle": "Re-read worktree state",
   "pipeline.hintBefore": "Phases trigger the matching command in the chat — same as typing ",

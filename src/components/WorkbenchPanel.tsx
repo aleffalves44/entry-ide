@@ -1,11 +1,11 @@
 /**
  * Right-rail Workbench (v1.1.14, agent-mode only).
  *
- * Replaces the per-session-row folder icon and the legacy
- * AgentContextPanel as the primary right rail for agent sessions.
- * Ships with two tabs (Files, Context) and a per-session Notes
- * drawer pinned to the bottom.  Splitter between body and notes is
- * draggable; persisted ratio lives in `state.ui.workbench`.
+ * Hosts the agent's right-rail surfaces (Pipeline, Files, Context, Git,
+ * Consumo) plus a per-session Notes drawer pinned to the bottom.  Surface
+ * selection lives in the right ActivityBar (one icon per surface); this
+ * panel only renders the active surface's body and the splitter between
+ * the body and Notes.  Splitter ratio is persisted in `state.ui.workbench`.
  *
  * Design spec: docs/mockups/right-rail-workbench.html
  *
@@ -168,13 +168,6 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
     };
   }, [dispatch]);
 
-  const setTab = useCallback(
-    (tab: "pipeline" | "files" | "context" | "git" | "metrics") => {
-      dispatch({ type: "SET_WORKBENCH_TAB", tab });
-    },
-    [dispatch],
-  );
-
   const close = useCallback(() => {
     dispatch({ type: "SET_WORKBENCH_OPEN", open: false });
   }, [dispatch]);
@@ -259,54 +252,6 @@ export function WorkbenchPanel({ session }: WorkbenchPanelProps) {
             aria-label="Close workbench"
           >
             ✕
-          </button>
-        </div>
-
-        <div className="workbench-tabs" role="tablist">
-          <button
-            type="button"
-            className="workbench-tab"
-            role="tab"
-            aria-selected={wb.tab === "pipeline"}
-            onClick={() => setTab("pipeline")}
-          >
-            Pipeline
-          </button>
-          <button
-            type="button"
-            className="workbench-tab"
-            role="tab"
-            aria-selected={wb.tab === "files"}
-            onClick={() => setTab("files")}
-          >
-            Files
-          </button>
-          <button
-            type="button"
-            className="workbench-tab"
-            role="tab"
-            aria-selected={wb.tab === "context"}
-            onClick={() => setTab("context")}
-          >
-            Context
-          </button>
-          <button
-            type="button"
-            className="workbench-tab"
-            role="tab"
-            aria-selected={wb.tab === "git"}
-            onClick={() => setTab("git")}
-          >
-            Git
-          </button>
-          <button
-            type="button"
-            className="workbench-tab"
-            role="tab"
-            aria-selected={wb.tab === "metrics"}
-            onClick={() => setTab("metrics")}
-          >
-            Consumo
           </button>
         </div>
       </header>

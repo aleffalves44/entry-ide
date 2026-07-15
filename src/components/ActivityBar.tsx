@@ -226,11 +226,17 @@ export const SessionsIcon = (
   </svg>
 );
 
-export const WorkbenchIcon = (
+export const PipelineIcon = (
   <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    {/* Folder + horizontal divider — evokes "files + notes drawer" */}
-    <path d="M2 5 C 2 3.9 2.9 3 4 3 H 7 L 9 5 H 14 C 15.1 5 16 5.9 16 7 V 13 C 16 14.1 15.1 15 14 15 H 4 C 2.9 15 2 14.1 2 13 Z" />
-    <line x1="2" y1="11" x2="16" y2="11" opacity="0.5" />
+    {/* Three stacked phase steps connected by a vertical runner — evokes
+        the SDD spike → plan → task → pr pipeline. */}
+    <rect x="6" y="2" width="10" height="3.2" rx="1" />
+    <rect x="6" y="7.4" width="10" height="3.2" rx="1" opacity="0.6" />
+    <rect x="6" y="12.8" width="10" height="3.2" rx="1" opacity="0.6" />
+    <line x1="3" y1="3.6" x2="6" y2="3.6" />
+    <line x1="3" y1="9" x2="6" y2="9" />
+    <line x1="3" y1="14.4" x2="6" y2="14.4" />
+    <circle cx="2.4" cy="3.6" r="0.9" fill="currentColor" stroke="none" />
   </svg>
 );
 

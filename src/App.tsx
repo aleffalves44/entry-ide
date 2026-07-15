@@ -27,7 +27,7 @@ import { getSetting } from "./api/settings";
 import { SessionList } from "./components/SessionList";
 import { ContextPanel } from "./components/ContextPanel";
 import { hideOpeningOverlay, showOpeningOverlay } from "./utils/sessionCreatorOverlay";
-import { ActivityBar, SessionsIcon, ContextIcon, WorkbenchIcon, PlusIcon, PluginsIcon, SettingsIcon, ConsumptionIcon } from "./components/ActivityBar";
+import { ActivityBar, SessionsIcon, ContextIcon, PipelineIcon, FilesIcon, GitIcon, PlusIcon, PluginsIcon, SettingsIcon, ConsumptionIcon } from "./components/ActivityBar";
 import { openUsageWindow } from "./utils/usageWindow";
 import { WorkbenchPanel } from "./components/WorkbenchPanel";
 import { workbenchPixelWidth } from "./utils/workbenchLayout";
@@ -158,6 +158,13 @@ function AppContent() {
       .catch(() => {});
   }, []);
 
+  // Load workbench surface (right-rail) icon order
+  useEffect(() => {
+    getSetting("workbench_surface_order")
+      .then((v) => { if (v) { try { setWorkbenchSurfaceOrder(JSON.parse(v)); } catch {} } })
+      .catch(() => {});
+  }, []);
+
   // Keep a ref to state so plugin callbacks always read fresh values
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -191,6 +198,9 @@ function AppContent() {
   const [activeBottomPanel, setActiveBottomPanel] = useState<string | null>(null);
   const [bottomPanelHeight, setBottomPanelHeight] = useState(300);
   const [activityBarOrder, setActivityBarOrder] = useState<string[]>([]);
+  // Persisted order of the right-rail Workbench surface icons (Pipeline /
+  // Files / Context / Git / Consumo).  Empty array = default order.
+  const [workbenchSurfaceOrder, setWorkbenchSurfaceOrder] = useState<string[]>([]);
   const [leftPanelWidth, setLeftPanelWidth] = useState(240);
   const [rightPanelWidth, setRightPanelWidth] = useState(300);
   // Side-viewer (file preview / expanded diff) width — the viewer opens
@@ -979,21 +989,6 @@ function AppContent() {
             }}
             topAction={{ icon: PlusIcon, label: `New Session (${fmt("{mod}N")})`, onClick: () => setQuickCreatorOpen(true) }}
             bottomActions={[
-              {
-                icon: ConsumptionIcon,
-                label: "Consumo Geral",
-                onClick: () => {
-                  // Docked by default (Workbench "Consumo" tab); falls
-                  // back to the separate window when there's no agent
-                  // session to host the right rail.
-                  if (activeSession?.mode === "agent") {
-                    dispatch({ type: "SET_WORKBENCH_OPEN", open: true });
-                    dispatch({ type: "SET_WORKBENCH_TAB", tab: "metrics" });
-                  } else {
-                    void openUsageWindow();
-                  }
-                },
-              },
               { icon: PluginsIcon, label: "Plugins", onClick: () => setSettingsOpen("plugins") },
               { icon: SettingsIcon, label: "Settings", onClick: () => setSettingsOpen("general") },
             ]}
@@ -1174,13 +1169,22 @@ function AppContent() {
             side="right"
             tabs={
               activeSession?.mode === "agent"
-                ? [
-                    {
-                      id: "workbench",
-                      label: `Workbench (${fmt("{mod}{alt}B")})`,
-                      icon: WorkbenchIcon,
-                    },
-                  ]
+                ? (() => {
+                    const surfaces: { id: string; label: string; icon: ReactNode }[] = [
+                      { id: "pipeline", label: "Pipeline", icon: PipelineIcon },
+                      { id: "files", label: "Files", icon: FilesIcon },
+                      { id: "context", label: "Context", icon: ContextIcon },
+                      { id: "git", label: "Git", icon: GitIcon },
+                      { id: "metrics", label: "Consumo", icon: ConsumptionIcon },
+                    ];
+                    if (workbenchSurfaceOrder.length === 0) return surfaces;
+                    const orderMap = new Map(workbenchSurfaceOrder.map((id, i) => [id, i]));
+                    return [...surfaces].sort((a, b) => {
+                      const ai = orderMap.get(a.id) ?? 9999;
+                      const bi = orderMap.get(b.id) ?? 9999;
+                      return ai - bi;
+                    });
+                  })()
                 : [
                     { id: "context", label: `Context (${fmt("{mod}E")})`, icon: ContextIcon },
                   ]
@@ -1188,15 +1192,31 @@ function AppContent() {
             activeTabId={
               activeSession?.mode === "agent"
                 ? ui.workbench.open
-                  ? "workbench"
+                  ? ui.workbench.tab
                   : null
                 : ui.contextPanelOpen
                   ? "context"
                   : null
             }
+            onReorder={
+              activeSession?.mode === "agent"
+                ? (ids) => {
+                    setWorkbenchSurfaceOrder(ids);
+                    setSetting("workbench_surface_order", JSON.stringify(ids)).catch(() => {});
+                  }
+                : undefined
+            }
             onTabClick={(tabId) => {
-              if (tabId === "workbench") {
-                dispatch({ type: "TOGGLE_WORKBENCH" });
+              if (activeSession?.mode === "agent") {
+                // Clicking the surface already open closes the workbench
+                // (standard activity-bar toggle); otherwise open it on
+                // that surface, switching if it was already showing another.
+                if (ui.workbench.open && ui.workbench.tab === tabId) {
+                  dispatch({ type: "SET_WORKBENCH_OPEN", open: false });
+                } else {
+                  dispatch({ type: "SET_WORKBENCH_OPEN", open: true });
+                  dispatch({ type: "SET_WORKBENCH_TAB", tab: tabId as "pipeline" | "files" | "context" | "git" | "metrics" });
+                }
               } else if (tabId === "context") {
                 dispatch({ type: "TOGGLE_CONTEXT" });
               }

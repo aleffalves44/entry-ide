@@ -131,11 +131,13 @@ describe("WorkbenchPanel · tabs", () => {
     expect(getTabBody("Context")).toHaveAttribute("hidden");
   });
 
-  it("clicking the Context tab dispatches SET_WORKBENCH_TAB", () => {
+  it("renders no in-panel tab strip (surfaces are chosen from the activity bar)", () => {
     render(<WorkbenchPanel session={agentSession()} />);
-    fireEvent.click(screen.getByRole("tab", { name: "Context" }));
-    const dispatched = dispatchMock.mock.calls.map((c) => c[0]);
-    expect(dispatched).toContainEqual({ type: "SET_WORKBENCH_TAB", tab: "context" });
+    expect(document.querySelector(".workbench-tabs")).toBeNull();
+    // The bodies still mount so switching from the activity bar is instant
+    // and scroll state is preserved.
+    expect(getTabBody("Files")).toBeInTheDocument();
+    expect(getTabBody("Context")).toBeInTheDocument();
   });
 
   it("when state.ui.workbench.tab is 'context', the Context panel is visible", () => {
