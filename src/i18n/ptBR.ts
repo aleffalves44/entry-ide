@@ -128,6 +128,8 @@ export const ptBR: Record<MessageKey, string> = {
   "pipeline.pluginMissingBodyBefore": "O painel Pipeline dispara as fases do framework ",
   "pipeline.pluginMissingBodyAfter":
     " (spike → plan → task → pr). Instale o plugin no Claude Code e reinicie a sessão:",
+  "pipeline.installButton": "Instalar harness-cmd",
+  "pipeline.installing": "Instalando…",
   "pipeline.branchTitle": "Branch atual",
   "pipeline.refreshTitle": "Reler estado do worktree",
   "pipeline.hintBefore": "Fases disparam o comando correspondente na conversa — o mesmo que digitar ",

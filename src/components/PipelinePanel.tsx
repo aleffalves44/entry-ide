@@ -126,6 +126,18 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
     [session.id],
   );
 
+  // Install the harness-cmd plugin by sending the slash command into the
+  // agent chat — identical to typing `/plugin install harness-cmd`.
+  const [installing, setInstalling] = useState(false);
+  const installPlugin = useCallback(() => {
+    if (installing) return;
+    setInstalling(true);
+    submitToAgent(session.id, "/plugin install harness-cmd", []).catch((e) => {
+      console.warn("[PipelinePanel] install dispatch failed:", e);
+      setInstalling(false);
+    });
+  }, [installing, session.id]);
+
   const togglePhase = useCallback(
     (key: PhaseKey) => {
       if (isStreaming) return;
@@ -153,6 +165,14 @@ export function PipelinePanel({ session }: PipelinePanelProps) {
             {t("pipeline.pluginMissingBodyAfter")}
           </p>
           <code className="pipeline-empty-cmd">/plugin install harness-cmd</code>
+          <button
+            type="button"
+            className="pipeline-install-btn"
+            onClick={installPlugin}
+            disabled={installing}
+          >
+            {installing ? t("pipeline.installing") : t("pipeline.installButton")}
+          </button>
         </div>
       </div>
     );

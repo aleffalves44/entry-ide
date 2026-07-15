@@ -171,6 +171,25 @@
   font-size: 11px;
 }
 
+.pipeline-install-btn {
+  align-self: flex-start;
+  background: none;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  color: var(--accent);
+  cursor: pointer;
+  padding: 4px 12px;
+  font-size: 11px;
+  transition: background var(--dur-tap) var(--ease-standard);
+}
+.pipeline-install-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+.pipeline-install-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* Expanded phase section */
 .pipeline-phase-expanded {
   display: flex;
