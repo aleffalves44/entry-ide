@@ -17,6 +17,7 @@ import { ModelPicker } from "./ModelPicker";
 import { PermissionPicker, CLAUDE_PERMISSION_MODES } from "./PermissionPicker";
 import { EffortPicker } from "./EffortPicker";
 import { CLAUDE_MODEL_OPTIONS } from "../agent/modelOptions";
+import { useSessionStreaming } from "../hooks/useSessionStreaming";
 
 /** Claude's published `--effort` levels (verified via `claude --help`). */
 const CLAUDE_EFFORT_LEVELS = ["low", "medium", "high", "xhigh", "max"] as const;
@@ -111,6 +112,13 @@ export function SessionComposer() {
   const [permPickerOpen, setPermPickerOpen] = useState(false);
   const [pendingPerm, setPendingPerm] = useState<string | null>(null);
   const [permSwitchError, setPermSwitchError] = useState<string | null>(null);
+  // Whether a turn is currently in flight for the active agent session.
+  // Flipping the permission-mode chip mid-turn sends a `setPermissionMode`
+  // control op into the bridge while the SDK is mid-query / mid-canUseTool,
+  // which races the active turn and freezes execution.  Disable the chip
+  // while streaming so the mode only flips when no turn is running — the
+  // approval stops between pipeline phases and idle are the safe windows.
+  const permSwitchBlocked = useSessionStreaming(composerSessionId);
   const effortChipRef = useRef<HTMLButtonElement | null>(null);
   const [effortPickerOpen, setEffortPickerOpen] = useState(false);
   const [pendingEffort, setPendingEffort] = useState<string | null>(null);
@@ -593,6 +601,14 @@ export function SessionComposer() {
     setPermSwitchError(null);
   }, [composerSessionId]);
 
+  // Close an open permission picker the moment a turn starts streaming —
+  // otherwise the user could open it during an approval stop, then a
+  // dispatched phase flips `isStreaming` on and leaves a picker whose
+  // selections would race the now-running turn.
+  useEffect(() => {
+    if (permSwitchBlocked && permPickerOpen) setPermPickerOpen(false);
+  }, [permSwitchBlocked, permPickerOpen]);
+
   useEffect(() => {
     if (!permSwitchError) return;
     const id = setTimeout(() => setPermSwitchError(null), 4000);
@@ -1066,12 +1082,18 @@ export function SessionComposer() {
                   <button
                     ref={permChipRef}
                     type="button"
-                    className={`session-composer-perm-chip-btn composer-chip composer-chip-perms${pendingPerm ? " session-composer-perm-chip-btn-pending" : ""}${isDanger ? " session-composer-perm-chip-btn-danger composer-chip-danger" : ""}`}
+                    disabled={permSwitchBlocked}
+                    className={`session-composer-perm-chip-btn composer-chip composer-chip-perms${pendingPerm ? " session-composer-perm-chip-btn-pending" : ""}${isDanger ? " session-composer-perm-chip-btn-danger composer-chip-danger" : ""}${permSwitchBlocked ? " composer-chip-disabled" : ""}`}
                     onClick={() => setPermPickerOpen((o) => !o)}
-                    title={`Permission mode: ${meta.label} — click to switch`}
+                    title={
+                      permSwitchBlocked
+                        ? `Permission mode: ${meta.label} — wait for the current turn to finish before switching (switching mid-turn can freeze execution)`
+                        : `Permission mode: ${meta.label} — click to switch`
+                    }
                     aria-label={`Permission mode: ${meta.label}`}
                     aria-haspopup="menu"
                     aria-expanded={permPickerOpen}
+                    aria-disabled={permSwitchBlocked || undefined}
                   >
                     <span className="composer-chip-dot" aria-hidden="true" />
                     <span className="composer-chip-value">{meta.label}</span>

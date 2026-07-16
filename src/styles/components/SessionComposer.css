@@ -859,6 +859,22 @@
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* Disabled chip — e.g. the permission-mode chip while a turn is
+ * streaming.  Switching the mode mid-turn races the SDK's active
+ * query and freezes execution, so the chip is inert until the turn
+ * settles.  No hover affordance, reduced opacity, not-allowed cursor. */
+.composer-chip.composer-chip-disabled,
+.composer-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.composer-chip.composer-chip-disabled:hover,
+.composer-chip:disabled:hover {
+  color: var(--text-1);
+  border-color: var(--rule-card, var(--border));
+  background: transparent;
+}
+
 .composer-chip-dot {
   width: 5px;
   height: 5px;
